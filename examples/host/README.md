@@ -19,7 +19,17 @@ npm run dev -w @1shotapi/ows-example-host
 
 ## HTTPS / ngrok
 
-Passkeys require a secure context. See `.env.example` for tunnel configuration.
+Passkeys require a secure context. Use the official [@ngrok/ngrok](https://www.npmjs.com/package/@ngrok/ngrok) SDK (not the vulnerable third-party `ngrok` npm package):
+
+```bash
+# Set token from https://dashboard.ngrok.com/get-started/your-authtoken
+export NGROK_AUTHTOKEN=your_token   # PowerShell: $env:NGROK_AUTHTOKEN="your_token"
+
+npm run dev -w @1shotapi/ows-example-host
+npm run tunnel -w @1shotapi/ows-example-host
+```
+
+Set `VITE_WALLET_IFRAME_URL` in `.env.local` to the wallet iframe's HTTPS URL when testing cross-origin passkeys.
 
 ## Status
 
