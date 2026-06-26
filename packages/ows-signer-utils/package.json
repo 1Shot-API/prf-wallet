@@ -1,0 +1,45 @@
+{
+  "name": "@1shotapi/ows-signer-utils",
+  "version": "0.0.0",
+  "description": "OWS utilities to embed the custody signer iframe and communicate via postMessage — chain-specific signing helpers (EVM, etc.)",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\"",
+    "test": "node --import tsx --test test/*.test.ts",
+    "lint": "tsc -p tsconfig.json --noEmit"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0"
+  },
+  "keywords": [
+    "ows",
+    "open-wallet-standard",
+    "webauthn",
+    "prf",
+    "signer",
+    "evm",
+    "iframe"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/1Shot-API/open-wallet.git",
+    "directory": "packages/ows-signer-utils"
+  },
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  }
+}

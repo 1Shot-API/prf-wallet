@@ -1,0 +1,37 @@
+{
+  "name": "@1shotapi/ows-signer",
+  "version": "0.0.0",
+  "description": "OWS custody signer — plain JavaScript WebAuthn PRF key custody with curve-based signing (on-chain via EIP-8244)",
+  "type": "module",
+  "files": [
+    "src",
+    "html",
+    "README.md"
+  ],
+  "exports": {
+    "./html": "./html/index.html",
+    "./src/*": "./src/*"
+  },
+  "scripts": {
+    "test": "node --test test/*.test.js"
+  },
+  "keywords": [
+    "ows",
+    "open-wallet-standard",
+    "webauthn",
+    "prf",
+    "passkey",
+    "signer",
+    "custody",
+    "secp256k1"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/1Shot-API/open-wallet.git",
+    "directory": "packages/ows-signer"
+  },
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  }
+}

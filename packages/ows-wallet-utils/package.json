@@ -1,0 +1,46 @@
+{
+  "name": "@1shotapi/ows-wallet-utils",
+  "version": "0.0.0",
+  "description": "OWS utilities for wallet iframe implementers — host ↔ wallet messaging via @1shotapi/postmate",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\"",
+    "test": "node --import tsx --test test/*.test.ts",
+    "lint": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@1shotapi/postmate": "^1.5.5"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0"
+  },
+  "keywords": [
+    "ows",
+    "open-wallet-standard",
+    "postmate",
+    "iframe",
+    "wallet"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/1Shot-API/open-wallet.git",
+    "directory": "packages/ows-wallet-utils"
+  },
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  }
+}

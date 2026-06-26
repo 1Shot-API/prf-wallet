@@ -1,0 +1,30 @@
+{
+  "name": "open-wallet",
+  "private": true,
+  "description": "1Shot API Open Wallet Standard (OWS) — reference implementation monorepo",
+  "workspaces": [
+    "packages/*",
+    "examples/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "clean": "npm run clean --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "changeset": "changeset",
+    "version-packages": "changeset version",
+    "release": "npm run build && changeset publish"
+  },
+  "devDependencies": {
+    "@changesets/cli": "^2.29.0",
+    "typescript": "~5.8.0"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/1Shot-API/open-wallet.git"
+  },
+  "license": "MIT"
+}

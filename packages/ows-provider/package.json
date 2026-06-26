@@ -1,0 +1,48 @@
+{
+  "name": "@1shotapi/ows-provider",
+  "version": "0.0.0",
+  "description": "OWS EIP-1193 provider for host applications — embed wallet iframe and use with viem, ethers, etc.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\"",
+    "test": "node --import tsx --test test/*.test.ts",
+    "lint": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@1shotapi/ows-wallet-utils": "*"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0"
+  },
+  "keywords": [
+    "ows",
+    "open-wallet-standard",
+    "eip-1193",
+    "ethereum",
+    "provider",
+    "viem",
+    "ethers"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/1Shot-API/open-wallet.git",
+    "directory": "packages/ows-provider"
+  },
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  }
+}

@@ -1,0 +1,52 @@
+{
+  "name": "@1shotapi/ows-onchain",
+  "version": "0.0.0",
+  "description": "OWS EIP-8244 build and deploy pipeline for publishing the custody signer on-chain",
+  "type": "module",
+  "files": [
+    "contracts",
+    "ignition",
+    "scripts",
+    "README.md"
+  ],
+  "scripts": {
+    "build:html": "node scripts/build.ts",
+    "compile": "hardhat compile",
+    "deploy:local": "npm run build:html && hardhat compile && hardhat ignition deploy ignition/modules/OwsSignerFrontend.ts --network localhost",
+    "deploy:sepolia": "npm run build:html && hardhat compile --build-profile production && hardhat ignition deploy ignition/modules/OwsSignerFrontend.ts --network sepolia",
+    "serve": "node scripts/serve.ts",
+    "node": "hardhat node",
+    "test": "node --test test/*.test.js",
+    "test:hardhat": "hardhat test",
+    "clean": "node -e \"require('fs').rmSync('cache',{recursive:true,force:true}); require('fs').rmSync('artifacts',{recursive:true,force:true})\""
+  },
+  "dependencies": {
+    "@1shotapi/ows-signer": "*"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-ignition": "^3.1.7",
+    "@nomicfoundation/hardhat-toolbox-viem": "^5.0.7",
+    "@types/node": "^22.19.0",
+    "forge-std": "github:foundry-rs/forge-std#v1.9.4",
+    "hardhat": "^3.9.0",
+    "viem": "^2.52.0"
+  },
+  "keywords": [
+    "ows",
+    "open-wallet-standard",
+    "eip-8244",
+    "onchain",
+    "hardhat",
+    "webauthn",
+    "prf"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/1Shot-API/open-wallet.git",
+    "directory": "packages/ows-onchain"
+  },
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  }
+}

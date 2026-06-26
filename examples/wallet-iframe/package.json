@@ -1,0 +1,21 @@
+{
+  "name": "@1shotapi/ows-example-wallet",
+  "version": "0.0.0",
+  "private": true,
+  "description": "OWS reference wallet iframe (layer B) — embeds custody signer and handles signing UX",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "lint": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@1shotapi/ows-signer": "*",
+    "@1shotapi/ows-signer-utils": "*",
+    "@1shotapi/ows-wallet-utils": "*"
+  },
+  "devDependencies": {
+    "vite": "^6.3.0"
+  }
+}
