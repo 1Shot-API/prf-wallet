@@ -1,22 +1,12 @@
-/**
- * OWS EIP-1193 provider for host applications.
- * Implementation forthcoming.
- */
+export { OWSProxy } from "./ows-proxy.js";
+export type { OWSProxyOptions } from "./ows-proxy.js";
+export type { EIP1193Provider, EIP1193RequestArgs } from "./eip1193/provider.js";
+export { createEip1193Provider } from "./eip1193/provider.js";
 
-export type OwsProviderConfig = {
-  container: HTMLElement;
-  walletUrl: string;
-};
-
-/** Minimal EIP-1193 shape — will be expanded during implementation. */
-export type EthereumProvider = {
-  request(args: { method: string; params?: unknown[] }): Promise<unknown>;
-  on?(event: string, listener: (...args: unknown[]) => void): void;
-  removeListener?(event: string, listener: (...args: unknown[]) => void): void;
-};
-
-export async function createOwsProvider(
-  _config: OwsProviderConfig,
-): Promise<EthereumProvider> {
-  throw new Error("Not implemented");
-}
+export {
+  OwsRpcError,
+  OwsUnimplementedError,
+  OwsInvalidParamsError,
+  OwsUserRejectedError,
+  OwsRpcTimeoutError,
+} from "@1shotapi/ows-types";

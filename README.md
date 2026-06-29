@@ -16,6 +16,7 @@ Host (layer A)              @1shotapi/ows-provider          EIP-1193 for viem/et
 
 | Layer | Package | Published |
 |-------|---------|-----------|
+| Shared types | `@1shotapi/ows-types` | Yes |
 | C — Custody signer | `@1shotapi/ows-signer` | Yes (plain JS, on-chain) |
 | B — Signer SDK | `@1shotapi/ows-signer-utils` | Yes |
 | B — Wallet SDK | `@1shotapi/ows-wallet-utils` | Yes |
@@ -53,6 +54,7 @@ See [examples/host/README.md](examples/host/README.md) for ngrok / HTTPS setup (
 
 ```
 packages/
+  ows-types/            Shared types and errors (host, wallet, signer SDKs)
   ows-signer/           Plain JS custody signer — no build step
   ows-signer-utils/     Embed signer iframe; evm.signMessage(), etc.
   ows-wallet-utils/     Host ↔ wallet iframe (Postmate RPC wrappers)

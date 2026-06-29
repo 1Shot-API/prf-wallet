@@ -9,6 +9,7 @@ examples/host                 Layer A — @1shotapi/ows-provider (EIP-1193)
 examples/wallet-iframe        Layer B — wallet wrapper demo
 packages/ows-signer           Layer C — custody signer (plain JS, zero deps, on-chain)
 packages/ows-signer-utils     Wallet iframe ↔ custody signer (evm.signMessage, etc.)
+packages/ows-types            Shared types and errors across OWS SDKs
 packages/ows-wallet-utils     Host ↔ wallet iframe (@1shotapi/postmate wrappers)
 packages/ows-onchain          EIP-8244 deploy pipeline for ows-signer
 ```
@@ -21,6 +22,10 @@ packages/ows-onchain          EIP-8244 deploy pipeline for ows-signer
 4. **C accepts `postMessage` only when `event.source === window.parent` and `window.parent !== window.top`.**
 5. **Do not vendor Postmate.** Use `@1shotapi/postmate` from npm / GitHub.
 6. **Examples are not published.**
+
+## Code style
+
+Prefer **methods on objects** over standalone exported functions when the logic belongs to a single class or module (e.g. serialize an RPC envelope inside `RpcHostClient`, not as a public `createRpcRequest` helper). Export free functions only when they are genuinely shared utilities with multiple independent call sites.
 
 ## Tooling
 

@@ -1,7 +1,7 @@
 {
-  "name": "@1shotapi/ows-provider",
+  "name": "@1shotapi/ows-types",
   "version": "0.0.0",
-  "description": "OWS EIP-1193 provider for host applications — embed wallet iframe and use with viem, ethers, etc.",
+  "description": "Shared OWS TypeScript types and error classes for host, wallet, and signer SDKs",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -21,27 +21,19 @@
     "test": "node --import tsx --test test/*.test.ts",
     "lint": "tsc -p tsconfig.json --noEmit"
   },
-  "dependencies": {
-    "@1shotapi/ows-types": "*",
-    "@1shotapi/ows-wallet-utils": "*",
-    "@1shotapi/postmate": "^1.5.5"
-  },
   "devDependencies": {
     "tsx": "^4.19.0"
   },
   "keywords": [
     "ows",
     "open-wallet-standard",
-    "eip-1193",
-    "ethereum",
-    "provider",
-    "viem",
-    "ethers"
+    "types",
+    "errors"
   ],
   "repository": {
     "type": "git",
     "url": "https://github.com/1Shot-API/open-wallet.git",
-    "directory": "packages/ows-provider"
+    "directory": "packages/ows-types"
   },
   "license": "MIT",
   "publishConfig": {

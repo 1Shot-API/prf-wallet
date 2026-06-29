@@ -1,32 +1,70 @@
 # @1shotapi/ows-provider
 
-EIP-1193 provider for **host applications** (layer A) using an OWS wallet iframe.
+EIP-1193 provider for **host applications** (layer A) using an OWS-compatible wallet iframe.
 
-Embed your wallet iframe, get a standards-compliant `EthereumProvider`, and pass it to viem, ethers, wagmi, or any EIP-1193 consumer.
+Embed your wallet iframe, get `proxy.ethereum` for viem/ethers/wagmi, and call custom wallet RPC via `proxy.rpc()`.
 
-## Example (forthcoming)
+## Install
+
+```bash
+npm install @1shotapi/ows-provider
+```
+
+Your host app must also have a wallet iframe running [`OWSWallet`](https://github.com/1Shot-API/open-wallet/tree/main/packages/ows-wallet-utils) from `@1shotapi/ows-wallet-utils`.
+
+## Quick start
 
 ```typescript
-import { createOwsProvider } from "@1shotapi/ows-provider";
+import { OWSProxy } from "@1shotapi/ows-provider";
+import { createWalletClient, custom } from "viem";
 
-const provider = await createOwsProvider({
-  container: document.getElementById("wallet")!,
-  walletUrl: "https://wallet.example.com",
+const container = document.getElementById("wallet")!;
+const proxy = await OWSProxy.create(container, "https://wallet.example.com");
+
+const accounts = await proxy.ethereum.request({ method: "eth_requestAccounts" });
+
+const client = createWalletClient({
+  transport: custom(proxy.ethereum),
 });
-
-const accounts = await provider.request({ method: "eth_requestAccounts" });
 ```
+
+### Custom wallet RPC
+
+```typescript
+const status = await proxy.rpc<{ connected: boolean }>("getStatus");
+```
+
+Returns `OwsUnimplementedError` if the wallet iframe did not register that method.
+
+## API
+
+### `OWSProxy.create(container, walletUrl, options?)`
+
+| Option | Description |
+|--------|-------------|
+| `name` | iframe `name` attribute (default `ows-wallet`) |
+| `classList` | CSS classes on iframe at creation |
+| `rpcTimeoutMs` | RPC timeout (default 120s) |
+
+### `proxy.ethereum`
+
+EIP-1193 provider: `request`, `on`, `removeListener` (events stubbed for future use).
+
+### `proxy.rpc(method, params?)`
+
+Extension RPC for wallet-specific methods (non–EIP-1193).
 
 ## Architecture
 
 ```
-Host app
-  └── @1shotapi/ows-provider  (EIP-1193)
-        └── @1shotapi/ows-wallet-utils  (Postmate ↔ wallet iframe)
-              └── Your wallet iframe (layer B)
-                    └── @1shotapi/ows-signer-utils ↔ custody signer (layer C)
+Host (A) — OWSProxy
+  └── Postmate iframe
+        └── Wallet (B) — OWSWallet
+              └── OWSSigner (C) via ows-signer-utils
 ```
 
-## Status
+`@1shotapi/postmate` sets `allow="publickey-credentials-get; publickey-credentials-create"` when the iframe is created.
 
-Scaffold only — implementation forthcoming.
+## License
+
+MIT

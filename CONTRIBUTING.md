@@ -14,6 +14,7 @@ Thank you for contributing to the **Open Wallet Standard (OWS)** reference imple
 | Path | Language | Build | Published |
 |------|----------|-------|-----------|
 | `packages/ows-signer` | Plain JavaScript | **None** | `@1shotapi/ows-signer` |
+| `packages/ows-types` | TypeScript | `tsc` | `@1shotapi/ows-types` |
 | `packages/ows-signer-utils` | TypeScript | `tsc` | `@1shotapi/ows-signer-utils` |
 | `packages/ows-wallet-utils` | TypeScript | `tsc` | `@1shotapi/ows-wallet-utils` |
 | `packages/ows-provider` | TypeScript | `tsc` | `@1shotapi/ows-provider` |

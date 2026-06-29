@@ -2,26 +2,68 @@
 
 Utilities for **wallet iframe implementers** (layer B) to communicate with the host application (layer A).
 
-Built on [@1shotapi/postmate](https://github.com/1Shot-API/postmate) — the 1Shot API fork with passkey iframe support — with typed RPC wrappers for common OWS wallet operations.
+Built on [@1shotapi/postmate](https://github.com/1Shot-API/postmate) with a JSON-RPC-style callback protocol and Zod-validated EIP-1193 params.
 
-## Use cases
+## Install
 
-- Wallet iframe exposes methods the host can call (`connect`, `signTransaction`, etc.).
-- Host events forwarded into the wallet for display / approval flows.
-- Passkey-compatible iframe creation (`allow="publickey-credentials-get"`).
-
-## Example (forthcoming)
-
-```typescript
-import { OwsWalletChild, OwsWalletParent } from "@1shotapi/ows-wallet-utils";
-
-// Host side
-const wallet = await OwsWalletParent.connect({ container, url: walletIframeUrl });
-
-// Wallet iframe side
-const host = await OwsWalletChild.handshake();
+```bash
+npm install @1shotapi/ows-wallet-utils zod
 ```
 
-## Status
+## Quick start (wallet iframe)
 
-Scaffold only — implementation forthcoming.
+```typescript
+import { OWSWallet } from "@1shotapi/ows-wallet-utils";
+import { z } from "zod";
+
+const wallet = await OWSWallet.create({
+  eip1193: {
+    async eth_requestAccounts() {
+      return ["0xYourAddress"];
+    },
+    async personal_sign(params) {
+      const [message] = params as [string, string];
+      return "0x…";
+    },
+  },
+  rpc: {
+    getStatus: {
+      handler: async () => ({ connected: true }),
+    },
+  },
+});
+
+// Or register before handshake:
+const prepared = OWSWallet.prepare();
+prepared.registerRpc(
+  "customMethod",
+  async (params) => ({ ok: true }),
+  z.object({ foo: z.number() }),
+);
+await prepared.start();
+```
+
+Unregistered EIP-1193 methods respond with `OwsUnimplementedError` (`-32601`). Custom RPC methods must be registered via `options.rpc` or `registerRpc()` before `start()`.
+
+## Protocol
+
+- Host calls `child.call(method, envelope)` via Postmate
+- Child emits `ows:rpcCallback` with `{ callId, success, result | error }`
+- `@1shotapi/postmate` sets passkey `allow` on iframe creation — do not override after the fact
+
+## Exports
+
+- `OWSWallet` — child-side Postmate model
+- `EIP1193_PARAM_SCHEMAS`, `getEip1193ParamSchema` — Zod validators for standard methods
+- `OwsRpcError`, `OwsUnimplementedError`, `OwsInvalidParamsError` — shared error types
+
+## Related
+
+| Package | Role |
+|---------|------|
+| `@1shotapi/ows-provider` | Host-side `OWSProxy` + EIP-1193 |
+| `@1shotapi/ows-signer-utils` | Wallet ↔ custody signer (layer B→C) |
+
+## License
+
+MIT

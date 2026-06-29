@@ -21,6 +21,9 @@
     "test": "node --import tsx --test test/*.test.ts",
     "lint": "tsc -p tsconfig.json --noEmit"
   },
+  "dependencies": {
+    "@1shotapi/ows-types": "*"
+  },
   "peerDependencies": {
     "viem": "^2.0.0"
   },
