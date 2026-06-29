@@ -376,7 +376,16 @@ async function handleRecoverKey(params, correlationId, targetOrigin) {
       correlationId,
       { rebound: true },
     );
+    return;
   }
+
+  emitEvent(
+    window.parent,
+    targetOrigin,
+    "RecoverySessionStarted",
+    correlationId,
+    { recoverySessionActive: true },
+  );
 }
 
 /**

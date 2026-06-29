@@ -21,8 +21,12 @@
     "test": "node --import tsx --test test/*.test.ts",
     "lint": "tsc -p tsconfig.json --noEmit"
   },
+  "peerDependencies": {
+    "viem": "^2.0.0"
+  },
   "devDependencies": {
-    "tsx": "^4.19.0"
+    "tsx": "^4.19.0",
+    "viem": "^2.52.0"
   },
   "keywords": [
     "ows",

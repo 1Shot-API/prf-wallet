@@ -41,7 +41,7 @@ Only accepts messages when `event.source === window.parent`. Replies use the par
 | `signDigest` | `digestData`, `scheme`, `credentialId?` | `KeyDerived` (PRF path), `DigestSigned` |
 | `revealPrivateKey` | `credentialId?` | `KeyDerived` (+ DOM display) |
 | `createRecoveryData` | `passwordText`, `buttonText`, `minPasswordLength`, `credentialId?` | `KeyDerived`, `RecoveryDataCreated` |
-| `recoverKey` | `aes256EncryptedPrivateKey`, `passwordText`, `buttonText`, `credentialId?` | DOM display; optional re-bind → `RecoverySessionCleared` |
+| `recoverKey` | `aes256EncryptedPrivateKey`, `passwordText`, `buttonText`, `credentialId?` | DOM display; `RecoverySessionStarted` or re-bind → `RecoverySessionCleared` |
 | `getPublicKey` | `credentialId?`, `challenge?` | `KeyDerived`, `PublicKey`, `ChallengeSigned?` |
 | `clearRecoverySession` | — | `RecoverySessionCleared` |
 

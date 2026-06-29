@@ -14,10 +14,26 @@ const listener = await ngrok.forward({
 console.log(`OWS example host tunnel: ${listener.url()}`);
 console.log(`Forwarding to http://localhost:${port}`);
 
-const shutdown = async () => {
-  await listener.close();
+let shuttingDown = false;
+
+const shutdown = async (signal) => {
+  if (shuttingDown) return;
+  shuttingDown = true;
+
+  try {
+    await listener.close();
+  } catch (error) {
+    console.error(`Failed to close tunnel (${signal}):`, error);
+    process.exit(1);
+    return;
+  }
+
   process.exit(0);
 };
 
-process.on("SIGINT", shutdown);
-process.on("SIGTERM", shutdown);
+process.on("SIGINT", () => {
+  void shutdown("SIGINT");
+});
+process.on("SIGTERM", () => {
+  void shutdown("SIGTERM");
+});
