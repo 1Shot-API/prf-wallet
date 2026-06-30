@@ -40,15 +40,17 @@ npm test
 
 ### Run the OWS demos
 
-```bash
-# Terminal 1 — wallet iframe (layer B)
-npm run dev -w @1shotapi/ows-example-wallet
+Copy [`.env.example`](.env.example) to `.env` and set `NGROK_AUTHTOKEN` and optionally `NGROK_DOMAIN` (your reserved ngrok domain) for HTTPS passkey testing.
 
-# Terminal 2 — host app (layer A)
+```bash
+# Terminal 1 — wallet iframe + custody signer (single ngrok tunnel)
+npm run dev:wallet
+
+# Terminal 2 — host app (set VITE_WALLET_IFRAME_URL to ngrok /wallet/ URL)
 npm run dev -w @1shotapi/ows-example-host
 ```
 
-See [examples/host/README.md](examples/host/README.md) for ngrok / HTTPS setup (required for passkeys).
+See [examples/wallet-iframe/README.md](examples/wallet-iframe/README.md) and [examples/host/README.md](examples/host/README.md) for details.
 
 ## Repository layout
 

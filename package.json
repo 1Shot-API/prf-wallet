@@ -11,6 +11,7 @@
     "clean": "npm run clean --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present",
+    "dev:wallet": "npm run dev -w @1shotapi/ows-example-wallet",
     "changeset": "changeset",
     "version-packages": "changeset version",
     "release": "npm run build && changeset publish"

@@ -16,6 +16,7 @@
   },
   "devDependencies": {
     "@ngrok/ngrok": "^1.7.0",
+    "dotenv": "^16.4.7",
     "vite": "^6.4.2"
   }
 }
