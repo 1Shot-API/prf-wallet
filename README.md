@@ -46,7 +46,7 @@ Copy [`.env.example`](.env.example) to `.env` and set `NGROK_AUTHTOKEN` and opti
 # Terminal 1 — wallet iframe + custody signer (single ngrok tunnel)
 npm run dev:wallet
 
-# Terminal 2 — host app (set VITE_WALLET_IFRAME_URL to ngrok /wallet/ URL)
+# Terminal 2 — host app (reads NGROK_DOMAIN from repo root .env)
 npm run dev -w @1shotapi/ows-example-host
 ```
 

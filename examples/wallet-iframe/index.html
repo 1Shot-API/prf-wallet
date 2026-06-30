@@ -4,10 +4,72 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>OWS — Example Wallet Iframe</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      font-family: system-ui, sans-serif;
+      line-height: 1.5;
+    }
+    body {
+      margin: 0;
+      padding: 1rem 1.25rem;
+    }
+    h1 {
+      margin: 0 0 0.25rem;
+      font-size: 1.25rem;
+    }
+    .subtitle {
+      margin: 0 0 1rem;
+      opacity: 0.75;
+      font-size: 0.9rem;
+    }
+    .status-panel {
+      display: grid;
+      gap: 0.5rem;
+      max-width: 36rem;
+    }
+    .status-row {
+      display: grid;
+      grid-template-columns: 7rem 1fr;
+      gap: 0.5rem;
+      align-items: baseline;
+    }
+    .status-label {
+      font-weight: 500;
+    }
+    .status-value {
+      font-family: ui-monospace, monospace;
+      font-size: 0.85rem;
+      word-break: break-all;
+    }
+    #signer-container {
+      position: absolute;
+      width: 0;
+      height: 0;
+      overflow: hidden;
+      clip-path: inset(50%);
+    }
+  </style>
 </head>
 <body>
   <h1>OWS Example Wallet (layer B)</h1>
-  <p>Reference wallet wrapper — implementation forthcoming.</p>
+  <p class="subtitle">Wallet wrapper — passkey custody via nested signer iframe.</p>
+
+  <section class="status-panel" aria-label="Wallet status">
+    <div class="status-row">
+      <span class="status-label">Status</span>
+      <span id="wallet-status" class="status-value">Loading…</span>
+    </div>
+    <div class="status-row">
+      <span class="status-label">EVM</span>
+      <span id="evm-address" class="status-value">—</span>
+    </div>
+    <div class="status-row">
+      <span class="status-label">Solana</span>
+      <span id="solana-address" class="status-value">—</span>
+    </div>
+  </section>
+
   <div id="signer-container"></div>
 </body>
 </html>

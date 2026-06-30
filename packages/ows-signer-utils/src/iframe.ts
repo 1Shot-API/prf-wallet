@@ -12,7 +12,8 @@ export function createSignerIframe(
   return new Promise((resolve, reject) => {
     const iframe = document.createElement("iframe");
     iframe.src = signerUrl;
-    iframe.allow = "publickey-credentials-get *";
+    iframe.allow =
+      "publickey-credentials-get *; publickey-credentials-create *";
     iframe.title = "OWS custody signer";
     iframe.style.border = "0";
 

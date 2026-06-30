@@ -22,7 +22,8 @@
     "lint": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@1shotapi/ows-types": "*"
+    "@1shotapi/ows-types": "*",
+    "@scure/base": "^1.2.5"
   },
   "peerDependencies": {
     "viem": "^2.0.0"

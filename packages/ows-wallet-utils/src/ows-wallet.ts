@@ -11,6 +11,7 @@ import {
   handleRpcModelCall,
   type RpcModelRegistration,
 } from "./rpc/child-wrapper.js";
+import { debugLog, setOwsWalletDebugFromOptions } from "./debug.js";
 
 export type Eip1193Handler = (params: unknown[]) => Promise<unknown>;
 
@@ -20,6 +21,8 @@ export type RpcHandlerRegistration = {
 };
 
 export type OWSWalletOptions = {
+  /** Log Postmate handshake and RPC traffic to `console.debug`. */
+  debug?: boolean;
   eip1193?: Partial<Record<Eip1193Method, Eip1193Handler>>;
   rpc?: Record<string, RpcHandlerRegistration>;
 };
@@ -32,6 +35,7 @@ export class OWSWallet {
   private handshakeStarted = false;
 
   private constructor(options?: OWSWalletOptions) {
+    setOwsWalletDebugFromOptions(options?.debug);
     if (options?.eip1193) {
       for (const [method, handler] of Object.entries(options.eip1193)) {
         if (handler) {
@@ -65,8 +69,16 @@ export class OWSWallet {
     this.handshakeStarted = true;
 
     const model = this.buildPostmateModel();
+    debugLog("starting Postmate child handshake", {
+      eip1193Handlers: [...this.eip1193Handlers.keys()],
+      customRpc: [...this.customHandlers.keys()],
+      modelMethods: Object.keys(model).length,
+    });
+
     this.handshakePromise = new Postmate.Model(model);
     this.childApi = await this.handshakePromise;
+
+    debugLog("Postmate child connected; RPC model ready");
 
     return this;
   }
@@ -125,14 +137,17 @@ export class OWSWallet {
     data: unknown,
     isEip1193: boolean,
   ): Promise<void> {
+    debugLog("RPC model invoked", { method, isEip1193, raw: data });
+
     const childApi =
       this.childApi ?? (await this.handshakePromise);
     if (!childApi) {
+      debugLog("RPC dropped — child API not available", { method });
       return;
     }
 
     const registration = this.resolveRegistration(method, isEip1193);
-    await handleRpcModelCall(childApi, data, registration);
+    await handleRpcModelCall(childApi, data, registration, method);
   }
 
   private resolveRegistration(

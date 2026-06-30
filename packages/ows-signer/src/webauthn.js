@@ -1,6 +1,7 @@
-import { getRpId } from "../state.js";
-import { PRF_LABEL_SECP256K1 } from "../constants.js";
-import { bufferToBase64Url } from "../hex.js";
+import { getRpId } from "./state.js";
+import { PRF_LABEL_SECP256K1 } from "./constants.js";
+import { bufferToBase64Url } from "./hex.js";
+import { debugLog, describePrfExtensionResults } from "./debug.js";
 
 /**
  * @param {Uint8Array} [userId]
@@ -55,6 +56,7 @@ export async function createPasskeyCredential(name, options = {}) {
   if (!credential || !(credential instanceof PublicKeyCredential)) {
     throw new Error("credentialCreationFailed");
   }
+  debugLog("createPasskeyCredential", describePrfExtensionResults(credential));
   return credential;
 }
 
@@ -93,6 +95,7 @@ export async function getPasskeyAssertion(challenge, credentialId) {
   if (!credential || !(credential instanceof PublicKeyCredential)) {
     throw new Error("credentialGetFailed");
   }
+  debugLog("getPasskeyAssertion", describePrfExtensionResults(credential));
   return credential;
 }
 

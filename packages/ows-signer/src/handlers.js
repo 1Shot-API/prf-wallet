@@ -11,6 +11,7 @@ import {
   hkdfExpand,
   normalizePrfOutputToArrayBuffer,
 } from "./crypto/prf.js";
+import { debugLog, describePrfExtensionResults } from "./debug.js";
 import { decryptPrivateKey, encryptPrivateKey } from "./crypto/recovery.js";
 import { signWithScheme, validateSignPayload } from "./crypto/sign.js";
 import { parse0xHex, to0xHex } from "./hex.js";
@@ -149,6 +150,35 @@ export async function handleRequest(
 }
 
 /**
+ * PRF bytes are returned on assertion (`prf.eval`), not registration (`prf.enable`).
+ * Some platforms may return results on create; otherwise run a follow-up get.
+ *
+ * @param {PublicKeyCredential} credential
+ * @param {string} [credentialId]
+ * @returns {Promise<PublicKeyCredential>}
+ */
+async function credentialForKeyDerivation(credential, credentialId) {
+  debugLog("ceremony extension results", describePrfExtensionResults(credential));
+
+  const rawPrf = credential.getClientExtensionResults()?.prf?.results?.first;
+  if (normalizePrfOutputToArrayBuffer(rawPrf)) {
+    debugLog("using PRF output from current ceremony");
+    return credential;
+  }
+
+  const id = credentialId ?? getCredentialId(credential);
+  debugLog("no PRF results on registration; running assertion with prf.eval", {
+    credentialId: id,
+  });
+  const assertion = await getPasskeyAssertion(undefined, id);
+  debugLog(
+    "assertion extension results",
+    describePrfExtensionResults(assertion),
+  );
+  return assertion;
+}
+
+/**
  * @param {Record<string, unknown>} params
  * @param {string | undefined} correlationId
  * @param {string} targetOrigin
@@ -168,7 +198,12 @@ async function handleCreateCredential(params, correlationId, targetOrigin) {
 
   await withCeremony(async () => {
     const credential = await createPasskeyCredential(name, options);
-    const keys = await deriveKeysFromCredential(credential);
+    const credentialId = getCredentialId(credential);
+    const prfCredential = await credentialForKeyDerivation(
+      credential,
+      credentialId,
+    );
+    const keys = await deriveKeysFromCredential(prfCredential);
     emitKeyDerived(
       targetOrigin,
       correlationId,
@@ -177,7 +212,7 @@ async function handleCreateCredential(params, correlationId, targetOrigin) {
     );
 
     emitEvent(window.parent, targetOrigin, "CredentialCreated", correlationId, {
-      credentialId: getCredentialId(credential),
+      credentialId,
       passkeyPublicKey: getPasskeyPublicKeyBase64Url(credential),
       secp256k1PublicKey: to0xHex(keys.secp256k1PublicKey),
     });

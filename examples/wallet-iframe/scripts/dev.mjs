@@ -99,7 +99,7 @@ function printUrls(tunnelUrl) {
     const signerUrl = new URL("/signer/", tunnelUrl).href;
     console.log(`  Wallet (ngrok):  ${walletUrl}`);
     console.log(`  Signer (ngrok):  ${signerUrl}`);
-    console.log(`  Host env:        VITE_WALLET_IFRAME_URL=${walletUrl}`);
+    console.log(`  Host env:        WALLET_IFRAME_URL=${walletUrl}`);
   }
 }
 

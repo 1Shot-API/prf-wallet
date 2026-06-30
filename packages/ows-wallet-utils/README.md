@@ -45,6 +45,21 @@ await prepared.start();
 
 Unregistered EIP-1193 methods respond with `OwsUnimplementedError` (`-32601`). Custom RPC methods must be registered via `options.rpc` or `registerRpc()` before `start()`.
 
+### Debug logging
+
+Enable `console.debug` traces for Postmate handshake and RPC traffic:
+
+```typescript
+await OWSWallet.create({ debug: true, eip1193: { ... } });
+```
+
+Or in the browser console before the wallet loads:
+
+```javascript
+localStorage.setItem("ows-wallet-utils:debug", "1");
+// or: globalThis.OWS_WALLET_UTILS_DEBUG = true;
+```
+
 ## Protocol
 
 - Host calls `child.call(method, envelope)` via Postmate

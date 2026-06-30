@@ -3,6 +3,8 @@ const HtmlWebpackPlugin = require("html-webpack-plugin");
 const CopyWebpackPlugin = require("copy-webpack-plugin");
 
 const signerPkgRoot = path.resolve(__dirname, "../../packages/ows-signer");
+const signerPkgSrc = path.join(signerPkgRoot, "src");
+const signerPublicDir = path.resolve(__dirname, "public/signer");
 
 /** @param {import('webpack').Configuration} env */
 module.exports = (_env, argv) => {
@@ -41,32 +43,59 @@ module.exports = (_env, argv) => {
         inject: "body",
         scriptLoading: "module",
       }),
-      new CopyWebpackPlugin({
-        patterns: [
-          {
-            from: path.join(signerPkgRoot, "src"),
-            to: "signer/src",
-          },
-          {
-            from: path.resolve(__dirname, "public/signer/index.html"),
-            to: "signer/index.html",
-          },
-        ],
-      }),
+      // Production: copy signer into dist. Dev serves live files via devServer.static below.
+      ...(isProd
+        ? [
+            new CopyWebpackPlugin({
+              patterns: [
+                { from: signerPkgSrc, to: "signer/src" },
+                {
+                  from: path.join(signerPublicDir, "index.html"),
+                  to: "signer/index.html",
+                },
+              ],
+            }),
+          ]
+        : []),
     ],
     devtool: isProd ? "source-map" : "eval-source-map",
     devServer: {
       port: Number(process.env.PORT ?? 5174),
       host: "0.0.0.0",
       allowedHosts: "all",
+      // Use page origin for HMR websocket (required when served via ngrok HTTPS).
+      client: isProd
+        ? false
+        : {
+            webSocketURL: "auto://0.0.0.0:0/ws",
+          },
       devMiddleware: {
         publicPath: "/wallet/",
       },
-      static: {
-        directory: path.resolve(__dirname, "dist"),
-        publicPath: "/",
-        watch: true,
-      },
+      static: isProd
+        ? {
+            directory: path.resolve(__dirname, "dist"),
+            publicPath: "/",
+            watch: true,
+          }
+        : [
+            // Live signer modules — avoid stale copies under dist/signer/src
+            {
+              directory: signerPkgSrc,
+              publicPath: "/signer/src",
+              watch: true,
+            },
+            {
+              directory: signerPublicDir,
+              publicPath: "/signer",
+              watch: true,
+            },
+            {
+              directory: path.resolve(__dirname, "dist"),
+              publicPath: "/",
+              watch: true,
+            },
+          ],
       historyApiFallback: {
         rewrites: [
           { from: /^\/wallet\/?$/, to: "/wallet/index.html" },

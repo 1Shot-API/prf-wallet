@@ -31,3 +31,4 @@ export { EIP1193_PARAM_SCHEMAS, getEip1193ParamSchema } from "./eip1193/schemas.
 export { runHandler } from "./rpc/handler.js";
 export { handleRpcModelCall } from "./rpc/child-wrapper.js";
 export type { RpcModelRegistration } from "./rpc/child-wrapper.js";
+export { debugLog, isOwsWalletDebugEnabled } from "./debug.js";

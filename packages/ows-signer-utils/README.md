@@ -92,6 +92,14 @@ Inbound events: validate `event.origin === signerOrigin` and `event.source === i
 
 All EVM methods accept optional `{ credentialId }` per call.
 
+### `signer.solana`
+
+| Method | Description |
+|--------|-------------|
+| `getAccountAddress()` | Solana address (base58 ed25519 public key) |
+
+Accepts optional `{ credentialId }` per call.
+
 ### Errors
 
 - `OwsNotAllowedError` — user cancelled or policy blocked

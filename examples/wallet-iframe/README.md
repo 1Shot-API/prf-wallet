@@ -37,7 +37,7 @@ npm run dev:local -w @1shotapi/ows-example-wallet
 | Wallet | http://localhost:5174/wallet/ |
 | Signer | http://localhost:5174/signer/ |
 
-When ngrok starts, the script prints HTTPS URLs and `VITE_WALLET_IFRAME_URL` for the host example.
+When ngrok starts, the script prints HTTPS URLs for the wallet iframe. The host reads `NGROK_DOMAIN` from repo root `.env`.
 
 ## Full E2E (with host)
 
@@ -45,8 +45,7 @@ When ngrok starts, the script prints HTTPS URLs and `VITE_WALLET_IFRAME_URL` for
 # Terminal 1 — wallet + signer
 npm run dev:wallet
 
-# Terminal 2 — host (use ngrok /wallet/ URL from terminal 1)
-# Set VITE_WALLET_IFRAME_URL in examples/host/.env.local
+# Terminal 2 — host (reads NGROK_DOMAIN from repo root .env)
 npm run dev -w @1shotapi/ows-example-host
 ```
 
@@ -54,4 +53,4 @@ Passkeys require HTTPS — use the ngrok wallet URL for cross-origin host testin
 
 ## Status
 
-Stub implementation — instantiates `OWSSigner` and `OWSWallet`; signing UX forthcoming.
+Bootstrapped wallet with passkey creation, EIP-191 `personal_sign`, and EVM/Solana address display.

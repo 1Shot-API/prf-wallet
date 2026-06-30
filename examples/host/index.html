@@ -3,12 +3,23 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>OWS — Example Host</title>
+  <title>Open Wallet — Example Host</title>
 </head>
 <body>
-  <h1>OWS Example Host (layer A)</h1>
-  <p>Embeds wallet iframe via @1shotapi/ows-provider — implementation forthcoming.</p>
-  <div id="wallet-container"></div>
-  <script type="module" src="/src/main.ts"></script>
+  <header class="site-header">
+    <h1>Open Wallet <span class="byline">by 1Shot API</span></h1>
+  </header>
+
+  <main class="content">
+    <section class="sign-panel">
+      <label for="message-input">Message to sign (EIP-191)</label>
+      <textarea id="message-input" rows="3">Hello from Open Wallet</textarea>
+      <button type="button" id="sign-button">Sign</button>
+      <p id="status" class="status" aria-live="polite"></p>
+      <pre id="signature-output" class="signature-output" hidden></pre>
+    </section>
+  </main>
+
+  <div id="wallet-container" class="wallet-container" aria-hidden="true"></div>
 </body>
 </html>

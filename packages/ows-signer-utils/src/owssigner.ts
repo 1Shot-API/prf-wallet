@@ -2,6 +2,7 @@ import type { Address, Hex } from "viem";
 import { publicKeyToAddress } from "viem/utils";
 import { createSignerIframe, getSignerOrigin } from "./iframe.js";
 import { EvmSigner } from "./evm/namespace.js";
+import { SolanaSigner } from "./solana/namespace.js";
 import {
   cacheKeyDerivedFromEvent,
   SignerRpcClient,
@@ -25,6 +26,7 @@ export type OWSSignerOptions = {
 
 export class OWSSigner {
   readonly evm: EvmSigner;
+  readonly solana: SolanaSigner;
 
   private readonly rpc: SignerRpcClient;
   private credentialId?: string;
@@ -38,6 +40,7 @@ export class OWSSigner {
     this.rpc = rpc;
     this.credentialId = options?.credentialId;
     this.evm = new EvmSigner(this);
+    this.solana = new SolanaSigner(this);
   }
 
   static async create(

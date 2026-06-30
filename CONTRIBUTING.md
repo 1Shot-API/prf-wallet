@@ -19,7 +19,7 @@ Thank you for contributing to the **Open Wallet Standard (OWS)** reference imple
 | `packages/ows-wallet-utils` | TypeScript | `tsc` | `@1shotapi/ows-wallet-utils` |
 | `packages/ows-provider` | TypeScript | `tsc` | `@1shotapi/ows-provider` |
 | `packages/ows-onchain` | TypeScript + Solidity | Hardhat | `@1shotapi/ows-onchain` |
-| `examples/*` | TypeScript | Vite (dev) | No |
+| `examples/*` | TypeScript | Webpack (dev) | No |
 
 **Critical rule:** `@1shotapi/ows-signer` must never acquire a build step or npm dependencies. Source is published verbatim and deployed on-chain as-is.
 
