@@ -1,6 +1,4 @@
 import { OWSProxy } from "@1shotapi/ows-provider";
-import type { EVMAccountAddress } from "@1shotapi/ows-types";
-import type { Hex } from "viem";
 import "./styles.css";
 
 const messageInput = document.getElementById("message-input") as HTMLTextAreaElement;
@@ -38,9 +36,9 @@ async function handleSign(proxy: OWSProxy): Promise<void> {
   setStatus("Requesting accounts…");
 
   try {
-    const accounts = (await proxy.ethereum.request({
+    const accounts = await proxy.ethereum.request({
       method: "eth_requestAccounts",
-    })) as EVMAccountAddress[];
+    });
 
     const account = accounts[0];
     if (!account) {
@@ -49,10 +47,10 @@ async function handleSign(proxy: OWSProxy): Promise<void> {
 
     setStatus("Approve the passkey prompt to sign…");
 
-    const signature = (await proxy.ethereum.request({
+    const signature = await proxy.ethereum.request({
       method: "personal_sign",
       params: [message, account],
-    })) as Hex;
+    });
 
     signatureOutput.textContent = signature;
     signatureOutput.hidden = false;

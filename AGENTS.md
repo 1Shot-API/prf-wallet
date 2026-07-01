@@ -27,6 +27,20 @@ packages/ows-onchain          EIP-8244 deploy pipeline for ows-signer
 
 Prefer **methods on objects** over standalone exported functions when the logic belongs to a single class or module (e.g. serialize an RPC envelope inside `RpcHostClient`, not as a public `createRpcRequest` helper). Export free functions only when they are genuinely shared utilities with multiple independent call sites.
 
+## Branded types
+
+Use **branded primitives** from `@1shotapi/ows-types` (`ts-brand`) anywhere a value is semantically more than a raw `string`, `number`, or `bigint`.
+
+**Always prefer a branded primitive over an unbranded `string`, `number`, or `bigint`.** Do not use raw primitives for domain values (addresses, call IDs, chain IDs, amounts, etc.) when a branded type exists or should exist in `ows-types`.
+
+- Define each primitive in `packages/ows-types/src/primitives/<Name>.ts` using the same pattern as `RPCCallId` (type alias + `make()` constructor).
+- Export from `packages/ows-types/src/primitives/index.ts`.
+- Examples: `EVMAccountAddress` (not `0x${string}` or viem `Address`), `SolanaAccountAddress`, `BitcoinAccountAddress`, `RPCCallId`.
+- Brand at the point of validation or derivation (e.g. Zod `.transform(EVMAccountAddress)`, or after `publicKeyToAddress`).
+- For polymorphic APIs (e.g. EIP-1193 `request`), use a **mapped method table** (`EIP1193Requests` in `ows-provider`) with a conditional generic on `request()` so callers get inferred branded results without `as` casts.
+
+Do not introduce parallel branded types in consumer packages — add or extend primitives in `ows-types` instead.
+
 ## Tooling
 
 - Node.js 22+, npm workspaces

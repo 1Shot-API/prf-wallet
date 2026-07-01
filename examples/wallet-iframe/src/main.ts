@@ -8,7 +8,7 @@ import {
 } from "./storage";
 
 // Temporary PRF / WebAuthn debugging (signer reads OWS_SIGNER_DEBUG + localStorage)
-(globalThis as { OWS_SIGNER_DEBUG?: boolean }).OWS_SIGNER_DEBUG = true;
+(globalThis as { OWS_SIGNER_DEBUG?: boolean }).OWS_SIGNER_DEBUG = false;
 
 const walletStatusEl = document.getElementById("wallet-status")!;
 const evmAddressEl = document.getElementById("evm-address")!;

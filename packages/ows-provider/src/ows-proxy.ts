@@ -1,7 +1,7 @@
 import Postmate from "@1shotapi/postmate";
 import { DEFAULT_RPC_TIMEOUT_MS } from "@1shotapi/ows-types";
 import { RpcHostClient } from "./rpc/host-client.js";
-import { createEip1193Provider, type EIP1193Provider } from "./eip1193/provider.js";
+import { EIP1193Provider } from "./eip1193/provider.js";
 
 export type OWSProxyOptions = {
   /** iframe `name` attribute. Default: `ows-wallet` */
@@ -20,7 +20,7 @@ export class OWSProxy {
   private constructor(parent: Postmate.ParentAPI, rpcClient: RpcHostClient) {
     this.parent = parent;
     this.rpcClient = rpcClient;
-    this.ethereum = createEip1193Provider((method, params) =>
+    this.ethereum = new EIP1193Provider((method, params) =>
       this.rpc(method, params),
     );
   }

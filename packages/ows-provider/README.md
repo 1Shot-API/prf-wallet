@@ -48,7 +48,7 @@ Returns `OwsUnimplementedError` if the wallet iframe did not register that metho
 
 ### `proxy.ethereum`
 
-EIP-1193 provider: `request`, `on`, `removeListener` (events stubbed for future use).
+`EIP1193Provider` — EIP-1193 `request` with typed results for known methods (`eth_requestAccounts` → `EVMAccountAddress[]`, `personal_sign` → signature hex, etc.). Construct with `new EIP1193Provider(invoke)` or use `OWSProxy.create`, which wires RPC automatically.
 
 ### `proxy.rpc(method, params?)`
 

@@ -1,8 +1,8 @@
 import { describe, it, afterEach } from "node:test";
 import assert from "node:assert/strict";
-import { OWS_RPC_CALLBACK_EVENT, RPCCallId } from "@1shotapi/ows-types";
+import { EVMAccountAddress, OWS_RPC_CALLBACK_EVENT, RPCCallId } from "@1shotapi/ows-types";
 import { RpcHostClient } from "../src/rpc/host-client.ts";
-import { createEip1193Provider } from "../src/eip1193/provider.ts";
+import { EIP1193Provider } from "../src/eip1193/provider.ts";
 
 describe("RpcHostClient", () => {
   afterEach(() => {
@@ -60,9 +60,9 @@ describe("RpcHostClient", () => {
   });
 });
 
-describe("createEip1193Provider", () => {
+describe("EIP1193Provider", () => {
   it("normalizes missing params to an empty array", async () => {
-    const provider = createEip1193Provider(async (method, params) => {
+    const provider = new EIP1193Provider(async (method, params) => {
       return { method, params };
     });
 
@@ -71,16 +71,29 @@ describe("createEip1193Provider", () => {
   });
 
   it("forwards explicit params arrays", async () => {
-    const provider = createEip1193Provider(async (_method, params) => params);
+    const provider = new EIP1193Provider(async (_method, params) => params);
 
     const result = await provider.request({
       method: "personal_sign",
-      params: ["0xhi", "0x0000000000000000000000000000000000000001"],
+      params: [
+        "0xhi",
+        EVMAccountAddress("0x0000000000000000000000000000000000000001"),
+      ],
     });
 
     assert.deepEqual(result, [
       "0xhi",
       "0x0000000000000000000000000000000000000001",
     ]);
+  });
+
+  it("infers EVMAccountAddress[] for eth_requestAccounts", async () => {
+    const address = EVMAccountAddress(
+      "0x00000000000000000000000000000000000000ab",
+    );
+    const provider = new EIP1193Provider(async () => [address]);
+
+    const accounts = await provider.request({ method: "eth_requestAccounts" });
+    assert.equal(accounts[0], address);
   });
 });
