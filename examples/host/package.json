@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@1shotapi/ows-provider": "*",
+    "@1shotapi/ows-types": "*",
     "viem": "^2.52.0"
   },
   "devDependencies": {

@@ -8,6 +8,7 @@ import {
   serializeRpc,
 } from "../src/index.ts";
 import { handleRpcModelCall } from "../src/rpc/child-wrapper.ts";
+import { RPCCallId } from "@1shotapi/ows-types";
 
 describe("handleRpcModelCall", () => {
   const emitted: Array<{ name: string; data: string }> = [];
@@ -24,7 +25,7 @@ describe("handleRpcModelCall", () => {
   it("returns success via ows:rpcCallback", async () => {
     await handleRpcModelCall(
       childApi,
-      serializeRpc({ callId: 1, method: "custom", params: { foo: 1 } }),
+      serializeRpc({ callId: RPCCallId(1), method: "custom", params: { foo: 1 } }),
       {
       handler: async (params) => ({ echo: params }),
     });
@@ -39,7 +40,7 @@ describe("handleRpcModelCall", () => {
   it("returns unimplemented error envelope", async () => {
     await handleRpcModelCall(
       childApi,
-      serializeRpc({ callId: 2, method: "missing", params: null }),
+      serializeRpc({ callId: RPCCallId(2), method: "missing", params: null }),
       {
       handler: async () => {
         throw new OwsUnimplementedError("nope");
@@ -54,7 +55,7 @@ describe("handleRpcModelCall", () => {
   it("validates params with zod schema", async () => {
     await handleRpcModelCall(
       childApi,
-      serializeRpc({ callId: 3, method: "custom", params: { bad: true } }),
+      serializeRpc({ callId: RPCCallId(3), method: "custom", params: { bad: true } }),
       {
         paramsSchema: z.object({ foo: z.number() }),
         handler: async () => "ok",

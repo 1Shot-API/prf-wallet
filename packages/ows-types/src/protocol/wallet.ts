@@ -1,3 +1,5 @@
+import { RPCCallId } from "../primitives/index.js";
+
 /** Postmate emit event name for async RPC callbacks (child → host). */
 export const OWS_RPC_CALLBACK_EVENT = "ows:rpcCallback" as const;
 
@@ -19,13 +21,13 @@ export type RpcErrorPayload = {
 };
 
 export type RpcRequestEnvelope = {
-  callId: number;
+  callId: RPCCallId;
   method: string;
   params: unknown;
 };
 
 export type RpcResponseEnvelope = {
-  callId: number;
+  callId: RPCCallId;
   success: boolean;
   result?: unknown;
   error?: RpcErrorPayload;

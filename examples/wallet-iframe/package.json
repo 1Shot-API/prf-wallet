@@ -14,6 +14,7 @@
   "dependencies": {
     "@1shotapi/ows-signer": "*",
     "@1shotapi/ows-signer-utils": "*",
+    "@1shotapi/ows-types": "*",
     "@1shotapi/ows-wallet-utils": "*",
     "viem": "^2.52.0"
   },

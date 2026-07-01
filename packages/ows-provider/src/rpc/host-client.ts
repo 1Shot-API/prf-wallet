@@ -8,6 +8,7 @@ import {
   serializeRpc,
   type RpcRequestEnvelope,
   type RpcResponseEnvelope,
+  RPCCallId,
 } from "@1shotapi/ows-types";
 
 type PendingRpc = {
@@ -17,8 +18,8 @@ type PendingRpc = {
 };
 
 export class RpcHostClient {
-  private nextCallId = 1;
-  private readonly pending = new Map<number, PendingRpc>();
+  private nextCallId = RPCCallId(1);
+  private readonly pending = new Map<RPCCallId, PendingRpc>();
 
   constructor(
     private readonly child: Postmate.ParentAPI,
@@ -34,7 +35,7 @@ export class RpcHostClient {
     params: unknown,
     timeoutMs?: number,
   ): Promise<T> {
-    const callId = this.nextCallId++;
+    const callId = RPCCallId(this.nextCallId++);
     const timeout = timeoutMs ?? this.defaultTimeoutMs;
 
     return new Promise<T>((resolve, reject) => {
@@ -90,7 +91,7 @@ export class RpcHostClient {
   }
 
   private createRpcRequest(
-    callId: number,
+    callId: RPCCallId,
     method: string,
     params: unknown,
   ): string {

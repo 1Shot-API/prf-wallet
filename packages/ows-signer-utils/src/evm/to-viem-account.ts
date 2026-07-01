@@ -10,8 +10,8 @@ export async function toViemLocalAccount(
     credentialId: signer.getCredentialId(),
   });
 
-  const account: LocalAccount = {
-    address,
+  const account = {
+    address: address,
     type: "local",
     source: "owsSigner",
     publicKey: publicKeyResult.secp256k1PublicKey,
@@ -27,7 +27,7 @@ export async function toViemLocalAccount(
     async signAuthorization(authorization) {
       return signer.evm.signAuthorization(authorization);
     },
-  };
+  } satisfies LocalAccount;
 
   return account;
 }

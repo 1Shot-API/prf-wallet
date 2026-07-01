@@ -55,3 +55,5 @@ export type {
   CreateCredentialOptions,
   GetPublicKeyParams,
 } from "./protocol/signer.js";
+
+export * from "./primitives/index.js";

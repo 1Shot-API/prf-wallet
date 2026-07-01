@@ -1,6 +1,6 @@
 import { describe, it, afterEach } from "node:test";
 import assert from "node:assert/strict";
-import { OWS_RPC_CALLBACK_EVENT } from "@1shotapi/ows-types";
+import { OWS_RPC_CALLBACK_EVENT, RPCCallId } from "@1shotapi/ows-types";
 import { RpcHostClient } from "../src/rpc/host-client.ts";
 import { createEip1193Provider } from "../src/eip1193/provider.ts";
 
@@ -17,7 +17,7 @@ describe("RpcHostClient", () => {
         listeners.set(event, cb);
       },
       call(method: string, data: string) {
-        const request = JSON.parse(data) as { callId: number; params: unknown };
+        const request = JSON.parse(data) as { callId: RPCCallId; params: unknown };
         const response = {
           callId: request.callId,
           success: true,
@@ -40,7 +40,7 @@ describe("RpcHostClient", () => {
         listeners.set(event, cb);
       },
       call(_method: string, data: string) {
-        const request = JSON.parse(data) as { callId: number };
+        const request = JSON.parse(data) as { callId: RPCCallId };
         listeners.get(OWS_RPC_CALLBACK_EVENT)?.(
           JSON.stringify({
             callId: request.callId,

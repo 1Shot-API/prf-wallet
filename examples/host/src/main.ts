@@ -1,5 +1,6 @@
 import { OWSProxy } from "@1shotapi/ows-provider";
-import type { Address, Hex } from "viem";
+import type { EVMAccountAddress } from "@1shotapi/ows-types";
+import type { Hex } from "viem";
 import "./styles.css";
 
 const messageInput = document.getElementById("message-input") as HTMLTextAreaElement;
@@ -39,7 +40,7 @@ async function handleSign(proxy: OWSProxy): Promise<void> {
   try {
     const accounts = (await proxy.ethereum.request({
       method: "eth_requestAccounts",
-    })) as Address[];
+    })) as EVMAccountAddress[];
 
     const account = accounts[0];
     if (!account) {

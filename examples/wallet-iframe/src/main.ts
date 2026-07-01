@@ -1,5 +1,6 @@
 import { OWSSigner } from "@1shotapi/ows-signer-utils";
 import { OWSWallet } from "@1shotapi/ows-wallet-utils";
+import { EVMAccountAddress, SolanaAccountAddress } from "@1shotapi/ows-types";
 import {
   isWalletCreated,
   loadCredentialId,
@@ -17,7 +18,10 @@ function setWalletStatus(created: boolean): void {
   walletStatusEl.textContent = created ? "Created" : "Not created";
 }
 
-function setAddresses(evm: string, solana: string): void {
+function setAddresses(
+  evm: EVMAccountAddress,
+  solana: SolanaAccountAddress,
+): void {
   evmAddressEl.textContent = evm;
   solanaAddressEl.textContent = solana;
 }
@@ -39,7 +43,7 @@ async function main(): Promise<void> {
 
   async function refreshAddresses(): Promise<void> {
     if (!isWalletCreated()) {
-      setAddresses("—", "—");
+      setAddresses(EVMAccountAddress("0x0"), SolanaAccountAddress("—"));
       return;
     }
 
@@ -95,7 +99,7 @@ async function main(): Promise<void> {
       await refreshAddresses();
     } catch (error) {
       console.warn("[ows-example-wallet] could not load addresses", error);
-      setAddresses("—", "—");
+      setAddresses(EVMAccountAddress("0x0"), SolanaAccountAddress("—"));
     }
   }
 

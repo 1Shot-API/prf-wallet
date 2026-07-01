@@ -1,4 +1,12 @@
-import type { Address, AuthorizationRequest, Hex, SignableMessage, SignedAuthorization, TransactionSerializable, TypedDataDefinition } from "viem";
+import { EVMAccountAddress } from "@1shotapi/ows-types";
+import type {
+  AuthorizationRequest,
+  Hex,
+  SignableMessage,
+  SignedAuthorization,
+  TransactionSerializable,
+  TypedDataDefinition,
+} from "viem";
 import { publicKeyToAddress } from "viem/utils";
 import type { OWSSigner } from "../owssigner.js";
 import {
@@ -19,7 +27,9 @@ export type EvmCallOptions = {
 export class EvmSigner {
   constructor(private readonly signer: OWSSigner) {}
 
-  async getAccountAddress(options?: EvmCallOptions): Promise<Address> {
+  async getAccountAddress(
+    options?: EvmCallOptions,
+  ): Promise<EVMAccountAddress> {
     const cached = this.signer.getCachedAddress();
     if (cached) return cached;
 
@@ -27,7 +37,9 @@ export class EvmSigner {
       credentialId: options?.credentialId ?? this.signer.getCredentialId(),
     });
 
-    const address = publicKeyToAddress(publicKey.secp256k1PublicKey);
+    const address = EVMAccountAddress(
+      publicKeyToAddress(publicKey.secp256k1PublicKey),
+    );
     this.signer.setCachedAddress(address);
     return address;
   }

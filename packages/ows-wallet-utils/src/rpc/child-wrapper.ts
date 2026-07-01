@@ -2,6 +2,7 @@ import type Postmate from "@1shotapi/postmate";
 import {
   OWS_RPC_CALLBACK_EVENT,
   OwsRpcError,
+  RPCCallId,
   deserializeRpcRequest,
   serializeRpc,
   type RpcResponseEnvelope,
@@ -33,7 +34,7 @@ export async function handleRpcModelCall(
     });
     emitError(
       childApi,
-      -1,
+      RPCCallId(-1),
       error instanceof Error ? error.message : "Invalid RPC request",
       -32_600,
     );
@@ -52,11 +53,11 @@ export async function handleRpcModelCall(
       registration.paramsSchema,
       registration.handler,
     );
-    const response: RpcResponseEnvelope = {
+    const response = {
       callId: envelope.callId,
       success: true,
       result,
-    };
+    } satisfies RpcResponseEnvelope;
     debugLog("RPC response success", {
       method: methodLabel ?? envelope.method,
       callId: envelope.callId,
@@ -65,11 +66,11 @@ export async function handleRpcModelCall(
     childApi.emit(OWS_RPC_CALLBACK_EVENT, serializeRpc(response));
   } catch (error) {
     if (error instanceof OwsRpcError) {
-      const response: RpcResponseEnvelope = {
+      const response = {
         callId: envelope.callId,
         success: false,
         error: error.toPayload(),
-      };
+      } satisfies RpcResponseEnvelope;
       debugLog("RPC response error", {
         method: methodLabel ?? envelope.method,
         callId: envelope.callId,
@@ -79,14 +80,14 @@ export async function handleRpcModelCall(
       return;
     }
 
-    const response: RpcResponseEnvelope = {
+    const response = {
       callId: envelope.callId,
       success: false,
       error: {
         code: -32_603,
         message: error instanceof Error ? error.message : "Internal error",
       },
-    };
+    } satisfies RpcResponseEnvelope;
     debugLog("RPC response internal error", {
       method: methodLabel ?? envelope.method,
       callId: envelope.callId,
@@ -98,14 +99,14 @@ export async function handleRpcModelCall(
 
 function emitError(
   childApi: Postmate.ChildAPI,
-  callId: number,
+  callId: RPCCallId,
   message: string,
   code: number,
 ): void {
-  const response: RpcResponseEnvelope = {
+  const response = {
     callId,
     success: false,
     error: { code, message },
-  };
+  } satisfies RpcResponseEnvelope;
   childApi.emit(OWS_RPC_CALLBACK_EVENT, serializeRpc(response));
 }

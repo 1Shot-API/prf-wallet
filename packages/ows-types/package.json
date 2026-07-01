@@ -38,5 +38,8 @@
   "license": "MIT",
   "publishConfig": {
     "access": "public"
+  },
+  "dependencies": {
+    "ts-brand": "^0.2.0"
   }
 }

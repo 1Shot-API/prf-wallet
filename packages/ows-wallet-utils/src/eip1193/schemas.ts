@@ -1,7 +1,11 @@
+import { EVMAccountAddress } from "@1shotapi/ows-types";
 import { z } from "zod";
 import type { Eip1193Method } from "./methods.js";
 
-const addressSchema = z.string().regex(/^0x[0-9a-fA-F]{40}$/);
+const addressSchema = z
+  .string()
+  .regex(/^0x[0-9a-fA-F]{40}$/)
+  .transform((value) => EVMAccountAddress(value as `0x${string}`));
 
 const hexSchema = z.string().regex(/^0x[0-9a-fA-F]*$/);
 

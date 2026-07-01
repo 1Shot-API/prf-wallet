@@ -5,6 +5,7 @@ import {
   deserializeRpcRequest,
   deserializeRpcResponse,
   OwsInvalidParamsError,
+  RPCCallId,
   serializeRpc,
 } from "@1shotapi/ows-types";
 import { getEip1193ParamSchema } from "../src/eip1193/schemas.js";
@@ -12,10 +13,10 @@ import { runHandler } from "../src/rpc/handler.js";
 
 describe("protocol/serde", () => {
   it("roundtrips request and response envelopes", () => {
-    const request = { callId: 1, method: "eth_chainId", params: [] };
+    const request = { callId: RPCCallId(1), method: "eth_chainId", params: [] };
     assert.deepEqual(deserializeRpcRequest(serializeRpc(request)), request);
 
-    const response = { callId: 1, success: true, result: "0x1" };
+    const response = { callId: RPCCallId(1), success: true, result: "0x1" };
     assert.deepEqual(deserializeRpcResponse(serializeRpc(response)), response);
   });
 });

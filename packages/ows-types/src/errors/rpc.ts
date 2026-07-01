@@ -1,3 +1,4 @@
+import { RPCCallId } from "../primitives/RPCCallId.js";
 import {
   RPC_ERROR_INVALID_PARAMS,
   RPC_ERROR_UNIMPLEMENTED,
@@ -63,7 +64,7 @@ export class OwsRpcTimeoutError extends OwsRpcError {
   constructor(
     message: string,
     readonly method: string,
-    readonly callId: number,
+    readonly callId: RPCCallId,
   ) {
     super(message, -32_603, { method, callId });
     this.name = "OwsRpcTimeoutError";

@@ -1,3 +1,4 @@
+import type { SolanaAccountAddress } from "@1shotapi/ows-types";
 import type { OWSSigner } from "../owssigner.js";
 import { addressFromEd25519PublicKey } from "./address.js";
 
@@ -8,7 +9,9 @@ export type SolanaCallOptions = {
 export class SolanaSigner {
   constructor(private readonly signer: OWSSigner) {}
 
-  async getAccountAddress(options?: SolanaCallOptions): Promise<string> {
+  async getAccountAddress(
+    options?: SolanaCallOptions,
+  ): Promise<SolanaAccountAddress> {
     const publicKey = await this.signer.getPublicKey({
       credentialId: options?.credentialId ?? this.signer.getCredentialId(),
     });

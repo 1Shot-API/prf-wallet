@@ -1,4 +1,5 @@
-import type { Address, Hex } from "viem";
+import { EVMAccountAddress } from "@1shotapi/ows-types";
+import type { Hex } from "viem";
 import { publicKeyToAddress } from "viem/utils";
 import { createSignerIframe, getSignerOrigin } from "./iframe.js";
 import { EvmSigner } from "./evm/namespace.js";
@@ -30,7 +31,7 @@ export class OWSSigner {
 
   private readonly rpc: SignerRpcClient;
   private credentialId?: string;
-  private cachedAddress?: Address;
+  private cachedAddress?: EVMAccountAddress;
 
   private constructor(
     private readonly iframe: HTMLIFrameElement,
@@ -64,11 +65,11 @@ export class OWSSigner {
     return this.credentialId;
   }
 
-  getCachedAddress(): Address | undefined {
+  getCachedAddress(): EVMAccountAddress | undefined {
     return this.cachedAddress;
   }
 
-  setCachedAddress(address: Address): void {
+  setCachedAddress(address: EVMAccountAddress): void {
     this.cachedAddress = address;
   }
 
@@ -86,7 +87,7 @@ export class OWSSigner {
 
   private cacheAddressFromPublicKey(publicKey: Hex): void {
     if (this.cachedAddress) return;
-    this.cachedAddress = publicKeyToAddress(publicKey);
+    this.cachedAddress = EVMAccountAddress(publicKeyToAddress(publicKey));
   }
 
   async getVersion(): Promise<VersionData> {
