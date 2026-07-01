@@ -8,7 +8,6 @@ import type {
 export type {
   EIP1193RequestArgs,
   EIP1193Requests,
-  EvmSignatureHex,
   KnownEIP1193Method,
 } from "./requests.js";
 

@@ -4,7 +4,6 @@ export {
   EIP1193Provider,
   type EIP1193RequestArgs,
   type EIP1193Requests,
-  type EvmSignatureHex,
   type KnownEIP1193Method,
 } from "./eip1193/provider.js";
 

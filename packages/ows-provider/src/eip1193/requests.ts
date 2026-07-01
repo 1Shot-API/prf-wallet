@@ -1,7 +1,4 @@
-import type { EVMAccountAddress } from "@1shotapi/ows-types";
-
-/** EIP-191 / ECDSA signature hex. */
-export type EvmSignatureHex = `0x${string}`;
+import type { EVMAccountAddress, EVMSignatureHex } from "@1shotapi/ows-types";
 
 /**
  * Typed EIP-1193 methods supported by `EIP1193Provider.request`.
@@ -19,7 +16,7 @@ export type EIP1193Requests = {
   };
   personal_sign: {
     params: readonly [message: string, address: EVMAccountAddress];
-    result: EvmSignatureHex;
+    result: EVMSignatureHex;
   };
 };
 
