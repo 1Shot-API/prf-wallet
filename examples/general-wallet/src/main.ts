@@ -60,7 +60,7 @@ async function main(): Promise<void> {
     }
 
     console.info(
-      "[ows-example-wallet] createCredential via signer iframe (layer C)",
+      "[ows-example-general-wallet] createCredential via Signing Layer",
     );
     await signer.createCredential("ows-wallet", { rpName: "Open Wallet" });
     const credentialId = signer.getCredentialId();
@@ -98,15 +98,15 @@ async function main(): Promise<void> {
     try {
       await refreshAddresses();
     } catch (error) {
-      console.warn("[ows-example-wallet] could not load addresses", error);
+      console.warn("[ows-example-general-wallet] could not load addresses", error);
       setAddresses(EVMAccountAddress("0x0"), SolanaAccountAddress("—"));
     }
   }
 
-  console.info("[ows-example-wallet] ready");
+  console.info("[ows-example-general-wallet] ready");
 }
 
 main().catch((error: unknown) => {
-  console.error("[ows-example-wallet] failed to start", error);
+  console.error("[ows-example-general-wallet] failed to start", error);
   walletStatusEl.textContent = "Error";
 });

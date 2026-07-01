@@ -1,6 +1,6 @@
 # @1shotapi/ows-signer-utils
 
-Typed, browser-only SDK for **wallet iframe authors** (layer B): embed the OWS custody signer iframe, speak the OWS v1 `postMessage` protocol, and expose `OWSSigner` with passkey/recovery helpers plus a Viem-aligned `signer.evm` namespace.
+Typed, browser-only SDK for **Branding Layer** authors: embed the OWS Signing Layer iframe, speak the OWS v1 `postMessage` protocol, and expose `OWSSigner` with passkey/recovery helpers plus a Viem-aligned `signer.evm` namespace.
 
 ## Install
 
@@ -40,12 +40,12 @@ const account = await toViemLocalAccount(signer);
 ## Architecture
 
 ```
-Host app (A)  →  Wallet iframe (B)  →  Custody signer iframe (C)
+Host Layer  →  Branding Layer  →  Signing Layer
                       ↑
               @1shotapi/ows-signer-utils
 ```
 
-This package runs in the **wallet iframe**. It must not be used from the host page directly — the custody signer requires the wallet layer for correct WebAuthn / iframe nesting.
+This package runs in the **Branding Layer**. It must not be used from the host page directly — the Signing Layer requires the branding iframe for correct WebAuthn / iframe nesting.
 
 Outbound RPC: `iframe.contentWindow.postMessage(request, signerOrigin)`  
 Inbound events: validate `event.origin === signerOrigin` and `event.source === iframe.contentWindow`.
@@ -67,7 +67,7 @@ Inbound events: validate `event.origin === signerOrigin` and `event.source === i
 | `hidden` | Hide iframe (default `true`) |
 | `rpcTimeoutMs` | RPC timeout (default 120s) |
 
-### Root methods (layer C passthrough)
+### Root methods (Signing Layer passthrough)
 
 | Method | Description |
 |--------|-------------|
@@ -110,9 +110,9 @@ Accepts optional `{ credentialId }` per call.
 
 | Package | Role |
 |---------|------|
-| `@1shotapi/ows-signer` | Plain JS custody signer (layer C) |
-| `@1shotapi/ows-wallet-utils` | Host ↔ wallet iframe messaging |
-| `@1shotapi/ows-provider` | EIP-1193 provider for host apps (layer A) |
+| `@1shotapi/ows-signer` | Plain JS Signing Layer |
+| `@1shotapi/ows-wallet-utils` | Host Layer ↔ Branding Layer messaging |
+| `@1shotapi/ows-provider` | EIP-1193 provider for Host Layer apps |
 
 ## License
 

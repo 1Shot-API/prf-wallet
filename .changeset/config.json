@@ -8,7 +8,7 @@
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
   "ignore": [
-    "@1shotapi/ows-example-wallet",
+    "@1shotapi/ows-example-general-wallet",
     "@1shotapi/ows-example-host"
   ]
 }

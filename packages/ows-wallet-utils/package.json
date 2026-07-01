@@ -1,7 +1,7 @@
 {
   "name": "@1shotapi/ows-wallet-utils",
   "version": "0.0.0",
-  "description": "OWS utilities for wallet iframe implementers — host ↔ wallet messaging via @1shotapi/postmate",
+  "description": "OWS utilities for Branding Layer implementers — Host Layer ↔ Branding Layer messaging via @1shotapi/postmate",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

@@ -1,6 +1,6 @@
 /**
  * Start webpack-dev-server for the OWS example host.
- * Loads NGROK_DOMAIN from repo root .env for wallet iframe URL (webpack.config.cjs).
+ * Loads NGROK_DOMAIN from repo root .env for Branding Layer iframe URL (webpack.config.cjs).
  */
 import { createRequire } from "node:module";
 import path from "node:path";
@@ -82,7 +82,7 @@ try {
   await startDevServer();
   const walletUrl = require("../webpack.config.cjs").walletIframeUrl();
   console.log(`OWS example host: http://localhost:${port}`);
-  console.log(`  Wallet iframe: ${walletUrl}`);
+  console.log(`  Branding Layer iframe: ${walletUrl}`);
 } catch (error) {
   console.error("Failed to start host dev server:", error);
   process.exit(1);

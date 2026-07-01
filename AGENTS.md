@@ -4,22 +4,24 @@ Monorepo: **1Shot API Open Wallet Standard** (`@1shotapi/open-wallet`).
 
 ## Stack
 
+OWS uses three iframe layers: **Host Layer**, **Branding Layer**, and **Signing Layer**.
+
 ```
-examples/host                 Layer A — @1shotapi/ows-provider (EIP-1193)
-examples/wallet-iframe        Layer B — wallet wrapper demo
-packages/ows-signer           Layer C — custody signer (plain JS, zero deps, on-chain)
-packages/ows-signer-utils     Wallet iframe ↔ custody signer (evm.signMessage, etc.)
+examples/host                 Host Layer — @1shotapi/ows-provider (EIP-1193)
+examples/general-wallet       Branding Layer — general-purpose wallet demo
+packages/ows-signer           Signing Layer (plain JS, zero deps, on-chain)
+packages/ows-signer-utils     Branding Layer ↔ Signing Layer (evm.signMessage, etc.)
 packages/ows-types            Shared types and errors across OWS SDKs
-packages/ows-wallet-utils     Host ↔ wallet iframe (@1shotapi/postmate wrappers)
+packages/ows-wallet-utils     Host Layer ↔ Branding Layer (@1shotapi/postmate wrappers)
 packages/ows-onchain          EIP-8244 deploy pipeline for ows-signer
 ```
 
 ## Hard rules
 
 1. **`packages/ows-signer` is plain JavaScript only.** No TypeScript, bundler, dependencies, or build step.
-2. **Custody signer signs curves/digests, not chain APIs.** EIP-191, EIP-712, etc. belong in `ows-signer-utils`.
-3. **Host (A) must never embed custody signer (C) directly.** Always A → B → C.
-4. **C accepts `postMessage` only when `event.source === window.parent` and `window.parent !== window.top`.**
+2. **Signing Layer signs curves/digests, not chain APIs.** EIP-191, EIP-712, etc. belong in `ows-signer-utils`.
+3. **Host Layer must never embed the Signing Layer directly.** Always Host → Branding → Signing.
+4. **Signing Layer accepts `postMessage` only when `event.source === window.parent` and `window.parent !== window.top`.**
 5. **Do not vendor Postmate.** Use `@1shotapi/postmate` from npm / GitHub.
 6. **Examples are not published.**
 
@@ -52,7 +54,7 @@ Do not introduce parallel branded types in consumer packages — add or extend p
 
 ```bash
 npm install && npm run build && npm test
-npm run dev -w @1shotapi/ows-example-wallet
+npm run dev -w @1shotapi/ows-example-general-wallet
 npm run dev -w @1shotapi/ows-example-host
 ```
 

@@ -1,6 +1,6 @@
 # @1shotapi/ows-signer
 
-The **OWS custody signer** (layer C) — plain JavaScript, zero npm dependencies, no build step.
+The **OWS Signing Layer** — plain JavaScript, zero npm dependencies, no build step.
 
 ## Design
 
@@ -10,11 +10,11 @@ Minimal **KMS/HSM** iframe: WebAuthn PRF key custody, curve-based signing, optio
 
 - `rpId` is always **`window.location.hostname`** (the signer document origin).
 - **Canonical CDN / on-chain gateway:** shared passkey namespace for all integrators on that host.
-- **Per-brand rpId:** self-host or reverse-proxy signer HTML on your wallet origin.
+- **Per-brand rpId:** self-host or reverse-proxy signer HTML on your branding origin.
 
 ## Nesting
 
-Must be embedded as **iframe inside a wallet iframe** (not directly in the host). Rejects messages unless `window.parent !== window.top`.
+Must be embedded as **iframe inside a Branding Layer iframe** (not directly in the host). Rejects messages unless `window.parent !== window.top`.
 
 ## Wire protocol
 

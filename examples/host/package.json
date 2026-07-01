@@ -2,7 +2,7 @@
   "name": "@1shotapi/ows-example-host",
   "version": "0.0.0",
   "private": true,
-  "description": "OWS reference host application (layer A) — EIP-1193 via ows-provider",
+  "description": "OWS reference Host Layer application — EIP-1193 via ows-provider",
   "type": "module",
   "scripts": {
     "dev": "node scripts/dev.mjs",

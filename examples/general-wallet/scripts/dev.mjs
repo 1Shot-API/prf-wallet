@@ -1,5 +1,5 @@
 /**
- * Start webpack-dev-server for wallet + signer, optionally expose via ngrok.
+ * Start webpack-dev-server for Branding Layer + Signing Layer, optionally expose via ngrok.
  * Loads NGROK_AUTHTOKEN from repo root .env (copy from .env.example).
  *
  * Usage:
@@ -90,15 +90,15 @@ function printUrls(tunnelUrl) {
   const localWallet = `http://localhost:${port}/wallet/`;
   const localSigner = `http://localhost:${port}/signer/`;
 
-  console.log(`OWS wallet dev server: http://localhost:${port}`);
-  console.log(`  Wallet (local):  ${localWallet}`);
-  console.log(`  Signer (local):  ${localSigner}`);
+  console.log(`OWS general-wallet dev server: http://localhost:${port}`);
+  console.log(`  Branding Layer (local):  ${localWallet}`);
+  console.log(`  Signing Layer (local):   ${localSigner}`);
 
   if (tunnelUrl) {
     const walletUrl = new URL("/wallet/", tunnelUrl).href;
     const signerUrl = new URL("/signer/", tunnelUrl).href;
-    console.log(`  Wallet (ngrok):  ${walletUrl}`);
-    console.log(`  Signer (ngrok):  ${signerUrl}`);
+    console.log(`  Branding Layer (ngrok):  ${walletUrl}`);
+    console.log(`  Signing Layer (ngrok):   ${signerUrl}`);
     console.log(`  Host env:        WALLET_IFRAME_URL=${walletUrl}`);
   }
 }

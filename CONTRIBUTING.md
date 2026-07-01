@@ -40,10 +40,10 @@ Include a changeset for user-facing changes to publishable packages: `npm run ch
 
 [1ShotPay](https://1shotpay.com) validates OWS patterns in a **private repository**:
 
-1. Custody signer logic → `packages/ows-signer` (plain JS, curve-based signing only).
+1. Signing Layer logic → `packages/ows-signer` (plain JS, curve-based signing only).
 2. Chain marshalling → `packages/ows-signer-utils`.
-3. Wallet iframe patterns → `examples/wallet-iframe` via `ows-wallet-utils`.
-4. Host EIP-1193 → `packages/ows-provider`.
+3. General-purpose Branding Layer patterns → `examples/general-wallet` via `ows-wallet-utils`.
+4. Host Layer EIP-1193 → `packages/ows-provider`.
 
 Do not commit proprietary assets, API keys, or 1ShotPay-specific endpoints.
 

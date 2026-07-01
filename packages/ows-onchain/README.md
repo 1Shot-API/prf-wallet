@@ -21,7 +21,7 @@ ows-signer/html/index.html
         │
         ▼ Hardhat Ignition deploy
         │
-        ▼ html() → browser gunzip → OWS custody signer runs
+        ▼ html() → browser gunzip → OWS Signing Layer runs
 ```
 
 ## Local development

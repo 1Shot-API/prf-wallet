@@ -1,8 +1,8 @@
 # @1shotapi/ows-provider
 
-EIP-1193 provider for **host applications** (layer A) using an OWS-compatible wallet iframe.
+EIP-1193 provider for **Host Layer** applications using an OWS-compatible Branding Layer iframe.
 
-Embed your wallet iframe, get `proxy.ethereum` for viem/ethers/wagmi, and call custom wallet RPC via `proxy.rpc()`.
+Embed your branding iframe, get `proxy.ethereum` for viem/ethers/wagmi, and call custom wallet RPC via `proxy.rpc()`.
 
 ## Install
 
@@ -10,7 +10,7 @@ Embed your wallet iframe, get `proxy.ethereum` for viem/ethers/wagmi, and call c
 npm install @1shotapi/ows-provider
 ```
 
-Your host app must also have a wallet iframe running [`OWSWallet`](https://github.com/1Shot-API/open-wallet/tree/main/packages/ows-wallet-utils) from `@1shotapi/ows-wallet-utils`.
+Your host app must also have a Branding Layer iframe running [`OWSWallet`](https://github.com/1Shot-API/open-wallet/tree/main/packages/ows-wallet-utils) from `@1shotapi/ows-wallet-utils`.
 
 ## Quick start
 
@@ -34,7 +34,7 @@ const client = createWalletClient({
 const status = await proxy.rpc<{ connected: boolean }>("getStatus");
 ```
 
-Returns `OwsUnimplementedError` if the wallet iframe did not register that method.
+Returns `OwsUnimplementedError` if the Branding Layer did not register that method.
 
 ## API
 
@@ -57,10 +57,10 @@ Extension RPC for wallet-specific methods (non–EIP-1193).
 ## Architecture
 
 ```
-Host (A) — OWSProxy
+Host Layer — OWSProxy
   └── Postmate iframe
-        └── Wallet (B) — OWSWallet
-              └── OWSSigner (C) via ows-signer-utils
+        └── Branding Layer — OWSWallet
+              └── Signing Layer — OWSSigner via ows-signer-utils
 ```
 
 `@1shotapi/postmate` sets `allow="publickey-credentials-get; publickey-credentials-create"` when the iframe is created.

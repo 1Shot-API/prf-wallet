@@ -1,6 +1,6 @@
 # @1shotapi/ows-wallet-utils
 
-Utilities for **wallet iframe implementers** (layer B) to communicate with the host application (layer A).
+Utilities for **Branding Layer** implementers to communicate with the **Host Layer**.
 
 Built on [@1shotapi/postmate](https://github.com/1Shot-API/postmate) with a JSON-RPC-style callback protocol and Zod-validated EIP-1193 params.
 
@@ -10,7 +10,7 @@ Built on [@1shotapi/postmate](https://github.com/1Shot-API/postmate) with a JSON
 npm install @1shotapi/ows-wallet-utils zod
 ```
 
-## Quick start (wallet iframe)
+## Quick start (Branding Layer)
 
 ```typescript
 import { OWSWallet } from "@1shotapi/ows-wallet-utils";
@@ -76,8 +76,8 @@ localStorage.setItem("ows-wallet-utils:debug", "1");
 
 | Package | Role |
 |---------|------|
-| `@1shotapi/ows-provider` | Host-side `OWSProxy` + EIP-1193 |
-| `@1shotapi/ows-signer-utils` | Wallet ↔ custody signer (layer B→C) |
+| `@1shotapi/ows-provider` | Host Layer `OWSProxy` + EIP-1193 |
+| `@1shotapi/ows-signer-utils` | Branding Layer ↔ Signing Layer |
 
 ## License
 

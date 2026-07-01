@@ -1,7 +1,7 @@
 {
   "name": "@1shotapi/ows-provider",
   "version": "0.0.0",
-  "description": "OWS EIP-1193 provider for host applications — embed wallet iframe and use with viem, ethers, etc.",
+  "description": "OWS EIP-1193 provider for Host Layer applications — embed Branding Layer iframe and use with viem, ethers, etc.",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
