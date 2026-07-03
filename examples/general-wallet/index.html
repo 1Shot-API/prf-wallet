@@ -10,9 +10,61 @@
       font-family: system-ui, sans-serif;
       line-height: 1.5;
     }
+    html,
     body {
       margin: 0;
+      min-height: 100%;
+      background: Canvas;
+      color: CanvasText;
+    }
+    .wallet-shell {
+      display: flex;
+      flex-direction: column;
+      min-height: 100%;
+      background: Canvas;
+    }
+    .wallet-chrome {
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+      padding: 0.625rem 0.75rem;
+      border-bottom: 1px solid color-mix(in srgb, CanvasText 15%, transparent);
+      background: Canvas;
+      flex-shrink: 0;
+    }
+    .wallet-chrome--embedded {
+      display: flex;
+    }
+    .wallet-chrome-title {
+      margin: 0;
+      font-size: 0.9rem;
+      font-weight: 600;
+    }
+    .wallet-close {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 1.75rem;
+      height: 1.75rem;
+      padding: 0;
+      border: 1px solid color-mix(in srgb, CanvasText 20%, transparent);
+      border-radius: 6px;
+      background: transparent;
+      color: inherit;
+      font: inherit;
+      font-size: 1.125rem;
+      line-height: 1;
+      cursor: pointer;
+    }
+    .wallet-close:focus-visible {
+      outline: 2px solid Highlight;
+      outline-offset: 2px;
+    }
+    .wallet-body {
+      flex: 1;
       padding: 1rem 1.25rem;
+      background: Canvas;
     }
     h1 {
       margin: 0 0 0.25rem;
@@ -52,23 +104,39 @@
   </style>
 </head>
 <body>
-  <h1>OWS Example General Wallet</h1>
-  <p class="subtitle">Branding Layer — general-purpose wallet with nested Signing Layer.</p>
+  <div class="wallet-shell">
+    <header id="wallet-chrome" class="wallet-chrome" aria-label="Wallet panel">
+      <h2 class="wallet-chrome-title">Open Wallet</h2>
+      <button
+        type="button"
+        id="wallet-close"
+        class="wallet-close"
+        aria-label="Close wallet"
+      >
+        ×
+      </button>
+    </header>
 
-  <section class="status-panel" aria-label="Wallet status">
-    <div class="status-row">
-      <span class="status-label">Status</span>
-      <span id="wallet-status" class="status-value">Loading…</span>
+    <div class="wallet-body">
+      <h1>OWS Example General Wallet</h1>
+      <p class="subtitle">Branding Layer — general-purpose wallet with nested Signing Layer.</p>
+
+      <section class="status-panel" aria-label="Wallet status">
+        <div class="status-row">
+          <span class="status-label">Status</span>
+          <span id="wallet-status" class="status-value">Loading…</span>
+        </div>
+        <div class="status-row">
+          <span class="status-label">EVM</span>
+          <span id="evm-address" class="status-value">—</span>
+        </div>
+        <div class="status-row">
+          <span class="status-label">Solana</span>
+          <span id="solana-address" class="status-value">—</span>
+        </div>
+      </section>
     </div>
-    <div class="status-row">
-      <span class="status-label">EVM</span>
-      <span id="evm-address" class="status-value">—</span>
-    </div>
-    <div class="status-row">
-      <span class="status-label">Solana</span>
-      <span id="solana-address" class="status-value">—</span>
-    </div>
-  </section>
+  </div>
 
   <div id="signer-container"></div>
 </body>

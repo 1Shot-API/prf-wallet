@@ -13,6 +13,8 @@ packages/ows-signer           Signing Layer (plain JS, zero deps, on-chain)
 packages/ows-signer-utils     Branding Layer ↔ Signing Layer (evm.signMessage, etc.)
 packages/ows-types            Shared types and errors across OWS SDKs
 packages/ows-wallet-utils     Host Layer ↔ Branding Layer (@1shotapi/postmate wrappers)
+packages/ows-branding-core    Branding module contracts + install helpers
+packages/ows-registry         Copy-paste Branding Layer modules (not published)
 packages/ows-onchain          EIP-8244 deploy pipeline for ows-signer
 ```
 

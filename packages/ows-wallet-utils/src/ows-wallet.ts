@@ -1,5 +1,10 @@
 import Postmate from "@1shotapi/postmate";
 import type { z } from "zod";
+import {
+  OWS_DISPLAY_READY_MODEL_METHOD,
+  OWS_HIDE_READY_MODEL_METHOD,
+  type RequestDisplayParams,
+} from "@1shotapi/ows-types";
 import { getEip1193ParamSchema } from "./eip1193/schemas.js";
 import {
   EIP1193_METHODS,
@@ -11,7 +16,13 @@ import {
   handleRpcModelCall,
   type RpcModelRegistration,
 } from "./rpc/child-wrapper.js";
+import {
+  DisplayChildClient,
+  type DisplaySession,
+} from "./display/child-client.js";
 import { debugLog, setOwsWalletDebugFromOptions } from "./debug.js";
+
+export type { DisplaySession, RequestDisplayParams };
 
 export type Eip1193Handler = (params: unknown[]) => Promise<unknown>;
 
@@ -30,6 +41,9 @@ export type OWSWalletOptions = {
 export class OWSWallet {
   private childApi: Postmate.ChildAPI | null = null;
   private handshakePromise: Promise<Postmate.ChildAPI> | null = null;
+  private displayClient: DisplayChildClient | null = null;
+  private displayReadyHandler: ((data: unknown) => void) | null = null;
+  private hideReadyHandler: ((data: unknown) => void) | null = null;
   private readonly eip1193Handlers = new Map<Eip1193Method, Eip1193Handler>();
   private readonly customHandlers = new Map<string, RpcHandlerRegistration>();
   private handshakeStarted = false;
@@ -77,10 +91,50 @@ export class OWSWallet {
 
     this.handshakePromise = new Postmate.Model(model);
     this.childApi = await this.handshakePromise;
+    this.displayClient = new DisplayChildClient(this.childApi);
+    this.displayReadyHandler = (data) => {
+      this.displayClient?.handleDisplayReady(data);
+    };
+    this.hideReadyHandler = (data) => {
+      this.displayClient?.handleHideReady(data);
+    };
 
     debugLog("Postmate child connected; RPC model ready");
 
     return this;
+  }
+
+  /**
+   * Ask the host to show and focus this iframe so WebAuthn / UI can run in a
+   * cross-origin embedding. Resolves when the host confirms display is ready.
+   */
+  async requestDisplay(params: RequestDisplayParams): Promise<DisplaySession> {
+    const childApi =
+      this.childApi ?? (await this.handshakePromise);
+    if (!childApi) {
+      throw new Error("OWSWallet is not connected to a host");
+    }
+
+    if (!this.displayClient) {
+      this.displayClient = new DisplayChildClient(childApi);
+    }
+
+    return this.displayClient.requestDisplay(params);
+  }
+
+  /** Ask the host to hide the wallet panel (e.g. user dismissed the flyout). */
+  async requestHide(): Promise<void> {
+    const childApi =
+      this.childApi ?? (await this.handshakePromise);
+    if (!childApi) {
+      throw new Error("OWSWallet is not connected to a host");
+    }
+
+    if (!this.displayClient) {
+      this.displayClient = new DisplayChildClient(childApi);
+    }
+
+    return this.displayClient.requestHide();
   }
 
   registerEip1193(method: Eip1193Method, handler: Eip1193Handler): void {
@@ -98,6 +152,10 @@ export class OWSWallet {
   }
 
   destroy(): void {
+    this.displayClient?.destroy();
+    this.displayClient = null;
+    this.displayReadyHandler = null;
+    this.hideReadyHandler = null;
     this.childApi = null;
   }
 
@@ -114,6 +172,14 @@ export class OWSWallet {
     (data: unknown) => Promise<void>
   > {
     const model: Record<string, (data: unknown) => Promise<void>> = {};
+
+    model[OWS_DISPLAY_READY_MODEL_METHOD] = async (data) => {
+      this.displayReadyHandler?.(data);
+    };
+
+    model[OWS_HIDE_READY_MODEL_METHOD] = async (data) => {
+      this.hideReadyHandler?.(data);
+    };
 
     for (const method of EIP1193_METHODS) {
       model[method] = async (data) => {

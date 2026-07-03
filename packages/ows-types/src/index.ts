@@ -23,6 +23,29 @@ export {
   RPC_ERROR_USER_REJECTED,
 } from "./protocol/wallet.js";
 
+export {
+  OWS_REQUEST_DISPLAY_EVENT,
+  OWS_RELEASE_DISPLAY_EVENT,
+  OWS_REQUEST_HIDE_EVENT,
+  OWS_DISPLAY_READY_MODEL_METHOD,
+  OWS_HIDE_READY_MODEL_METHOD,
+  DEFAULT_DISPLAY_TIMEOUT_MS,
+  deserializeRequestDisplay,
+  deserializeDisplayReady,
+  deserializeReleaseDisplay,
+  deserializeRequestHide,
+  deserializeHideReady,
+} from "./protocol/display.js";
+
+export type {
+  RequestDisplayParams,
+  RequestDisplayEnvelope,
+  DisplayReadyPayload,
+  ReleaseDisplayEnvelope,
+  RequestHideEnvelope,
+  HideReadyPayload,
+} from "./protocol/display.js";
+
 export type {
   RpcErrorPayload,
   RpcRequestEnvelope,

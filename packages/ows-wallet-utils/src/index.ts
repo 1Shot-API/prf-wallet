@@ -1,7 +1,9 @@
 export { OWSWallet } from "./ows-wallet.js";
 export type {
+  DisplaySession,
   Eip1193Handler,
   OWSWalletOptions,
+  RequestDisplayParams,
   RpcHandlerRegistration,
 } from "./ows-wallet.js";
 

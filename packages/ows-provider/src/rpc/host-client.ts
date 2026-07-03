@@ -17,6 +17,11 @@ type PendingRpc = {
   timeoutId: ReturnType<typeof setTimeout>;
 };
 
+export type RpcHostLifecycle = {
+  beforeRequest?: () => void;
+  afterRequest?: () => void;
+};
+
 export class RpcHostClient {
   private nextCallId = RPCCallId(1);
   private readonly pending = new Map<RPCCallId, PendingRpc>();
@@ -24,6 +29,7 @@ export class RpcHostClient {
   constructor(
     private readonly child: Postmate.ParentAPI,
     private readonly defaultTimeoutMs = DEFAULT_RPC_TIMEOUT_MS,
+    private readonly lifecycle?: RpcHostLifecycle,
   ) {
     child.on(OWS_RPC_CALLBACK_EVENT, (data: unknown) => {
       this.handleCallback(data);
@@ -38,15 +44,24 @@ export class RpcHostClient {
     const callId = RPCCallId(this.nextCallId++);
     const timeout = timeoutMs ?? this.defaultTimeoutMs;
 
+    this.lifecycle?.beforeRequest?.();
+
     return new Promise<T>((resolve, reject) => {
       const timeoutId = setTimeout(() => {
         this.pending.delete(callId);
+        this.lifecycle?.afterRequest?.();
         reject(new OwsRpcTimeoutError(`RPC timed out: ${method}`, method, callId));
       }, timeout);
 
       this.pending.set(callId, {
-        resolve: resolve as (value: unknown) => void,
-        reject,
+        resolve: (value) => {
+          this.lifecycle?.afterRequest?.();
+          resolve(value as T);
+        },
+        reject: (error) => {
+          this.lifecycle?.afterRequest?.();
+          reject(error);
+        },
         timeoutId,
       });
 

@@ -55,4 +55,10 @@ Passkeys require HTTPS — use the ngrok branding URL for cross-origin host test
 
 ## Status
 
-Bootstrapped wallet with passkey creation, EIP-191 `personal_sign`, and EVM/Solana address display.
+Bootstrapped wallet with passkey creation, EIP-191 `personal_sign` (with approval dialog registry module), and EVM/Solana address display.
+
+Registry modules live under `src/ows/` (synced from `packages/ows-registry`):
+
+```bash
+npm run sync:general-wallet -w @1shotapi/ows-registry
+```

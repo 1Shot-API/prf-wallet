@@ -28,6 +28,10 @@ export async function createPasskeyCredential(name, options = {}) {
     : randomUserId();
   const displayName = options.userDisplayName ?? name;
 
+  debugLog("createPasskeyCredential userActivation.isActive", {
+    isActive: navigator.userActivation?.isActive ?? false,
+  });
+
   const credential = await navigator.credentials.create({
     publicKey: {
       rp: { name: rpName, id: rpId },

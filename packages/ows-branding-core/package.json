@@ -1,0 +1,51 @@
+{
+  "name": "@1shotapi/ows-branding-core",
+  "version": "0.0.0",
+  "description": "Headless Branding Layer module contracts and install helpers for OWS registry items",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\"",
+    "test": "node --import tsx --test test/*.test.ts",
+    "lint": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@1shotapi/ows-types": "*"
+  },
+  "peerDependencies": {
+    "@1shotapi/ows-signer-utils": "*",
+    "@1shotapi/ows-wallet-utils": "*"
+  },
+  "devDependencies": {
+    "@1shotapi/ows-signer-utils": "*",
+    "@1shotapi/ows-wallet-utils": "*",
+    "tsx": "^4.19.0"
+  },
+  "keywords": [
+    "ows",
+    "open-wallet-standard",
+    "branding-layer",
+    "wallet"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/1Shot-API/open-wallet.git",
+    "directory": "packages/ows-branding-core"
+  },
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  }
+}

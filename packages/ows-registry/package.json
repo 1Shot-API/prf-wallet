@@ -1,0 +1,22 @@
+{
+  "name": "@1shotapi/ows-registry",
+  "version": "0.0.0",
+  "private": true,
+  "description": "OWS Branding Layer registry — copy-paste module templates (not a runtime npm UI package)",
+  "type": "module",
+  "scripts": {
+    "sync:general-wallet": "node scripts/sync-example.mjs general-wallet approval-dialog"
+  },
+  "keywords": [
+    "ows",
+    "open-wallet-standard",
+    "branding-layer",
+    "registry"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/1Shot-API/open-wallet.git",
+    "directory": "packages/ows-registry"
+  },
+  "license": "MIT"
+}

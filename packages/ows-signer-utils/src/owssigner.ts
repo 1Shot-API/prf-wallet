@@ -1,7 +1,7 @@
 import { EVMAccountAddress } from "@1shotapi/ows-types";
 import type { Hex } from "viem";
 import { publicKeyToAddress } from "viem/utils";
-import { createSignerIframe, getSignerOrigin } from "./iframe.js";
+import { createSignerIframe, getSignerOrigin, prepareSignerIframeForWebAuthn } from "./iframe.js";
 import { EvmSigner } from "./evm/namespace.js";
 import { SolanaSigner } from "./solana/namespace.js";
 import {
@@ -100,17 +100,22 @@ export class OWSSigner {
     name: string,
     options?: CreateCredentialOptions,
   ): Promise<CredentialCreatedData> {
-    const result = await this.rpc.request<CredentialCreatedData>(
-      "createCredential",
-      { name, options },
-      {
-        terminalEvent: "CredentialCreated",
-        onIntermediate: (_event, data) => this.onKeyDerived(data),
-      },
-    );
-    this.credentialId = result.credentialId;
-    this.cacheAddressFromPublicKey(result.secp256k1PublicKey);
-    return result;
+    const restoreSignerDisplay = prepareSignerIframeForWebAuthn(this.iframe);
+    try {
+      const result = await this.rpc.request<CredentialCreatedData>(
+        "createCredential",
+        { name, options },
+        {
+          terminalEvent: "CredentialCreated",
+          onIntermediate: (_event, data) => this.onKeyDerived(data),
+        },
+      );
+      this.credentialId = result.credentialId;
+      this.cacheAddressFromPublicKey(result.secp256k1PublicKey);
+      return result;
+    } finally {
+      restoreSignerDisplay();
+    }
   }
 
   async signDigest(
@@ -118,22 +123,27 @@ export class OWSSigner {
     scheme: SignScheme = "secp256k1-ecdsa-recoverable",
     credentialId?: string,
   ): Promise<DigestSignedData> {
-    const result = await this.rpc.request<DigestSignedData>(
-      "signDigest",
-      {
-        digestData,
-        scheme,
-        credentialId: credentialId ?? this.credentialId,
-      },
-      {
-        terminalEvent: "DigestSigned",
-        onIntermediate: (_event, data) => this.onKeyDerived(data),
-      },
-    );
-    if (result.credentialId) {
-      this.credentialId = result.credentialId;
+    const restoreSignerDisplay = prepareSignerIframeForWebAuthn(this.iframe);
+    try {
+      const result = await this.rpc.request<DigestSignedData>(
+        "signDigest",
+        {
+          digestData,
+          scheme,
+          credentialId: credentialId ?? this.credentialId,
+        },
+        {
+          terminalEvent: "DigestSigned",
+          onIntermediate: (_event, data) => this.onKeyDerived(data),
+        },
+      );
+      if (result.credentialId) {
+        this.credentialId = result.credentialId;
+      }
+      return result;
+    } finally {
+      restoreSignerDisplay();
     }
-    return result;
   }
 
   async getPublicKey(

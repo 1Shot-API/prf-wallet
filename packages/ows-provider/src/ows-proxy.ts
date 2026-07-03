@@ -2,6 +2,7 @@ import Postmate from "@1shotapi/postmate";
 import { DEFAULT_RPC_TIMEOUT_MS } from "@1shotapi/ows-types";
 import { RpcHostClient } from "./rpc/host-client.js";
 import { EIP1193Provider } from "./eip1193/provider.js";
+import { DisplayHostHandler } from "./display/host-handler.js";
 
 export type OWSProxyOptions = {
   /** iframe `name` attribute. Default: `ows-wallet` */
@@ -15,11 +16,17 @@ export class OWSProxy {
   readonly ethereum: EIP1193Provider;
 
   private readonly rpcClient: RpcHostClient;
+  private readonly displayHandler: DisplayHostHandler;
   private readonly parent: Postmate.ParentAPI;
 
-  private constructor(parent: Postmate.ParentAPI, rpcClient: RpcHostClient) {
+  private constructor(
+    parent: Postmate.ParentAPI,
+    rpcClient: RpcHostClient,
+    displayHandler: DisplayHostHandler,
+  ) {
     this.parent = parent;
     this.rpcClient = rpcClient;
+    this.displayHandler = displayHandler;
     this.ethereum = new EIP1193Provider((method, params) =>
       this.rpc(method, params),
     );
@@ -42,12 +49,23 @@ export class OWSProxy {
     });
 
     const parent = await handshake;
+
+    if (parent.frame instanceof HTMLIFrameElement) {
+      parent.frame.allow =
+        "publickey-credentials-get *; publickey-credentials-create *";
+    }
+
+    const displayHandler = new DisplayHostHandler(parent);
     const rpcClient = new RpcHostClient(
       parent,
       options?.rpcTimeoutMs ?? DEFAULT_RPC_TIMEOUT_MS,
+      {
+        beforeRequest: () => displayHandler.prepareForRpcAccess(),
+        afterRequest: () => displayHandler.completeRpcAccess(),
+      },
     );
 
-    return new OWSProxy(parent, rpcClient);
+    return new OWSProxy(parent, rpcClient, displayHandler);
   }
 
   rpc<T = unknown>(method: string, params?: unknown): Promise<T> {
@@ -55,6 +73,7 @@ export class OWSProxy {
   }
 
   destroy(): void {
+    this.displayHandler.destroy();
     this.rpcClient.destroy();
     this.parent.destroy();
   }

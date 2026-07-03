@@ -1,0 +1,27 @@
+{
+  "$schema": "https://ui.shadcn.com/schema/registry.json",
+  "name": "ows",
+  "homepage": "https://github.com/1Shot-API/open-wallet",
+  "items": [
+    {
+      "name": "approval-dialog",
+      "type": "registry:component",
+      "title": "Personal sign approval dialog",
+      "description": "Vanilla modal for EIP-191 personal_sign — shows message and Sign / Reject before calling the signer.",
+      "registryDependencies": [],
+      "dependencies": ["@1shotapi/ows-branding-core"],
+      "files": [
+        {
+          "path": "items/approval-dialog/vanilla/install.ts",
+          "type": "registry:file",
+          "target": "src/ows/approval-dialog/install.ts"
+        },
+        {
+          "path": "items/approval-dialog/vanilla/dialog.ts",
+          "type": "registry:file",
+          "target": "src/ows/approval-dialog/dialog.ts"
+        }
+      ]
+    }
+  ]
+}

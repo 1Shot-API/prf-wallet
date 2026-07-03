@@ -1,6 +1,8 @@
 import { OWSSigner } from "@1shotapi/ows-signer-utils";
 import { OWSWallet } from "@1shotapi/ows-wallet-utils";
+import { installBrandingModules } from "@1shotapi/ows-branding-core";
 import { EVMAccountAddress, SolanaAccountAddress } from "@1shotapi/ows-types";
+import { personalSignApprovalModule } from "./ows/approval-dialog/install";
 import {
   isWalletCreated,
   loadCredentialId,
@@ -59,6 +61,10 @@ async function main(): Promise<void> {
       return;
     }
 
+    console.debug(
+      "[ows-example-general-wallet] navigator.userActivation.isActive",
+      navigator.userActivation.isActive,
+    );
     console.info(
       "[ows-example-general-wallet] createCredential via Signing Layer",
     );
@@ -73,26 +79,37 @@ async function main(): Promise<void> {
     await refreshAddresses();
   }
 
-  await OWSWallet.create({
-    debug: true,
-    eip1193: {
-      async eth_requestAccounts() {
-        await ensureWalletReady();
-        return [await signer.evm.getAccountAddress()];
-      },
-      async eth_accounts() {
-        if (!isWalletCreated()) {
-          return [];
-        }
-        return [await signer.evm.getAccountAddress()];
-      },
-      async personal_sign(params) {
-        const [message] = params as [string, string];
-        await ensureWalletReady();
-        return signer.evm.signMessage({ message });
-      },
+  const wallet = OWSWallet.prepare({ debug: true });
+
+  await installBrandingModules(
+    {
+      wallet,
+      signer,
+      ensureReady: ensureWalletReady,
     },
+    [personalSignApprovalModule],
+  );
+
+  wallet.registerEip1193("eth_requestAccounts", async () => {
+    await ensureWalletReady();
+    return [await signer.evm.getAccountAddress()];
   });
+
+  wallet.registerEip1193("eth_accounts", async () => {
+    if (!isWalletCreated()) {
+      return [];
+    }
+    return [await signer.evm.getAccountAddress()];
+  });
+
+  await wallet.start();
+
+  if (window.parent !== window.top) {
+    document.getElementById("wallet-chrome")?.classList.add("wallet-chrome--embedded");
+    document.getElementById("wallet-close")?.addEventListener("click", () => {
+      void wallet.requestHide();
+    });
+  }
 
   if (created) {
     try {
