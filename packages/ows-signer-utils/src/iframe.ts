@@ -2,8 +2,12 @@ export type CreateSignerIframeOptions = {
   hidden?: boolean;
 };
 
-const SIGNER_WEBAUTHN_ALLOW =
-  "publickey-credentials-get *; publickey-credentials-create *";
+/** Permissions Policy features for the Signing Layer iframe (set before navigation). */
+const SIGNER_IFRAME_ALLOW = [
+  "publickey-credentials-get *",
+  "publickey-credentials-create *",
+  "clipboard-write *",
+].join("; ");
 
 type StoredLayout = {
   frameStyle: Record<string, string>;
@@ -112,7 +116,7 @@ export function createSignerIframe(
   return new Promise((resolve, reject) => {
     const iframe = document.createElement("iframe");
     iframe.src = signerUrl;
-    iframe.allow = SIGNER_WEBAUTHN_ALLOW;
+    iframe.allow = SIGNER_IFRAME_ALLOW;
     iframe.title = "OWS custody signer";
     iframe.style.border = "0";
 

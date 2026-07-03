@@ -14,7 +14,10 @@
     <section class="sign-panel">
       <label for="message-input">Message to sign (EIP-191)</label>
       <textarea id="message-input" rows="3">Hello from Open Wallet</textarea>
-      <button type="button" id="sign-button">Sign</button>
+      <div class="actions">
+        <button type="button" id="sign-button">Sign</button>
+        <button type="button" id="show-wallet-button">Show Wallet</button>
+      </div>
       <p id="status" class="status" aria-live="polite"></p>
       <pre id="signature-output" class="signature-output" hidden></pre>
     </section>

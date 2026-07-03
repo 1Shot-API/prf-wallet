@@ -2,7 +2,7 @@
 
 Utilities for **Branding Layer** implementers to communicate with the **Host Layer**.
 
-Built on [@1shotapi/postmate](https://github.com/1Shot-API/postmate) with a JSON-RPC-style callback protocol and Zod-validated EIP-1193 params.
+Built on [postmate](https://github.com/dollarshaveclub/postmate) with a JSON-RPC-style callback protocol and Zod-validated EIP-1193 params.
 
 ## Install
 
@@ -64,7 +64,7 @@ localStorage.setItem("ows-wallet-utils:debug", "1");
 
 - Host calls `child.call(method, envelope)` via Postmate
 - Child emits `ows:rpcCallback` with `{ callId, success, result | error }`
-- `@1shotapi/postmate` sets passkey `allow` on iframe creation — do not override after the fact
+- Host-side `OWSProxy` sets iframe `allow` (WebAuthn, clipboard) before navigation — do not override after load
 
 ## Exports
 

@@ -63,7 +63,7 @@ Host Layer — OWSProxy
               └── Signing Layer — OWSSigner via ows-signer-utils
 ```
 
-`@1shotapi/postmate` sets `allow="publickey-credentials-get; publickey-credentials-create"` when the iframe is created.
+`OWSProxy` sets iframe Permissions Policy (`allow`) before navigation (WebAuthn + clipboard), including when using stock `postmate`.
 
 ## License
 

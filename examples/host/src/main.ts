@@ -3,6 +3,9 @@ import "./styles.css";
 
 const messageInput = document.getElementById("message-input") as HTMLTextAreaElement;
 const signButton = document.getElementById("sign-button") as HTMLButtonElement;
+const showWalletButton = document.getElementById(
+  "show-wallet-button",
+) as HTMLButtonElement;
 const statusEl = document.getElementById("status") as HTMLParagraphElement;
 const signatureOutput = document.getElementById("signature-output") as HTMLPreElement;
 const walletContainer = document.getElementById("wallet-container")!;
@@ -21,6 +24,11 @@ async function main(): Promise<void> {
 
   signButton.addEventListener("click", () => {
     void handleSign(proxy);
+  });
+
+  showWalletButton.addEventListener("click", () => {
+    proxy.showWallet();
+    setStatus("Wallet panel shown. Use × in the wallet to hide.");
   });
 }
 

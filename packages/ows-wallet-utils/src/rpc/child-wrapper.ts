@@ -1,4 +1,4 @@
-import type Postmate from "@1shotapi/postmate";
+import type Postmate from "postmate";
 import {
   OWS_RPC_CALLBACK_EVENT,
   OwsRpcError,

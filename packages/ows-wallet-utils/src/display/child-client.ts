@@ -13,7 +13,7 @@ import {
   type HideReadyPayload,
   type RequestDisplayParams,
 } from "@1shotapi/ows-types";
-import type Postmate from "@1shotapi/postmate";
+import type Postmate from "postmate";
 import { debugLog } from "../debug.js";
 
 export type DisplaySession = {

@@ -99,33 +99,71 @@ describe("DisplayHostHandler", () => {
       JSON.parse(mock.calls[0]!.data as string).displayId,
       displayId,
     );
+    const containerStyle = mock.frame.parentElement.style as unknown as Record<
+      string,
+      string
+    >;
+    assert.equal(containerStyle.width, "1px");
+    assert.equal(containerStyle.height, "1px");
     assert.equal(
       (mock.frame.style as unknown as Record<string, string>).width,
-      "1px",
+      "100%",
+    );
+    assert.equal(
+      (mock.frame.style as unknown as Record<string, string>).position,
+      "static",
     );
   });
 
-  it("shows lower-right flyout for visible display", () => {
+  it("shows lower-right flyout for visible display using host wallet size", () => {
     const mock = createMockParent();
     Object.setPrototypeOf(mock.frame, MockHTMLIFrameElement.prototype);
     new DisplayHostHandler(mock.parent);
 
     const displayId = DisplayRequestId("10");
+    // Branding may request other dimensions; host popover size wins.
     mock.listeners.get(OWS_REQUEST_DISPLAY_EVENT)?.(
       serializeRpc({ displayId, width: 448, height: 360 }),
     );
 
-    assert.equal(
-      (mock.frame.style as unknown as Record<string, string>).width,
-      "100%",
-    );
+    const frameStyle = mock.frame.style as unknown as Record<string, string>;
+    assert.equal(frameStyle.width, "100%");
+    assert.equal(frameStyle.height, "100%");
+    assert.equal(frameStyle.position, "static");
     const containerStyle = mock.frame.parentElement.style as unknown as Record<
       string,
       string
     >;
+    assert.equal(containerStyle.position, "fixed");
     assert.equal(containerStyle.bottom, "16px");
     assert.equal(containerStyle.right, "16px");
     assert.equal(containerStyle.opacity, "1");
+    assert.equal(containerStyle.width, "300px");
+    assert.equal(containerStyle.height, "400px");
+  });
+
+  it("uses walletSizeX / walletSizeY when provided", () => {
+    const mock = createMockParent();
+    Object.setPrototypeOf(mock.frame, MockHTMLIFrameElement.prototype);
+    new DisplayHostHandler(mock.parent, {
+      walletSizeX: 320,
+      walletSizeY: 480,
+    });
+
+    mock.listeners.get(OWS_REQUEST_DISPLAY_EVENT)?.(
+      serializeRpc({
+        displayId: DisplayRequestId("11"),
+        width: 999,
+        height: 999,
+      }),
+    );
+
+    const containerStyle = mock.frame.parentElement.style as unknown as Record<
+      string,
+      string
+    >;
+    assert.equal(containerStyle.width, "320px");
+    assert.equal(containerStyle.height, "480px");
   });
 
   it("hides on requestHide and notifies child", () => {
@@ -151,7 +189,7 @@ describe("DisplayHostHandler", () => {
       string
     >;
     assert.equal(containerStyle["clip-path"], "none");
-    assert.equal(containerStyle.overflow, "visible");
+    assert.equal(containerStyle.overflow, "hidden");
     handler.destroy();
   });
 

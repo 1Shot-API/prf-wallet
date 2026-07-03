@@ -3,6 +3,7 @@ import { OWSWallet } from "@1shotapi/ows-wallet-utils";
 import { installBrandingModules } from "@1shotapi/ows-branding-core";
 import { EVMAccountAddress, SolanaAccountAddress } from "@1shotapi/ows-types";
 import { personalSignApprovalModule } from "./ows/approval-dialog/install";
+import { createCreateBackupModule } from "./ows/create-backup/install";
 import {
   isWalletCreated,
   loadCredentialId,
@@ -87,7 +88,13 @@ async function main(): Promise<void> {
       signer,
       ensureReady: ensureWalletReady,
     },
-    [personalSignApprovalModule],
+    [
+      personalSignApprovalModule,
+      createCreateBackupModule({
+        triggerButton: "#create-backup",
+        signerContainer: "#signer-container",
+      }),
+    ],
   );
 
   wallet.registerEip1193("eth_requestAccounts", async () => {

@@ -23,7 +23,7 @@ Thank you for contributing to the **Open Wallet Standard (OWS)** reference imple
 
 **Critical rule:** `@1shotapi/ows-signer` must never acquire a build step or npm dependencies. Source is published verbatim and deployed on-chain as-is.
 
-**Postmate:** Use the external [`@1shotapi/postmate`](https://github.com/1Shot-API/postmate) package — do not vendor it in this repo.
+**Postmate:** Use the external [`postmate`](https://github.com/dollarshaveclub/postmate) package — do not vendor it in this repo.
 
 ### Workspace commands
 

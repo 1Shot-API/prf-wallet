@@ -12,7 +12,7 @@ examples/general-wallet       Branding Layer — general-purpose wallet demo
 packages/ows-signer           Signing Layer (plain JS, zero deps, on-chain)
 packages/ows-signer-utils     Branding Layer ↔ Signing Layer (evm.signMessage, etc.)
 packages/ows-types            Shared types and errors across OWS SDKs
-packages/ows-wallet-utils     Host Layer ↔ Branding Layer (@1shotapi/postmate wrappers)
+packages/ows-wallet-utils     Host Layer ↔ Branding Layer (postmate wrappers)
 packages/ows-branding-core    Branding module contracts + install helpers
 packages/ows-registry         Copy-paste Branding Layer modules (not published)
 packages/ows-onchain          EIP-8244 deploy pipeline for ows-signer
@@ -24,7 +24,7 @@ packages/ows-onchain          EIP-8244 deploy pipeline for ows-signer
 2. **Signing Layer signs curves/digests, not chain APIs.** EIP-191, EIP-712, etc. belong in `ows-signer-utils`.
 3. **Host Layer must never embed the Signing Layer directly.** Always Host → Branding → Signing.
 4. **Signing Layer accepts `postMessage` only when `event.source === window.parent` and `window.parent !== window.top`.**
-5. **Do not vendor Postmate.** Use `@1shotapi/postmate` from npm / GitHub.
+5. **Do not vendor Postmate.** Use the `postmate` package from npm. Set iframe `allow` (WebAuthn, clipboard) before navigation — see `OWSProxy` / `createSignerIframe`.
 6. **Examples are not published.**
 
 ## Code style

@@ -21,7 +21,9 @@ function createTestContext(
       evm: {
         signMessage: async () => EVMSignatureHex("0x"),
       },
+      createRecoveryData: async () => ({ encryptedPrivateKey: "ows1:0x" }),
     },
+
     ...overrides,
   };
 }

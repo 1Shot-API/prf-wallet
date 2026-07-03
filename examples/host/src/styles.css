@@ -53,8 +53,13 @@ body {
   resize: vertical;
 }
 
-#sign-button {
-  align-self: flex-start;
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.actions button {
   padding: 0.5rem 1.25rem;
   border: 1px solid color-mix(in srgb, CanvasText 25%, transparent);
   border-radius: 6px;
@@ -63,7 +68,7 @@ body {
   cursor: pointer;
 }
 
-#sign-button:disabled {
+.actions button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }

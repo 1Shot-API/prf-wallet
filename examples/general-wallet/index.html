@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>OWS — Example General Wallet</title>
+  <!-- branding shell + create-backup action -->
   <style>
     :root {
       color-scheme: light dark;
@@ -94,6 +95,26 @@
       font-size: 0.85rem;
       word-break: break-all;
     }
+    .wallet-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-top: 0.5rem;
+    }
+    .wallet-action {
+      padding: 0.5rem 0.875rem;
+      border: 1px solid color-mix(in srgb, CanvasText 25%, transparent);
+      border-radius: 6px;
+      background: transparent;
+      color: inherit;
+      font: inherit;
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
+    .wallet-action:focus-visible {
+      outline: 2px solid Highlight;
+      outline-offset: 2px;
+    }
     #signer-container {
       position: absolute;
       width: 0;
@@ -133,6 +154,11 @@
         <div class="status-row">
           <span class="status-label">Solana</span>
           <span id="solana-address" class="status-value">—</span>
+        </div>
+        <div class="wallet-actions">
+          <button type="button" id="create-backup" class="wallet-action">
+            Create backup
+          </button>
         </div>
       </section>
     </div>

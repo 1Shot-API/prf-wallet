@@ -1,7 +1,7 @@
 {
   "name": "@1shotapi/ows-wallet-utils",
   "version": "0.0.0",
-  "description": "OWS utilities for Branding Layer implementers — Host Layer ↔ Branding Layer messaging via @1shotapi/postmate",
+  "description": "OWS utilities for Branding Layer implementers — Host Layer ↔ Branding Layer messaging via postmate",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -23,10 +23,11 @@
   },
   "dependencies": {
     "@1shotapi/ows-types": "*",
-    "@1shotapi/postmate": "^1.5.5",
+    "postmate": "^1.5.2",
     "zod": "^4.4.0"
   },
   "devDependencies": {
+    "@types/postmate": "^1.5.4",
     "tsx": "^4.19.0"
   },
   "keywords": [

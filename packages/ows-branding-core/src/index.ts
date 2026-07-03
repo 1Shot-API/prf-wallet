@@ -5,6 +5,7 @@ export type {
   BrandingModulePhase,
   BrandingSignerHost,
   BrandingWalletHost,
+  CreateBackupResult,
   PersonalSignApprovalRequest,
   UiHost,
 } from "./types.js";

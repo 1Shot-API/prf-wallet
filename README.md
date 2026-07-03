@@ -24,7 +24,7 @@ Host Layer                  @1shotapi/ows-provider          EIP-1193 for viem/et
 | On-chain deploy | `@1shotapi/ows-onchain` | Yes |
 | Demos | `examples/*` | No |
 
-Cross-frame messaging for Host ↔ Branding uses [@1shotapi/postmate](https://github.com/1Shot-API/postmate) (external package, not vendored here).
+Cross-frame messaging for Host ↔ Branding uses [postmate](https://github.com/dollarshaveclub/postmate) (external package, not vendored here).
 
 ## Quick start
 

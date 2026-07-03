@@ -10,11 +10,17 @@ export type PersonalSignApprovalRequest = {
   address: EVMAccountAddress;
 };
 
+export type CreateBackupResult = {
+  encryptedPrivateKey: string;
+};
+
 /** Host-provided UI surface; registry modules may implement defaults. */
 export type UiHost = {
   requestPersonalSignApproval(
     request: PersonalSignApprovalRequest,
   ): Promise<boolean>;
+  /** Present the encrypted recovery blob after create-backup succeeds. */
+  showCreateBackupResult(result: CreateBackupResult): Promise<void>;
 };
 
 /** Wallet surface registry modules may call (subset of `OWSWallet`). */
@@ -26,6 +32,7 @@ export type BrandingWalletHost = Pick<
 /** Signer surface registry modules may call (subset of `OWSSigner`). */
 export type BrandingSignerHost = {
   evm: Pick<OWSSigner["evm"], "signMessage">;
+  createRecoveryData: OWSSigner["createRecoveryData"];
 };
 
 export type BrandingContext = {

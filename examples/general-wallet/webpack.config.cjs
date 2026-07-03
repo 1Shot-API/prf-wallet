@@ -14,7 +14,8 @@ module.exports = (_env, argv) => {
     entry: path.resolve(__dirname, "src/main.ts"),
     output: {
       path: path.resolve(__dirname, "dist"),
-      filename: "wallet/[name].js",
+      // publicPath is /wallet/, so assets are served at /wallet/<filename>
+      filename: "[name].js",
       publicPath: "/wallet/",
       clean: true,
     },
@@ -39,7 +40,7 @@ module.exports = (_env, argv) => {
     plugins: [
       new HtmlWebpackPlugin({
         template: path.resolve(__dirname, "index.html"),
-        filename: "wallet/index.html",
+        filename: "index.html",
         inject: "body",
         scriptLoading: "module",
       }),
@@ -90,11 +91,8 @@ module.exports = (_env, argv) => {
               publicPath: "/signer",
               watch: true,
             },
-            {
-              directory: path.resolve(__dirname, "dist"),
-              publicPath: "/",
-              watch: true,
-            },
+            // Do not serve dist/wallet in dev — stale production HTML overrides
+            // HtmlWebpackPlugin's in-memory index and breaks /wallet/.
           ],
       historyApiFallback: {
         rewrites: [

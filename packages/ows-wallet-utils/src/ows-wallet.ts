@@ -1,4 +1,4 @@
-import Postmate from "@1shotapi/postmate";
+import Postmate from "postmate";
 import type { z } from "zod";
 import {
   OWS_DISPLAY_READY_MODEL_METHOD,

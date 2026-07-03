@@ -1,4 +1,4 @@
-import Postmate from "@1shotapi/postmate";
+import Postmate from "postmate";
 import {
   DEFAULT_RPC_TIMEOUT_MS,
   deserializeRpcResponse,

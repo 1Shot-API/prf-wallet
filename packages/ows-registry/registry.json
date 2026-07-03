@@ -22,6 +22,26 @@
           "target": "src/ows/approval-dialog/dialog.ts"
         }
       ]
+    },
+    {
+      "name": "create-backup",
+      "type": "registry:component",
+      "title": "Create encrypted wallet backup",
+      "description": "Vanilla dialog that mounts the signer iframe for passphrase entry, then shows the encrypted recovery blob with copy.",
+      "registryDependencies": [],
+      "dependencies": ["@1shotapi/ows-branding-core"],
+      "files": [
+        {
+          "path": "items/create-backup/vanilla/install.ts",
+          "type": "registry:file",
+          "target": "src/ows/create-backup/install.ts"
+        },
+        {
+          "path": "items/create-backup/vanilla/dialog.ts",
+          "type": "registry:file",
+          "target": "src/ows/create-backup/dialog.ts"
+        }
+      ]
     }
   ]
 }
