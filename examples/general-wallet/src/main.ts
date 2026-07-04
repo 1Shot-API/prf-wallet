@@ -1,10 +1,15 @@
 import { OWSSigner } from "@1shotapi/ows-signer-utils";
 import { OWSWallet } from "@1shotapi/ows-wallet-utils";
 import { installBrandingModules } from "@1shotapi/ows-branding-core";
-import { EVMAccountAddress, SolanaAccountAddress } from "@1shotapi/ows-types";
+import {
+  EVMAccountAddress,
+  EVMChainId,
+  SolanaAccountAddress,
+} from "@1shotapi/ows-types";
 import { personalSignApprovalModule } from "./ows/approval-dialog/install";
 import { createCreateBackupModule } from "./ows/create-backup/install";
 import { createRestoreBackupModule } from "./ows/recover-backup/install";
+import { createRpcProviderModule } from "./ows/rpc-provider/install";
 import {
   isWalletCreated,
   loadBackup,
@@ -16,9 +21,35 @@ import {
 // Temporary PRF / WebAuthn debugging (signer reads OWS_SIGNER_DEBUG + localStorage)
 (globalThis as { OWS_SIGNER_DEBUG?: boolean }).OWS_SIGNER_DEBUG = false;
 
+/** Demo chains for the branding-layer chain dropdown (not part of rpc-provider). */
+const DEMO_CHAINS: ReadonlyArray<{
+  chainId: EVMChainId;
+  label: string;
+  rpcUrl: string;
+}> = [
+  {
+    chainId: EVMChainId("0xaa36a7"), // 11155111
+    label: "Sepolia",
+    rpcUrl: "https://sepolia.drpc.org",
+  },
+  {
+    chainId: EVMChainId("0x14a34"), // 84532
+    label: "Base Sepolia",
+    rpcUrl: "https://sepolia.base.org",
+  },
+  {
+    chainId: EVMChainId("0x4ce152"), // 5042002
+    label: "Arc Testnet",
+    rpcUrl: "https://sepolia.base.org",
+  },
+];
+
 const walletStatusEl = document.getElementById("wallet-status")!;
 const evmAddressEl = document.getElementById("evm-address")!;
 const solanaAddressEl = document.getElementById("solana-address")!;
+const chainSelect = document.getElementById(
+  "chain-select",
+) as HTMLSelectElement;
 const createBackupButton = document.getElementById("create-backup");
 const restoreBackupButton = document.getElementById("restore-backup");
 
@@ -51,6 +82,10 @@ function refreshStatusUi(): void {
   if (restoreBackupButton instanceof HTMLElement) {
     restoreBackupButton.hidden = unlocked;
   }
+}
+
+function setChainSelectValue(chainId: EVMChainId): void {
+  chainSelect.value = chainId;
 }
 
 async function main(): Promise<void> {
@@ -118,6 +153,29 @@ async function main(): Promise<void> {
 
   const wallet = OWSWallet.prepare({ debug: true });
 
+  const defaultChainId = DEMO_CHAINS[0]!.chainId;
+  const rpcProvider = createRpcProviderModule({
+    providers: new Map(
+      DEMO_CHAINS.map((chain) => [chain.chainId, chain.rpcUrl]),
+    ),
+    defaultChainId,
+  });
+
+  setChainSelectValue(rpcProvider.getChainId());
+  rpcProvider.events.on("chainChanged", (chainId) => {
+    setChainSelectValue(chainId);
+  });
+  chainSelect.addEventListener("change", () => {
+    const previous = rpcProvider.getChainId();
+    void rpcProvider.switchChain(chainSelect.value).catch((error: unknown) => {
+      setChainSelectValue(previous);
+      console.error(
+        "[ows-example-general-wallet] chain switch failed",
+        error,
+      );
+    });
+  });
+
   await installBrandingModules(
     {
       wallet,
@@ -125,6 +183,7 @@ async function main(): Promise<void> {
       ensureReady: ensureWalletReady,
     },
     [
+      rpcProvider,
       personalSignApprovalModule,
       createCreateBackupModule({
         triggerButton: "#create-backup",
@@ -161,14 +220,19 @@ async function main(): Promise<void> {
 
   await wallet.start();
 
-  if (window.parent !== window.top) {
+  // Branding is a direct child of the host (`parent === top`), unlike the
+  // Signing Layer which is nested (`parent !== top`). Show chrome whenever we
+  // are embedded in any iframe.
+  if (window.parent !== window) {
     document.getElementById("wallet-chrome")?.classList.add("wallet-chrome--embedded");
     document.getElementById("wallet-close")?.addEventListener("click", () => {
       void wallet.requestHide();
     });
   }
 
-  console.info("[ows-example-general-wallet] ready");
+  console.info("[ows-example-general-wallet] ready", {
+    chainId: rpcProvider.getChainId(),
+  });
 }
 
 main().catch((error: unknown) => {

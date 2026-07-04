@@ -11,7 +11,8 @@
     "lint": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@1shotapi/ows-provider": "*"
+    "@1shotapi/ows-provider": "*",
+    "@1shotapi/ows-types": "*"
   },
   "devDependencies": {
     "css-loader": "^7.1.2",

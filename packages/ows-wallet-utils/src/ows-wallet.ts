@@ -6,11 +6,7 @@ import {
   type RequestDisplayParams,
 } from "@1shotapi/ows-types";
 import { getEip1193ParamSchema } from "./eip1193/schemas.js";
-import {
-  EIP1193_METHODS,
-  type Eip1193Method,
-  isEip1193Method,
-} from "./eip1193/methods.js";
+import { EIP1193_METHODS, isEip1193Method } from "./eip1193/methods.js";
 import { OwsUnimplementedError } from "@1shotapi/ows-types";
 import {
   handleRpcModelCall,
@@ -34,7 +30,11 @@ export type RpcHandlerRegistration = {
 export type OWSWalletOptions = {
   /** Log Postmate handshake and RPC traffic to `console.debug`. */
   debug?: boolean;
-  eip1193?: Partial<Record<Eip1193Method, Eip1193Handler>>;
+  /**
+   * EIP-1193 handlers. Keys may be standard wallet methods (`Eip1193Method`)
+   * or additional methods registered by branding modules (e.g. `eth_call`).
+   */
+  eip1193?: Partial<Record<string, Eip1193Handler>>;
   rpc?: Record<string, RpcHandlerRegistration>;
 };
 
@@ -44,7 +44,7 @@ export class OWSWallet {
   private displayClient: DisplayChildClient | null = null;
   private displayReadyHandler: ((data: unknown) => void) | null = null;
   private hideReadyHandler: ((data: unknown) => void) | null = null;
-  private readonly eip1193Handlers = new Map<Eip1193Method, Eip1193Handler>();
+  private readonly eip1193Handlers = new Map<string, Eip1193Handler>();
   private readonly customHandlers = new Map<string, RpcHandlerRegistration>();
   private handshakeStarted = false;
 
@@ -53,7 +53,7 @@ export class OWSWallet {
     if (options?.eip1193) {
       for (const [method, handler] of Object.entries(options.eip1193)) {
         if (handler) {
-          this.eip1193Handlers.set(method as Eip1193Method, handler);
+          this.eip1193Handlers.set(method, handler);
         }
       }
     }
@@ -137,7 +137,12 @@ export class OWSWallet {
     return this.displayClient.requestHide();
   }
 
-  registerEip1193(method: Eip1193Method, handler: Eip1193Handler): void {
+  /**
+   * Register an EIP-1193 method handler. Standard wallet methods are always
+   * exposed on the Postmate model; additional methods (e.g. `eth_call`) are
+   * added when registered so host `ethereum.request` can reach them.
+   */
+  registerEip1193(method: string, handler: Eip1193Handler): void {
     this.assertNotConnected();
     this.eip1193Handlers.set(method, handler);
   }
@@ -181,7 +186,11 @@ export class OWSWallet {
       this.hideReadyHandler?.(data);
     };
 
-    for (const method of EIP1193_METHODS) {
+    const eip1193Methods = new Set<string>([
+      ...EIP1193_METHODS,
+      ...this.eip1193Handlers.keys(),
+    ]);
+    for (const method of eip1193Methods) {
       model[method] = async (data) => {
         await this.dispatch(method, data, true);
       };
@@ -220,9 +229,11 @@ export class OWSWallet {
     method: string,
     isEip1193: boolean,
   ): RpcModelRegistration {
-    if (isEip1193 && isEip1193Method(method)) {
+    if (isEip1193) {
       const handler = this.eip1193Handlers.get(method);
-      const paramsSchema = getEip1193ParamSchema(method);
+      const paramsSchema = isEip1193Method(method)
+        ? getEip1193ParamSchema(method)
+        : undefined;
       if (handler) {
         return {
           paramsSchema,

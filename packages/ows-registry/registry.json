@@ -62,6 +62,21 @@
           "target": "src/ows/recover-backup/dialog.ts"
         }
       ]
+    },
+    {
+      "name": "rpc-provider",
+      "type": "registry:component",
+      "title": "EIP-1193 JSON-RPC reads",
+      "description": "Headless module that proxies non-signing EIP-1193 methods (eth_call, eth_getBalance, eth_chainId, …) to configured chain RPC URLs. No UI.",
+      "registryDependencies": [],
+      "dependencies": ["@1shotapi/ows-branding-core", "@1shotapi/ows-types"],
+      "files": [
+        {
+          "path": "items/rpc-provider/vanilla/install.ts",
+          "type": "registry:file",
+          "target": "src/ows/rpc-provider/install.ts"
+        }
+      ]
     }
   ]
 }

@@ -12,6 +12,24 @@
 
   <main class="content">
     <section class="sign-panel">
+      <div class="chain-row">
+        <label for="chain-select">Chain</label>
+        <select id="chain-select" aria-label="Active chain">
+          <option value="0xaa36a7">Sepolia</option>
+          <option value="0x14a34">Base Sepolia</option>
+          <option value="0x4ce152">Arc Testnet</option>
+        </select>
+        <button
+          type="button"
+          id="chain-refresh-button"
+          class="chain-refresh"
+          aria-label="Refresh chain from wallet"
+          title="Refresh chain from wallet"
+        >
+          ↻
+        </button>
+      </div>
+
       <label for="message-input">Message to sign (EIP-191)</label>
       <textarea id="message-input" rows="3">Hello from Open Wallet</textarea>
       <div class="actions">

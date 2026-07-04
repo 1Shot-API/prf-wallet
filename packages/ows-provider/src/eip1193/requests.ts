@@ -1,4 +1,8 @@
-import type { EVMAccountAddress, EVMSignatureHex } from "@1shotapi/ows-types";
+import type {
+  EVMAccountAddress,
+  EVMChainId,
+  EVMSignatureHex,
+} from "@1shotapi/ows-types";
 
 /**
  * Typed EIP-1193 methods supported by `EIP1193Provider.request`.
@@ -12,11 +16,15 @@ export type EIP1193Requests = {
     result: EVMAccountAddress[];
   };
   eth_chainId: {
-    result: `0x${string}`;
+    result: EVMChainId;
   };
   personal_sign: {
     params: readonly [message: string, address: EVMAccountAddress];
     result: EVMSignatureHex;
+  };
+  wallet_switchEthereumChain: {
+    params: readonly [{ chainId: EVMChainId }];
+    result: null;
   };
 };
 
