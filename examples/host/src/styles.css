@@ -84,14 +84,31 @@ body {
   cursor: not-allowed;
 }
 
-.sign-panel textarea {
+.sign-panel textarea,
+.sign-panel .text-input {
   width: 100%;
   box-sizing: border-box;
   padding: 0.625rem 0.75rem;
   border: 1px solid color-mix(in srgb, CanvasText 25%, transparent);
   border-radius: 6px;
+  background: Canvas;
+  color: inherit;
   font: inherit;
+}
+
+.sign-panel textarea {
   resize: vertical;
+}
+
+.sign-panel .text-input {
+  font-family: ui-monospace, monospace;
+  font-size: 0.9rem;
+}
+
+.panel-divider {
+  margin: 0.5rem 0 0;
+  border: none;
+  border-top: 1px solid color-mix(in srgb, CanvasText 15%, transparent);
 }
 
 .actions {
