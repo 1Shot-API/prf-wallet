@@ -1,22 +1,13 @@
-import type {
-  BrandingSignerHost,
-  CreateBackupResult,
-} from "@1shotapi/ows-branding-core";
+import type { BrandingSignerHost } from "@1shotapi/ows-branding-core";
 
-export type CreateBackupDialogOptions = {
+export type RestoreBackupDialogOptions = {
   /** Element to mount the dialog into (default `document.body`). */
   container?: HTMLElement;
   /** Home container that normally holds the signer iframe (e.g. `#signer-container`). */
   signerContainer: HTMLElement;
-  /** Minimum passphrase length shown in copy and passed to the signer. */
-  minPasswordLength?: number;
-  /** App-owned hook when a backup blob is created (e.g. persist to localStorage). */
-  onBackupCreated?: (result: CreateBackupResult) => void | Promise<void>;
-  /** Override result presentation (default: in-dialog copy UI). */
-  showResult?: (result: CreateBackupResult) => Promise<void>;
+  /** Encrypted backup blob (`ows1:…`) from app-owned storage. */
+  encryptedPrivateKey: string;
 };
-
-const DEFAULT_MIN_PASSWORD_LENGTH = 12;
 
 let stylesInjected = false;
 
@@ -28,23 +19,20 @@ type MountedIframe = {
 };
 
 /**
- * Run the create-backup flow: instructions + visible signer iframe for passphrase,
- * then show the encrypted recovery blob with copy.
+ * Run the restore-backup flow: instructions + visible signer iframe for passphrase,
+ * then `recoverKey` with the app-supplied encrypted blob.
  *
- * Resolves when the user finishes (Done) or cancels. Rejects only on unexpected errors
- * after the user has not cancelled.
+ * @returns `true` when restore completed, `false` when the user cancelled or dismissed an error.
  */
-export async function runCreateBackupFlow(
+export async function runRestoreBackupFlow(
   signer: BrandingSignerHost,
-  options: CreateBackupDialogOptions,
-): Promise<void> {
+  options: RestoreBackupDialogOptions,
+): Promise<boolean> {
   if (!stylesInjected) {
-    injectCreateBackupStyles();
+    injectRestoreBackupStyles();
     stylesInjected = true;
   }
 
-  const minPasswordLength =
-    options.minPasswordLength ?? DEFAULT_MIN_PASSWORD_LENGTH;
   const mountContainer = options.container ?? document.body;
   const iframe = options.signerContainer.querySelector("iframe");
   if (!(iframe instanceof HTMLIFrameElement)) {
@@ -56,38 +44,39 @@ export async function runCreateBackupFlow(
   let settled = false;
 
   const overlay = document.createElement("div");
-  overlay.className = "ows-backup-overlay";
+  overlay.className = "ows-restore-overlay";
   overlay.setAttribute("role", "presentation");
 
   const dialog = document.createElement("div");
-  dialog.className = "ows-backup-dialog";
+  dialog.className = "ows-restore-dialog";
   dialog.setAttribute("role", "dialog");
   dialog.setAttribute("aria-modal", "true");
-  dialog.setAttribute("aria-labelledby", "ows-backup-title");
+  dialog.setAttribute("aria-labelledby", "ows-restore-title");
 
   const title = document.createElement("h2");
-  title.id = "ows-backup-title";
-  title.className = "ows-backup-title";
-  title.textContent = "Create backup";
+  title.id = "ows-restore-title";
+  title.className = "ows-restore-title";
+  title.textContent = "Restore backup";
 
   const body = document.createElement("p");
-  body.className = "ows-backup-body";
-  body.textContent = `Enter a passphrase of at least ${minPasswordLength} characters to encrypt your private key. Store the backup somewhere safe — you will need it to restore your wallet.`;
+  body.className = "ows-restore-body";
+  body.textContent =
+    "Enter the passphrase you used when creating this backup to unlock your wallet.";
 
   const signerSlot = document.createElement("div");
-  signerSlot.id = "ows-backup-signer-slot";
-  signerSlot.className = "ows-backup-signer-slot";
+  signerSlot.id = "ows-restore-signer-slot";
+  signerSlot.className = "ows-restore-signer-slot";
 
   const errorEl = document.createElement("p");
-  errorEl.className = "ows-backup-error";
+  errorEl.className = "ows-restore-error";
   errorEl.hidden = true;
 
   const actions = document.createElement("div");
-  actions.className = "ows-backup-actions";
+  actions.className = "ows-restore-actions";
 
   const cancelButton = document.createElement("button");
   cancelButton.type = "button";
-  cancelButton.className = "ows-backup-button ows-backup-button--secondary";
+  cancelButton.className = "ows-restore-button ows-restore-button--secondary";
   cancelButton.textContent = "Cancel";
 
   actions.append(cancelButton);
@@ -103,21 +92,19 @@ export async function runCreateBackupFlow(
     overlay.remove();
   };
 
-  const finish = (resolve: () => void): void => {
+  const finish = (resolve: (restored: boolean) => void, restored: boolean): void => {
     if (settled) return;
     settled = true;
     aborted = true;
     teardown();
-    resolve();
+    resolve(restored);
   };
 
-  return new Promise<void>((resolve, reject) => {
-    cancelButton.addEventListener("click", () => finish(resolve));
+  return new Promise<boolean>((resolve, reject) => {
+    cancelButton.addEventListener("click", () => finish(resolve, false));
 
     void (async () => {
       try {
-        // Position over the slot without reparenting — moving an iframe in the
-        // DOM can reload its document and drop in-flight postMessage RPCs.
         mounted = mountSignerIframe(
           iframe,
           signerSlot,
@@ -125,10 +112,10 @@ export async function runCreateBackupFlow(
         );
         await waitForPaint();
 
-        const result = await signer.createRecoveryData(
-          `Passphrase (min ${minPasswordLength} characters)`,
-          "Continue",
-          minPasswordLength,
+        await signer.recoverKey(
+          options.encryptedPrivateKey,
+          "Backup passphrase",
+          "Restore",
         );
 
         if (aborted || settled) return;
@@ -136,24 +123,17 @@ export async function runCreateBackupFlow(
         restoreSignerIframe(mounted);
         mounted = null;
         signerSlot.hidden = true;
-        body.hidden = true;
+        body.textContent =
+          "Wallet restored. You can sign until this tab is closed.";
         cancelButton.remove();
 
-        await options.onBackupCreated?.(result);
-        if (aborted || settled) return;
-
-        if (options.showResult) {
-          overlay.remove();
-          await options.showResult(result);
-          if (!settled) {
-            settled = true;
-            resolve();
-          }
-        } else {
-          await showDefaultBackupResult(result, dialog, actions, () =>
-            finish(resolve),
-          );
-        }
+        const doneButton = document.createElement("button");
+        doneButton.type = "button";
+        doneButton.className = "ows-restore-button ows-restore-button--primary";
+        doneButton.textContent = "Done";
+        doneButton.addEventListener("click", () => finish(resolve, true));
+        actions.replaceChildren(doneButton);
+        doneButton.focus();
       } catch (error) {
         if (aborted || settled) return;
 
@@ -164,7 +144,7 @@ export async function runCreateBackupFlow(
         signerSlot.hidden = true;
 
         errorEl.hidden = false;
-        errorEl.textContent = formatBackupError(error);
+        errorEl.textContent = formatRestoreError(error);
         cancelButton.textContent = "Close";
         cancelButton.focus();
       }
@@ -174,57 +154,6 @@ export async function runCreateBackupFlow(
       settled = true;
       reject(error);
     });
-  });
-}
-
-function showDefaultBackupResult(
-  result: CreateBackupResult,
-  dialog: HTMLElement,
-  actions: HTMLElement,
-  onDone: () => void,
-): Promise<void> {
-  return new Promise((resolve) => {
-    const label = document.createElement("p");
-    label.className = "ows-backup-label";
-    label.textContent = "Encrypted backup";
-
-    const pre = document.createElement("pre");
-    pre.className = "ows-backup-blob";
-    pre.textContent = result.encryptedPrivateKey;
-
-    const copyButton = document.createElement("button");
-    copyButton.type = "button";
-    copyButton.className = "ows-backup-button ows-backup-button--secondary";
-    copyButton.textContent = "Copy";
-
-    const doneButton = document.createElement("button");
-    doneButton.type = "button";
-    doneButton.className = "ows-backup-button ows-backup-button--primary";
-    doneButton.textContent = "Done";
-
-    copyButton.addEventListener("click", () => {
-      void navigator.clipboard.writeText(result.encryptedPrivateKey).then(
-        () => {
-          copyButton.textContent = "Copied";
-          setTimeout(() => {
-            copyButton.textContent = "Copy";
-          }, 1500);
-        },
-        () => {
-          copyButton.textContent = "Copy failed";
-        },
-      );
-    });
-
-    doneButton.addEventListener("click", () => {
-      onDone();
-      resolve();
-    });
-
-    actions.replaceChildren(copyButton, doneButton);
-    dialog.insertBefore(label, actions);
-    dialog.insertBefore(pre, actions);
-    doneButton.focus();
   });
 }
 
@@ -240,7 +169,6 @@ function mountSignerIframe(
   const savedFrameStyles = captureInlineStyles(iframe);
   const savedContainerStyles = captureInlineStyles(homeContainer);
   const rect = slot.getBoundingClientRect();
-  // Above `.ows-backup-overlay` (z-index 10000) so the passphrase UI is interactive.
   const zIndex = "10001";
 
   setImportantStyle(homeContainer, "display", "block");
@@ -325,30 +253,34 @@ function restoreInlineStyles(
   }
 }
 
-function formatBackupError(error: unknown): string {
+function formatRestoreError(error: unknown): string {
   if (error instanceof Error) {
     const message = error.message;
-    if (message.includes("passwordTooShort")) {
-      return "Passphrase is too short. Try again.";
+    if (
+      message.includes("decryptionFailed") ||
+      message.includes("decrypt") ||
+      message.includes("OperationError")
+    ) {
+      return "Could not decrypt the backup. Check the passphrase and try again.";
     }
     if (message.includes("NotAllowed") || message.includes("not allowed")) {
       return "Passkey prompt was cancelled or blocked.";
     }
-    return message || "Backup failed.";
+    return message || "Restore failed.";
   }
-  return "Backup failed.";
+  return "Restore failed.";
 }
 
 /** @internal */
-export function injectCreateBackupStyles(): void {
-  if (document.getElementById("ows-backup-dialog-styles")) {
+export function injectRestoreBackupStyles(): void {
+  if (document.getElementById("ows-restore-dialog-styles")) {
     return;
   }
 
   const style = document.createElement("style");
-  style.id = "ows-backup-dialog-styles";
+  style.id = "ows-restore-dialog-styles";
   style.textContent = `
-    .ows-backup-overlay {
+    .ows-restore-overlay {
       position: fixed;
       inset: 0;
       z-index: 10000;
@@ -358,7 +290,7 @@ export function injectCreateBackupStyles(): void {
       padding: 1rem;
       background: color-mix(in srgb, CanvasText 35%, transparent);
     }
-    .ows-backup-dialog {
+    .ows-restore-dialog {
       width: min(30rem, 100%);
       max-height: min(85vh, 36rem);
       overflow: auto;
@@ -370,23 +302,17 @@ export function injectCreateBackupStyles(): void {
       font-family: system-ui, sans-serif;
       line-height: 1.5;
     }
-    .ows-backup-title {
+    .ows-restore-title {
       margin: 0 0 0.75rem;
       font-size: 1.125rem;
       font-weight: 600;
     }
-    .ows-backup-body {
+    .ows-restore-body {
       margin: 0 0 1rem;
       font-size: 0.9rem;
       opacity: 0.9;
     }
-    .ows-backup-label {
-      margin: 0 0 0.25rem;
-      font-size: 0.8rem;
-      font-weight: 500;
-      opacity: 0.75;
-    }
-    .ows-backup-signer-slot {
+    .ows-restore-signer-slot {
       margin: 0 0 1rem;
       min-height: 7rem;
       border: 1px solid color-mix(in srgb, CanvasText 20%, transparent);
@@ -394,29 +320,17 @@ export function injectCreateBackupStyles(): void {
       overflow: hidden;
       background: color-mix(in srgb, CanvasText 4%, Canvas);
     }
-    .ows-backup-blob {
-      margin: 0 0 1rem;
-      padding: 0.75rem;
-      border: 1px solid color-mix(in srgb, CanvasText 20%, transparent);
-      border-radius: 6px;
-      font-family: ui-monospace, monospace;
-      font-size: 0.8rem;
-      white-space: pre-wrap;
-      word-break: break-all;
-      max-height: 10rem;
-      overflow: auto;
-    }
-    .ows-backup-error {
+    .ows-restore-error {
       margin: 0 0 1rem;
       font-size: 0.9rem;
       color: color-mix(in srgb, CanvasText 20%, #c00);
     }
-    .ows-backup-actions {
+    .ows-restore-actions {
       display: flex;
       gap: 0.5rem;
       justify-content: flex-end;
     }
-    .ows-backup-button {
+    .ows-restore-button {
       padding: 0.5rem 1rem;
       border-radius: 6px;
       border: 1px solid color-mix(in srgb, CanvasText 25%, transparent);
@@ -425,11 +339,11 @@ export function injectCreateBackupStyles(): void {
       font: inherit;
       cursor: pointer;
     }
-    .ows-backup-button--primary {
+    .ows-restore-button--primary {
       background: color-mix(in srgb, CanvasText 12%, Canvas);
       font-weight: 500;
     }
-    .ows-backup-button:focus-visible {
+    .ows-restore-button:focus-visible {
       outline: 2px solid Highlight;
       outline-offset: 2px;
     }

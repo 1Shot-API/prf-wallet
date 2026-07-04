@@ -33,6 +33,7 @@ export type BrandingWalletHost = Pick<
 export type BrandingSignerHost = {
   evm: Pick<OWSSigner["evm"], "signMessage">;
   createRecoveryData: OWSSigner["createRecoveryData"];
+  recoverKey: OWSSigner["recoverKey"];
 };
 
 export type BrandingContext = {

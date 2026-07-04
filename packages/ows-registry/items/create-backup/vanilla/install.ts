@@ -14,7 +14,18 @@ export type CreateBackupModuleOptions = {
   signerContainer: HTMLElement | string;
   /** Minimum passphrase length (default 12). */
   minPasswordLength?: number;
+  /** App-owned hook when a backup blob is created (e.g. persist to localStorage). */
+  onBackupCreated?: (result: CreateBackupResult) => void | Promise<void>;
 };
+
+/** Document-delegated listeners keyed by selector (replaced on reinstall). */
+const delegatedClickListeners = new Map<string, (event: Event) => void>();
+
+/** Direct element listeners (replaced on reinstall of the same node). */
+const elementClickListeners = new WeakMap<
+  HTMLElement,
+  (event: Event) => void
+>();
 
 export function createCreateBackupModule(
   options: CreateBackupModuleOptions,
@@ -29,22 +40,42 @@ export function createCreateBackupModule(
         });
       };
 
-      if (typeof options.triggerButton !== "string") {
-        options.triggerButton.addEventListener("click", handleClick);
-        return;
-      }
-
-      // Event delegation so install succeeds even if the button is not in the
-      // DOM yet (e.g. stale HTML during HMR) and still works once it appears.
-      const selector = options.triggerButton;
-      document.addEventListener("click", (event) => {
-        const target = event.target;
-        if (!(target instanceof Element)) return;
-        if (!target.closest(selector)) return;
-        handleClick();
-      });
+      bindTriggerButton(options.triggerButton, handleClick);
     },
   };
+}
+
+function bindTriggerButton(
+  triggerButton: HTMLElement | string,
+  handleClick: () => void,
+): void {
+  if (typeof triggerButton !== "string") {
+    const previous = elementClickListeners.get(triggerButton);
+    if (previous) {
+      triggerButton.removeEventListener("click", previous);
+    }
+    const onClick = (): void => {
+      handleClick();
+    };
+    elementClickListeners.set(triggerButton, onClick);
+    triggerButton.addEventListener("click", onClick);
+    return;
+  }
+
+  const selector = triggerButton;
+  const previous = delegatedClickListeners.get(selector);
+  if (previous) {
+    document.removeEventListener("click", previous);
+  }
+
+  const onDocumentClick = (event: Event): void => {
+    const target = event.target;
+    if (!(target instanceof Element)) return;
+    if (!target.closest(selector)) return;
+    handleClick();
+  };
+  delegatedClickListeners.set(selector, onDocumentClick);
+  document.addEventListener("click", onDocumentClick);
 }
 
 async function runBackupClick(
@@ -72,6 +103,7 @@ async function runBackupClick(
       container: options.container,
       signerContainer,
       minPasswordLength: options.minPasswordLength,
+      onBackupCreated: options.onBackupCreated,
       showResult: hostShowResult
         ? (result: CreateBackupResult) => hostShowResult(result)
         : undefined,

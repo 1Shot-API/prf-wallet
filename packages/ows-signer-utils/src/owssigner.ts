@@ -1,8 +1,9 @@
-import { EVMAccountAddress } from "@1shotapi/ows-types";
+import { EVMAccountAddress, SolanaAccountAddress } from "@1shotapi/ows-types";
 import type { Hex } from "viem";
 import { publicKeyToAddress } from "viem/utils";
 import { createSignerIframe, getSignerOrigin, prepareSignerIframeForWebAuthn } from "./iframe.js";
 import { EvmSigner } from "./evm/namespace.js";
+import { addressFromEd25519PublicKey } from "./solana/address.js";
 import { SolanaSigner } from "./solana/namespace.js";
 import {
   cacheKeyDerivedFromEvent,
@@ -32,6 +33,7 @@ export class OWSSigner {
   private readonly rpc: SignerRpcClient;
   private credentialId?: string;
   private cachedAddress?: EVMAccountAddress;
+  private cachedSolanaAddress?: SolanaAccountAddress;
 
   private constructor(
     private readonly iframe: HTMLIFrameElement,
@@ -73,6 +75,14 @@ export class OWSSigner {
     this.cachedAddress = address;
   }
 
+  getCachedSolanaAddress(): SolanaAccountAddress | undefined {
+    return this.cachedSolanaAddress;
+  }
+
+  setCachedSolanaAddress(address: SolanaAccountAddress): void {
+    this.cachedSolanaAddress = address;
+  }
+
   destroy(): void {
     this.rpc.destroy();
     this.iframe.remove();
@@ -81,9 +91,27 @@ export class OWSSigner {
   private onKeyDerived = (data: Record<string, unknown>): void => {
     const derived = cacheKeyDerivedFromEvent(data);
     if (derived) {
-      this.cacheAddressFromPublicKey(derived.secp256k1PublicKey);
+      this.cacheAddressesFromPublicKeys(
+        derived.secp256k1PublicKey,
+        derived.ed25519PublicKey,
+      );
     }
   };
+
+  private cacheAddressesFromPublicKeys(
+    secp256k1PublicKey: Hex,
+    ed25519PublicKey: Hex,
+  ): void {
+    if (!this.cachedAddress) {
+      this.cachedAddress = EVMAccountAddress(
+        publicKeyToAddress(secp256k1PublicKey),
+      );
+    }
+    if (!this.cachedSolanaAddress) {
+      this.cachedSolanaAddress =
+        addressFromEd25519PublicKey(ed25519PublicKey);
+    }
+  }
 
   private cacheAddressFromPublicKey(publicKey: Hex): void {
     if (this.cachedAddress) return;
@@ -166,7 +194,10 @@ export class OWSSigner {
       },
     );
 
-    this.cacheAddressFromPublicKey(result.secp256k1PublicKey);
+    this.cacheAddressesFromPublicKeys(
+      result.secp256k1PublicKey,
+      result.ed25519PublicKey,
+    );
 
     const { signature, ...publicKeyData } = result;
     return signature
@@ -213,6 +244,7 @@ export class OWSSigner {
         terminalEvent: credentialId
           ? "RecoverySessionCleared"
           : "RecoverySessionStarted",
+        onIntermediate: (_event, data) => this.onKeyDerived(data),
       },
     );
   }

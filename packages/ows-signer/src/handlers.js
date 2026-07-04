@@ -11,6 +11,8 @@ import {
   hkdfExpand,
   normalizePrfOutputToArrayBuffer,
 } from "./crypto/prf.js";
+import { getPublicKeyAsync as edGetPublicKeyAsync } from "./crypto/vendor/noble-ed25519.js";
+import { getPublicKey as secpGetPublicKey } from "./crypto/vendor/noble-secp256k1.js";
 import { debugLog, describePrfExtensionResults } from "./debug.js";
 import { decryptPrivateKey, encryptPrivateKey } from "./crypto/recovery.js";
 import { signWithScheme, validateSignPayload } from "./crypto/sign.js";
@@ -349,6 +351,32 @@ async function handleCreateRecoveryData(params, correlationId, targetOrigin) {
     minPasswordLength,
   );
 
+  // Recovery session already holds the secp256k1 scalar — no WebAuthn needed.
+  if (hasRecoverySession()) {
+    const cached = getRecoveryPrivateKey();
+    if (!cached) throw new Error("recoverySessionEmpty");
+    const secp256k1PublicKey = secpGetPublicKey(cached, false);
+    const ed25519Seed = await ed25519SeedFromSecp256k1Scalar(cached);
+    const ed25519PublicKey = await edGetPublicKeyAsync(ed25519Seed);
+    emitKeyDerived(
+      targetOrigin,
+      correlationId,
+      secp256k1PublicKey,
+      ed25519PublicKey,
+    );
+    const encryptedPrivateKey = await encryptPrivateKey(cached, passphrase);
+    zeroize(ed25519Seed);
+    clearUi();
+    emitEvent(
+      window.parent,
+      targetOrigin,
+      "RecoveryDataCreated",
+      correlationId,
+      { encryptedPrivateKey },
+    );
+    return;
+  }
+
   await withCeremony(async () => {
     const credential = await getPasskeyAssertion(undefined, credentialId);
     const keys = await deriveKeysFromCredential(credential);
@@ -397,6 +425,20 @@ async function handleRecoverKey(params, correlationId, targetOrigin) {
   const passphrase = await promptPassphrase(passwordText, buttonText, 1);
   const privateKey = await decryptPrivateKey(envelope, passphrase);
   setRecoveryPrivateKey(privateKey);
+
+  // Emit public keys so OWSSigner can cache addresses (uncompressed secp256k1 —
+  // viem publicKeyToAddress requires 0x04 ‖ X ‖ Y).
+  const secp256k1PublicKey = secpGetPublicKey(privateKey, false);
+  const ed25519Seed = await ed25519SeedFromSecp256k1Scalar(privateKey);
+  const ed25519PublicKey = await edGetPublicKeyAsync(ed25519Seed);
+  emitKeyDerived(
+    targetOrigin,
+    correlationId,
+    secp256k1PublicKey,
+    ed25519PublicKey,
+  );
+  zeroize(ed25519Seed);
+
   showPrivateKey(privateKey);
 
   if (credentialId) {

@@ -153,17 +153,18 @@ describe("OWSSigner", () => {
     signer.destroy();
   });
 
-  it("caches EVM address from getPublicKey", async () => {
+  it("caches EVM and Solana addresses from getPublicKey", async () => {
     const { container } = setupBrowserMocks();
     const signer = await OWSSigner.create(container, SIGNER_URL, {
       credentialId: "cred-1",
     });
 
-    const address = await signer.evm.getAccountAddress();
-    assert.match(address, /^0x[0-9a-f]{40}$/i);
+    const evm = await signer.evm.getAccountAddress();
+    assert.match(evm, /^0x[0-9a-f]{40}$/i);
+    assert.equal(signer.getCachedAddress(), evm);
 
-    const cached = signer.getCachedAddress();
-    assert.equal(cached, address);
+    const solana = await signer.solana.getAccountAddress();
+    assert.equal(signer.getCachedSolanaAddress(), solana);
 
     signer.destroy();
   });

@@ -101,7 +101,8 @@ export async function deriveKeysFromCredential(credential) {
     PRF_LABEL_SECP256K1,
   );
   const ed25519Seed = await deriveEd25519SeedFromPrf(prfBuffer);
-  const secp256k1PublicKey = secpGetPublicKey(secp256k1PrivateKey, true);
+  // Uncompressed (0x04 ‖ X ‖ Y) — required by viem `publicKeyToAddress`.
+  const secp256k1PublicKey = secpGetPublicKey(secp256k1PrivateKey, false);
   const ed25519PublicKey = await edGetPublicKeyAsync(ed25519Seed);
 
   return { secp256k1PrivateKey, secp256k1PublicKey, ed25519PublicKey };

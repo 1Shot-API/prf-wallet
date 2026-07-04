@@ -42,6 +42,26 @@
           "target": "src/ows/create-backup/dialog.ts"
         }
       ]
+    },
+    {
+      "name": "recover-backup",
+      "type": "registry:component",
+      "title": "Restore encrypted wallet backup",
+      "description": "Vanilla dialog that mounts the signer iframe for passphrase entry and calls recoverKey with an app-supplied backup blob.",
+      "registryDependencies": [],
+      "dependencies": ["@1shotapi/ows-branding-core"],
+      "files": [
+        {
+          "path": "items/recover-backup/vanilla/install.ts",
+          "type": "registry:file",
+          "target": "src/ows/recover-backup/install.ts"
+        },
+        {
+          "path": "items/recover-backup/vanilla/dialog.ts",
+          "type": "registry:file",
+          "target": "src/ows/recover-backup/dialog.ts"
+        }
+      ]
     }
   ]
 }

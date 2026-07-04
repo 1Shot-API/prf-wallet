@@ -12,9 +12,14 @@ export class SolanaSigner {
   async getAccountAddress(
     options?: SolanaCallOptions,
   ): Promise<SolanaAccountAddress> {
+    const cached = this.signer.getCachedSolanaAddress();
+    if (cached) return cached;
+
     const publicKey = await this.signer.getPublicKey({
       credentialId: options?.credentialId ?? this.signer.getCredentialId(),
     });
-    return addressFromEd25519PublicKey(publicKey.ed25519PublicKey);
+    const address = addressFromEd25519PublicKey(publicKey.ed25519PublicKey);
+    this.signer.setCachedSolanaAddress(address);
+    return address;
   }
 }

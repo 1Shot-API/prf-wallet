@@ -10,6 +10,8 @@ export type CreateBackupDialogOptions = {
   signerContainer: HTMLElement;
   /** Minimum passphrase length shown in copy and passed to the signer. */
   minPasswordLength?: number;
+  /** App-owned hook when a backup blob is created (e.g. persist to localStorage). */
+  onBackupCreated?: (result: CreateBackupResult) => void | Promise<void>;
   /** Override result presentation (default: in-dialog copy UI). */
   showResult?: (result: CreateBackupResult) => Promise<void>;
 };
@@ -136,6 +138,9 @@ export async function runCreateBackupFlow(
         signerSlot.hidden = true;
         body.hidden = true;
         cancelButton.remove();
+
+        await options.onBackupCreated?.(result);
+        if (aborted || settled) return;
 
         if (options.showResult) {
           overlay.remove();

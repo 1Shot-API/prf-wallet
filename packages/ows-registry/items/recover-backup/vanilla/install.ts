@@ -1,21 +1,20 @@
-import type {
-  BrandingContext,
-  BrandingModule,
-  CreateBackupResult,
-} from "@1shotapi/ows-branding-core";
-import { runCreateBackupFlow } from "./dialog";
+import type { BrandingContext, BrandingModule } from "@1shotapi/ows-branding-core";
+import { runRestoreBackupFlow } from "./dialog";
 
-export type CreateBackupModuleOptions = {
+export type RestoreBackupModuleOptions = {
   /** Override dialog mount target. */
   container?: HTMLElement;
-  /** Button that starts the create-backup flow (element or CSS selector). */
+  /** Button that starts the restore-backup flow (element or CSS selector). */
   triggerButton: HTMLElement | string;
   /** Home container for the signer iframe (element or CSS selector). */
   signerContainer: HTMLElement | string;
-  /** Minimum passphrase length (default 12). */
-  minPasswordLength?: number;
-  /** App-owned hook when a backup blob is created (e.g. persist to localStorage). */
-  onBackupCreated?: (result: CreateBackupResult) => void | Promise<void>;
+  /**
+   * Load the encrypted backup blob from app-owned storage.
+   * Return `null` / `undefined` when no backup is available.
+   */
+  getEncryptedPrivateKey: () => string | null | undefined;
+  /** Called after `recoverKey` succeeds (e.g. refresh addresses). */
+  onRestored?: () => void | Promise<void>;
 };
 
 /** Document-delegated listeners keyed by selector (replaced on reinstall). */
@@ -27,16 +26,16 @@ const elementClickListeners = new WeakMap<
   (event: Event) => void
 >();
 
-export function createCreateBackupModule(
-  options: CreateBackupModuleOptions,
+export function createRestoreBackupModule(
+  options: RestoreBackupModuleOptions,
 ): BrandingModule {
   return {
-    name: "create-backup",
+    name: "recover-backup",
     phase: "pre-start",
     install(ctx: BrandingContext): void {
       const handleClick = (): void => {
-        void runBackupClick(ctx, options).catch((error: unknown) => {
-          console.error("[create-backup] failed", error);
+        void runRestoreClick(ctx, options).catch((error: unknown) => {
+          console.error("[recover-backup] failed", error);
         });
       };
 
@@ -78,18 +77,20 @@ function bindTriggerButton(
   document.addEventListener("click", onDocumentClick);
 }
 
-async function runBackupClick(
+async function runRestoreClick(
   ctx: BrandingContext,
-  options: CreateBackupModuleOptions,
+  options: RestoreBackupModuleOptions,
 ): Promise<void> {
+  const encryptedPrivateKey = options.getEncryptedPrivateKey();
+  if (!encryptedPrivateKey) {
+    window.alert("No backup found. Create a backup first.");
+    return;
+  }
+
   const signerContainer = resolveElement(
     options.signerContainer,
     "signerContainer",
   );
-
-  if (ctx.ensureReady) {
-    await ctx.ensureReady();
-  }
 
   const display = await ctx.wallet.requestDisplay({
     width: 480,
@@ -97,17 +98,14 @@ async function runBackupClick(
   });
 
   try {
-    const hostShowResult = ctx.ui?.showCreateBackupResult;
-
-    await runCreateBackupFlow(ctx.signer, {
+    const restored = await runRestoreBackupFlow(ctx.signer, {
       container: options.container,
       signerContainer,
-      minPasswordLength: options.minPasswordLength,
-      onBackupCreated: options.onBackupCreated,
-      showResult: hostShowResult
-        ? (result: CreateBackupResult) => hostShowResult(result)
-        : undefined,
+      encryptedPrivateKey,
     });
+    if (restored) {
+      await options.onRestored?.();
+    }
   } finally {
     await display.hide();
   }
@@ -122,7 +120,7 @@ function resolveElement(
   }
   const el = document.querySelector(target);
   if (!(el instanceof HTMLElement)) {
-    throw new Error(`create-backup: ${label} not found (${target})`);
+    throw new Error(`recover-backup: ${label} not found (${target})`);
   }
   return el;
 }

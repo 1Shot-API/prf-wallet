@@ -4,9 +4,12 @@ import { installBrandingModules } from "@1shotapi/ows-branding-core";
 import { EVMAccountAddress, SolanaAccountAddress } from "@1shotapi/ows-types";
 import { personalSignApprovalModule } from "./ows/approval-dialog/install";
 import { createCreateBackupModule } from "./ows/create-backup/install";
+import { createRestoreBackupModule } from "./ows/recover-backup/install";
 import {
   isWalletCreated,
+  loadBackup,
   loadCredentialId,
+  saveBackup,
   saveWalletCreated,
 } from "./storage";
 
@@ -16,10 +19,14 @@ import {
 const walletStatusEl = document.getElementById("wallet-status")!;
 const evmAddressEl = document.getElementById("evm-address")!;
 const solanaAddressEl = document.getElementById("solana-address")!;
+const createBackupButton = document.getElementById("create-backup");
+const restoreBackupButton = document.getElementById("restore-backup");
 
-function setWalletStatus(created: boolean): void {
-  walletStatusEl.textContent = created ? "Created" : "Not created";
-}
+/**
+ * Whether keys are available this tab. How they were obtained (passkey vs
+ * recovery) stays inside the Signing Layer — branding only tracks unlocked.
+ */
+let unlocked = false;
 
 function setAddresses(
   evm: EVMAccountAddress,
@@ -29,11 +36,29 @@ function setAddresses(
   solanaAddressEl.textContent = solana;
 }
 
+function refreshStatusUi(): void {
+  if (unlocked) {
+    walletStatusEl.textContent = "Unlocked";
+  } else if (isWalletCreated()) {
+    walletStatusEl.textContent = "Created (locked)";
+  } else {
+    walletStatusEl.textContent = "Not created";
+  }
+
+  if (createBackupButton instanceof HTMLElement) {
+    createBackupButton.hidden = !unlocked;
+  }
+  if (restoreBackupButton instanceof HTMLElement) {
+    restoreBackupButton.hidden = unlocked;
+  }
+}
+
 async function main(): Promise<void> {
   const signerUrl = new URL("/signer/", window.location.origin).href;
-  const created = isWalletCreated();
 
-  setWalletStatus(created);
+  // Do not auto-prompt WebAuthn on load — show locked/created status only.
+  refreshStatusUi();
+  setAddresses(EVMAccountAddress("0x0"), SolanaAccountAddress("—"));
 
   const signer = await OWSSigner.create(
     document.getElementById("signer-container")!,
@@ -44,21 +69,31 @@ async function main(): Promise<void> {
     },
   );
 
+  /**
+   * Addresses come only from the signer SDK. Passkey unlock and recoverKey both
+   * emit KeyDerived, which warms the address cache — getAccountAddress() is
+   * identical either way.
+   */
   async function refreshAddresses(): Promise<void> {
-    if (!isWalletCreated()) {
-      setAddresses(EVMAccountAddress("0x0"), SolanaAccountAddress("—"));
-      return;
-    }
-
-    const [evm, solana] = await Promise.all([
-      signer.evm.getAccountAddress(),
-      signer.solana.getAccountAddress(),
-    ]);
+    // Sequential: a cold EVM call runs one getPublicKey ceremony and caches both.
+    const evm = await signer.evm.getAccountAddress();
+    const solana = await signer.solana.getAccountAddress();
     setAddresses(evm, solana);
   }
 
+  /** Unlock existing passkey wallet or create one. Does not run on page load. */
   async function ensureWalletReady(): Promise<void> {
+    if (unlocked) {
+      return;
+    }
+
     if (isWalletCreated()) {
+      console.info(
+        "[ows-example-general-wallet] unlocking existing passkey wallet",
+      );
+      await refreshAddresses();
+      unlocked = true;
+      refreshStatusUi();
       return;
     }
 
@@ -76,8 +111,9 @@ async function main(): Promise<void> {
     }
 
     saveWalletCreated(credentialId);
-    setWalletStatus(true);
     await refreshAddresses();
+    unlocked = true;
+    refreshStatusUi();
   }
 
   const wallet = OWSWallet.prepare({ debug: true });
@@ -93,6 +129,19 @@ async function main(): Promise<void> {
       createCreateBackupModule({
         triggerButton: "#create-backup",
         signerContainer: "#signer-container",
+        onBackupCreated: (result) => {
+          saveBackup(result.encryptedPrivateKey);
+        },
+      }),
+      createRestoreBackupModule({
+        triggerButton: "#restore-backup",
+        signerContainer: "#signer-container",
+        getEncryptedPrivateKey: () => loadBackup(),
+        onRestored: async () => {
+          unlocked = true;
+          refreshStatusUi();
+          await refreshAddresses();
+        },
       }),
     ],
   );
@@ -103,7 +152,8 @@ async function main(): Promise<void> {
   });
 
   wallet.registerEip1193("eth_accounts", async () => {
-    if (!isWalletCreated()) {
+    // Silent: do not prompt WebAuthn when locked.
+    if (!unlocked) {
       return [];
     }
     return [await signer.evm.getAccountAddress()];
@@ -116,15 +166,6 @@ async function main(): Promise<void> {
     document.getElementById("wallet-close")?.addEventListener("click", () => {
       void wallet.requestHide();
     });
-  }
-
-  if (created) {
-    try {
-      await refreshAddresses();
-    } catch (error) {
-      console.warn("[ows-example-general-wallet] could not load addresses", error);
-      setAddresses(EVMAccountAddress("0x0"), SolanaAccountAddress("—"));
-    }
   }
 
   console.info("[ows-example-general-wallet] ready");
