@@ -25,16 +25,31 @@ const transactionObjectSchema = z
     accessList: z.array(z.unknown()).optional(),
   });
 
-const typedDataSchema = z
-  .object({
-    types: z.record(
-      z.string(),
-      z.array(z.object({ name: z.string(), type: z.string() })),
-    ),
-    primaryType: z.string(),
-    domain: z.record(z.string(), z.unknown()),
-    message: z.record(z.string(), z.unknown()),
-  });
+const typedDataObjectSchema = z.object({
+  types: z.record(
+    z.string(),
+    z.array(z.object({ name: z.string(), type: z.string() })),
+  ),
+  primaryType: z.string(),
+  domain: z.record(z.string(), z.unknown()),
+  message: z.record(z.string(), z.unknown()),
+});
+
+/** Object or JSON string (common for eth_signTypedData_v3 / _v4). */
+const typedDataSchema = z.union([
+  typedDataObjectSchema,
+  z.string().transform((value, ctx) => {
+    try {
+      return typedDataObjectSchema.parse(JSON.parse(value));
+    } catch {
+      ctx.addIssue({
+        code: "custom",
+        message: "Invalid EIP-712 typed data JSON",
+      });
+      return z.NEVER;
+    }
+  }),
+]);
 
 const switchChainParamsSchema = z.object({
   chainId: hexSchema,

@@ -6,7 +6,7 @@ import {
   EVMChainId,
   SolanaAccountAddress,
 } from "@1shotapi/ows-types";
-import { personalSignApprovalModule } from "./ows/approval-dialog/install";
+import { approvalDialogModule } from "./ows/approval-dialog/install";
 import { createCreateBackupModule } from "./ows/create-backup/install";
 import { createRestoreBackupModule } from "./ows/recover-backup/install";
 import { createRpcProviderModule } from "./ows/rpc-provider/install";
@@ -184,7 +184,7 @@ async function main(): Promise<void> {
     },
     [
       rpcProvider,
-      personalSignApprovalModule,
+      approvalDialogModule,
       createCreateBackupModule({
         triggerButton: "#create-backup",
         signerContainer: "#signer-container",

@@ -1,4 +1,7 @@
-import type { PersonalSignApprovalRequest } from "@1shotapi/ows-branding-core";
+import type {
+  PersonalSignApprovalRequest,
+  SignTypedDataApprovalRequest,
+} from "@1shotapi/ows-branding-core";
 
 export type ApprovalDialogOptions = {
   /** Element to mount the dialog into (default `document.body`). */
@@ -15,12 +18,51 @@ export function requestPersonalSignApproval(
   request: PersonalSignApprovalRequest,
   options?: ApprovalDialogOptions,
 ): Promise<boolean> {
-  if (!stylesInjected) {
-    injectApprovalDialogStyles();
-    stylesInjected = true;
-  }
+  ensureStyles();
 
-  const container = options?.container ?? document.body;
+  return openApprovalDialog({
+    title: "Sign message",
+    address: request.address,
+    container: options?.container,
+    body: [
+      labeledBlock("Message", formatMessageForDisplay(request.message)),
+    ],
+  });
+}
+
+/**
+ * Prompt the user to approve an EIP-712 eth_signTypedData request.
+ * Shows primary type, domain, and message as structured JSON.
+ */
+export function requestSignTypedDataApproval(
+  request: SignTypedDataApprovalRequest,
+  options?: ApprovalDialogOptions,
+): Promise<boolean> {
+  ensureStyles();
+
+  const { typedData } = request;
+
+  return openApprovalDialog({
+    title: "Sign typed data",
+    address: request.address,
+    container: options?.container,
+    body: [
+      labeledBlock("Primary type", typedData.primaryType),
+      labeledBlock("Domain", formatJson(typedData.domain)),
+      labeledBlock("Message", formatJson(typedData.message)),
+    ],
+  });
+}
+
+type ApprovalDialogBody = {
+  title: string;
+  address: string;
+  container?: HTMLElement;
+  body: HTMLElement[];
+};
+
+function openApprovalDialog(spec: ApprovalDialogBody): Promise<boolean> {
+  const container = spec.container ?? document.body;
 
   return new Promise((resolve) => {
     const overlay = document.createElement("div");
@@ -36,7 +78,7 @@ export function requestPersonalSignApproval(
     const title = document.createElement("h2");
     title.id = "ows-approval-title";
     title.className = "ows-approval-title";
-    title.textContent = "Sign message";
+    title.textContent = spec.title;
 
     const addressLabel = document.createElement("p");
     addressLabel.className = "ows-approval-label";
@@ -44,15 +86,7 @@ export function requestPersonalSignApproval(
 
     const addressValue = document.createElement("p");
     addressValue.className = "ows-approval-address";
-    addressValue.textContent = request.address;
-
-    const messageLabel = document.createElement("p");
-    messageLabel.className = "ows-approval-label";
-    messageLabel.textContent = "Message";
-
-    const messageValue = document.createElement("pre");
-    messageValue.className = "ows-approval-message";
-    messageValue.textContent = formatMessageForDisplay(request.message);
+    addressValue.textContent = spec.address;
 
     const actions = document.createElement("div");
     actions.className = "ows-approval-actions";
@@ -85,19 +119,41 @@ export function requestPersonalSignApproval(
     });
 
     actions.append(rejectButton, signButton);
-    dialog.append(
-      title,
-      addressLabel,
-      addressValue,
-      messageLabel,
-      messageValue,
-      actions,
-    );
+    dialog.append(title, addressLabel, addressValue, ...spec.body, actions);
     overlay.append(dialog);
     container.append(overlay);
 
     signButton.focus();
   });
+}
+
+function labeledBlock(label: string, content: string): HTMLElement {
+  const wrap = document.createElement("div");
+  wrap.className = "ows-approval-block";
+
+  const labelEl = document.createElement("p");
+  labelEl.className = "ows-approval-label";
+  labelEl.textContent = label;
+
+  const valueEl = document.createElement("pre");
+  valueEl.className = "ows-approval-message";
+  valueEl.textContent = content;
+
+  wrap.append(labelEl, valueEl);
+  return wrap;
+}
+
+function formatJson(value: unknown): string {
+  try {
+    return JSON.stringify(value, jsonReplacer, 2);
+  } catch {
+    return String(value);
+  }
+}
+
+/** Render bigint as decimal string for readable typed-data previews. */
+function jsonReplacer(_key: string, value: unknown): unknown {
+  return typeof value === "bigint" ? value.toString() : value;
 }
 
 function formatMessageForDisplay(message: string): string {
@@ -134,6 +190,13 @@ function isMostlyPrintable(text: string): boolean {
   return printable / text.length >= 0.85;
 }
 
+function ensureStyles(): void {
+  if (!stylesInjected) {
+    injectApprovalDialogStyles();
+    stylesInjected = true;
+  }
+}
+
 /** @internal */
 export function injectApprovalDialogStyles(): void {
   if (document.getElementById("ows-approval-dialog-styles")) {
@@ -155,7 +218,7 @@ export function injectApprovalDialogStyles(): void {
     }
     .ows-approval-dialog {
       width: min(28rem, 100%);
-      max-height: min(80vh, 32rem);
+      max-height: min(80vh, 36rem);
       overflow: auto;
       padding: 1.25rem;
       border-radius: 10px;
@@ -170,6 +233,9 @@ export function injectApprovalDialogStyles(): void {
       font-size: 1.125rem;
       font-weight: 600;
     }
+    .ows-approval-block {
+      margin: 0 0 0.75rem;
+    }
     .ows-approval-label {
       margin: 0 0 0.25rem;
       font-size: 0.8rem;
@@ -183,7 +249,7 @@ export function injectApprovalDialogStyles(): void {
       word-break: break-all;
     }
     .ows-approval-message {
-      margin: 0 0 1rem;
+      margin: 0;
       padding: 0.75rem;
       border: 1px solid color-mix(in srgb, CanvasText 20%, transparent);
       border-radius: 6px;
@@ -191,11 +257,14 @@ export function injectApprovalDialogStyles(): void {
       font-size: 0.85rem;
       white-space: pre-wrap;
       word-break: break-word;
+      max-height: 12rem;
+      overflow: auto;
     }
     .ows-approval-actions {
       display: flex;
       gap: 0.5rem;
       justify-content: flex-end;
+      margin-top: 0.25rem;
     }
     .ows-approval-button {
       padding: 0.5rem 1rem;

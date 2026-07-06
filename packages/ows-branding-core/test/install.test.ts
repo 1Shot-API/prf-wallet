@@ -20,6 +20,7 @@ function createTestContext(
     signer: {
       evm: {
         signMessage: async () => EVMSignatureHex("0x"),
+        signTypedData: async () => EVMSignatureHex("0x"),
       },
       createRecoveryData: async () => ({ encryptedPrivateKey: "ows1:0x" }),
       recoverKey: async () => {},

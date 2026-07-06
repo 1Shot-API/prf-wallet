@@ -22,6 +22,10 @@ export type EIP1193Requests = {
     params: readonly [message: string, address: EVMAccountAddress];
     result: EVMSignatureHex;
   };
+  eth_signTypedData_v4: {
+    params: readonly [address: EVMAccountAddress, typedData: unknown];
+    result: EVMSignatureHex;
+  };
   wallet_switchEthereumChain: {
     params: readonly [{ chainId: EVMChainId }];
     result: null;

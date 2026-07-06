@@ -7,5 +7,7 @@ export type {
   BrandingWalletHost,
   CreateBackupResult,
   PersonalSignApprovalRequest,
+  SignTypedDataApprovalRequest,
+  SignTypedDataPayload,
   UiHost,
 } from "./types.js";

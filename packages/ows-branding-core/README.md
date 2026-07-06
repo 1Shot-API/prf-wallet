@@ -9,12 +9,12 @@ Registry UI blocks (copied into your app via `@1shotapi/ows-registry`) implement
 ```typescript
 import { installBrandingModules } from "@1shotapi/ows-branding-core";
 import { OWSWallet } from "@1shotapi/ows-wallet-utils";
-import { personalSignApprovalModule } from "./ows/approval-dialog/install.js";
+import { approvalDialogModule } from "./ows/approval-dialog/install.js";
 
 const wallet = OWSWallet.prepare();
 const ctx = { wallet, signer, ensureReady: ensureWalletReady };
 
-await installBrandingModules(ctx, [personalSignApprovalModule]);
+await installBrandingModules(ctx, [approvalDialogModule]);
 wallet.registerEip1193("eth_requestAccounts", ...);
 await wallet.start();
 ```

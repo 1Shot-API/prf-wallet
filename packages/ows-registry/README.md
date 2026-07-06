@@ -6,7 +6,7 @@ ShadCN-style **copy-paste modules** for Branding Layer apps. Source of truth liv
 
 | Item | Target | Description |
 |------|--------|-------------|
-| `approval-dialog` | `vanilla` | EIP-191 `personal_sign` approval UI |
+| `approval-dialog` | `vanilla` | EIP-191 `personal_sign` + EIP-712 typed-data approval UI |
 
 ## Sync into an example
 

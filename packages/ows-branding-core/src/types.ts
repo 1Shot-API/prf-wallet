@@ -10,6 +10,19 @@ export type PersonalSignApprovalRequest = {
   address: EVMAccountAddress;
 };
 
+/** EIP-712 typed data payload (eth_signTypedData / _v3 / _v4). */
+export type SignTypedDataPayload = {
+  types: Record<string, Array<{ name: string; type: string }>>;
+  primaryType: string;
+  domain: Record<string, unknown>;
+  message: Record<string, unknown>;
+};
+
+export type SignTypedDataApprovalRequest = {
+  address: EVMAccountAddress;
+  typedData: SignTypedDataPayload;
+};
+
 export type CreateBackupResult = {
   encryptedPrivateKey: string;
 };
@@ -18,6 +31,9 @@ export type CreateBackupResult = {
 export type UiHost = {
   requestPersonalSignApproval(
     request: PersonalSignApprovalRequest,
+  ): Promise<boolean>;
+  requestSignTypedDataApproval(
+    request: SignTypedDataApprovalRequest,
   ): Promise<boolean>;
   /** Present the encrypted recovery blob after create-backup succeeds. */
   showCreateBackupResult(result: CreateBackupResult): Promise<void>;
@@ -31,7 +47,7 @@ export type BrandingWalletHost = Pick<
 
 /** Signer surface registry modules may call (subset of `OWSSigner`). */
 export type BrandingSignerHost = {
-  evm: Pick<OWSSigner["evm"], "signMessage">;
+  evm: Pick<OWSSigner["evm"], "signMessage" | "signTypedData">;
   createRecoveryData: OWSSigner["createRecoveryData"];
   recoverKey: OWSSigner["recoverKey"];
 };

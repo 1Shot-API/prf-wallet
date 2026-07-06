@@ -6,8 +6,8 @@
     {
       "name": "approval-dialog",
       "type": "registry:component",
-      "title": "Personal sign approval dialog",
-      "description": "Vanilla modal for EIP-191 personal_sign — shows message and Sign / Reject before calling the signer.",
+      "title": "Signing approval dialog",
+      "description": "Vanilla modals for EIP-191 personal_sign and EIP-712 eth_signTypedData (_v3/_v4) — shows request details and Sign / Reject before calling the signer.",
       "registryDependencies": [],
       "dependencies": ["@1shotapi/ows-branding-core"],
       "files": [
