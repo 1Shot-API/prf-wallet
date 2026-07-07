@@ -12,6 +12,8 @@
     "test": "npm run test --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present",
     "dev:general-wallet": "npm run dev -w @1shotapi/ows-example-general-wallet",
+    "dev:credential-issuer": "npm run dev -w @1shotapi/ows-example-credential-issuer",
+    "dev:credential-verifier": "npm run dev -w @1shotapi/ows-example-credential-verifier",
     "changeset": "changeset",
     "version-packages": "changeset version",
     "release": "npm run build && changeset publish"

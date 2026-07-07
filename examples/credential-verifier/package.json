@@ -1,0 +1,29 @@
+{
+  "name": "@1shotapi/ows-example-credential-verifier",
+  "version": "0.0.0",
+  "private": true,
+  "description": "OWS mock credential verifier host demo — triggers proxy.credentials.present",
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "build": "webpack --mode production --config webpack.config.cjs",
+    "clean": "node scripts/clean.mjs",
+    "lint": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@1shotapi/ows-credentials": "*",
+    "@1shotapi/ows-provider": "*",
+    "@1shotapi/ows-types": "*"
+  },
+  "devDependencies": {
+    "css-loader": "^7.1.2",
+    "dotenv": "^16.4.7",
+    "html-webpack-plugin": "^5.6.3",
+    "style-loader": "^4.0.0",
+    "ts-loader": "^9.5.2",
+    "typescript": "~5.8.0",
+    "webpack": "^5.98.0",
+    "webpack-cli": "^6.0.1",
+    "webpack-dev-server": "^5.2.1"
+  }
+}

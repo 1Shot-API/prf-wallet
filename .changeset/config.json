@@ -9,6 +9,8 @@
   "updateInternalDependencies": "patch",
   "ignore": [
     "@1shotapi/ows-example-general-wallet",
-    "@1shotapi/ows-example-host"
+    "@1shotapi/ows-example-host",
+    "@1shotapi/ows-example-credential-issuer",
+    "@1shotapi/ows-example-credential-verifier"
   ]
 }

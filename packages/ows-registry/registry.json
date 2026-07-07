@@ -77,6 +77,45 @@
           "target": "src/ows/rpc-provider/install.ts"
         }
       ]
+    },
+    {
+      "name": "credentials-provider",
+      "type": "registry:component",
+      "title": "Verifiable credentials provider",
+      "description": "Headless module that registers wallet.credentials handlers for OID4VCI/OID4VP-style flows (mock clients by default).",
+      "registryDependencies": ["credential-consent"],
+      "dependencies": [
+        "@1shotapi/ows-branding-core",
+        "@1shotapi/ows-credentials",
+        "@1shotapi/ows-types"
+      ],
+      "files": [
+        {
+          "path": "items/credentials-provider/vanilla/install.ts",
+          "type": "registry:file",
+          "target": "src/ows/credentials-provider/install.ts"
+        }
+      ]
+    },
+    {
+      "name": "credential-consent",
+      "type": "registry:component",
+      "title": "Credential presentation consent",
+      "description": "Vanilla dialog for OID4VP-style presentation approval before disclosing claims.",
+      "registryDependencies": [],
+      "dependencies": ["@1shotapi/ows-branding-core"],
+      "files": [
+        {
+          "path": "items/credential-consent/vanilla/install.ts",
+          "type": "registry:file",
+          "target": "src/ows/credential-consent/install.ts"
+        },
+        {
+          "path": "items/credential-consent/vanilla/dialog.ts",
+          "type": "registry:file",
+          "target": "src/ows/credential-consent/dialog.ts"
+        }
+      ]
     }
   ]
 }

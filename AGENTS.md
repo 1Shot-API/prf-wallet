@@ -15,7 +15,9 @@ packages/ows-types            Shared types and errors across OWS SDKs
 packages/ows-wallet-utils     Host Layer ↔ Branding Layer (postmate wrappers)
 packages/ows-branding-core    Branding module contracts + install helpers
 packages/ows-registry         Copy-paste Branding Layer modules (not published)
+packages/ows-credentials      Verifiable credentials extension (types, mocks, OID4VCI/OID4VP abstractions)
 packages/ows-onchain          EIP-8244 deploy pipeline for ows-signer
+spec/credentials/             OWS Credentials Extension normative docs
 ```
 
 ## Hard rules
@@ -58,6 +60,8 @@ Do not introduce parallel branded types in consumer packages — add or extend p
 npm install && npm run build && npm test
 npm run dev -w @1shotapi/ows-example-general-wallet
 npm run dev -w @1shotapi/ows-example-host
+npm run dev -w @1shotapi/ows-example-credential-issuer
+npm run dev -w @1shotapi/ows-example-credential-verifier
 ```
 
 ## Status

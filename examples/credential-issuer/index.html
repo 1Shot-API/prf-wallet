@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OWS — Mock Credential Issuer</title>
+</head>
+<body>
+  <header class="site-header">
+    <h1>Mock Credential Issuer</h1>
+    <p class="subtitle">Host demo — OID4VCI-style offer via <code>proxy.credentials.acceptOffer</code></p>
+  </header>
+
+  <main class="content">
+    <section class="panel">
+      <p id="offer-uri" class="mono"></p>
+      <div class="actions">
+        <button type="button" id="issue-button">Send offer to wallet</button>
+        <button type="button" id="show-wallet-button">Show wallet</button>
+      </div>
+      <p id="status" class="status" aria-live="polite"></p>
+      <pre id="result-output" class="output" hidden></pre>
+    </section>
+  </main>
+
+  <div id="wallet-container" class="wallet-container" aria-hidden="true"></div>
+</body>
+</html>

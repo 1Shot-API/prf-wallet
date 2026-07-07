@@ -6,6 +6,7 @@ export type {
   BrandingSignerHost,
   BrandingWalletHost,
   CreateBackupResult,
+  CredentialPresentationApprovalRequest,
   PersonalSignApprovalRequest,
   SignTypedDataApprovalRequest,
   SignTypedDataPayload,

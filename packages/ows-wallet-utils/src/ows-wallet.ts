@@ -17,6 +17,8 @@ import {
   type DisplaySession,
 } from "./display/child-client.js";
 import { debugLog, setOwsWalletDebugFromOptions } from "./debug.js";
+import { CredentialWalletRegistrar } from "./credentials/wallet-registrar.js";
+import type { CredentialHandlers } from "@1shotapi/ows-credentials";
 
 export type { DisplaySession, RequestDisplayParams };
 
@@ -46,6 +48,7 @@ export class OWSWallet {
   private hideReadyHandler: ((data: unknown) => void) | null = null;
   private readonly eip1193Handlers = new Map<string, Eip1193Handler>();
   private readonly customHandlers = new Map<string, RpcHandlerRegistration>();
+  private readonly credentialRegistrar = new CredentialWalletRegistrar();
   private handshakeStarted = false;
 
   private constructor(options?: OWSWalletOptions) {
@@ -72,6 +75,14 @@ export class OWSWallet {
     return new OWSWallet(options);
   }
 
+  /** Namespaced verifiable credential handlers (not generic `registerRpc`). */
+  readonly credentials = {
+    register: (handlers: CredentialHandlers): void => {
+      this.assertNotConnected();
+      this.credentialRegistrar.register(handlers);
+    },
+  };
+
   static async create(options?: OWSWalletOptions): Promise<OWSWallet> {
     return OWSWallet.prepare(options).start();
   }
@@ -86,6 +97,7 @@ export class OWSWallet {
     debugLog("starting Postmate child handshake", {
       eip1193Handlers: [...this.eip1193Handlers.keys()],
       customRpc: [...this.customHandlers.keys()],
+      credentialRpc: this.credentialRegistrar.getWireMethods(),
       modelMethods: Object.keys(model).length,
     });
 
@@ -204,7 +216,45 @@ export class OWSWallet {
       }
     }
 
+    for (const wireKey of this.credentialRegistrar.getWireMethods()) {
+      if (!(wireKey in model)) {
+        model[wireKey] = async (data) => {
+          await this.dispatchCredential(wireKey, data);
+        };
+      }
+    }
+
     return model;
+  }
+
+  private async dispatchCredential(wireKey: string, data: unknown): Promise<void> {
+    debugLog("Credential RPC model invoked", { wireKey, raw: data });
+
+    const childApi =
+      this.childApi ?? (await this.handshakePromise);
+    if (!childApi) {
+      debugLog("Credential RPC dropped — child API not available", { wireKey });
+      return;
+    }
+
+    const registration = this.credentialRegistrar.getRegistration(wireKey);
+    if (!registration) {
+      await handleRpcModelCall(
+        childApi,
+        data,
+        {
+          handler: async () => {
+            throw new OwsUnimplementedError(
+              `Credential method not registered: ${wireKey}`,
+            );
+          },
+        },
+        wireKey,
+      );
+      return;
+    }
+
+    await handleRpcModelCall(childApi, data, registration, wireKey);
   }
 
   private async dispatch(

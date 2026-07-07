@@ -10,6 +10,7 @@ function createTestContext(
   return {
     wallet: {
       registerEip1193: () => {},
+      credentials: { register: () => {} },
       requestDisplay: async () => ({
         displayId: DisplayRequestId("test"),
         release: () => {},

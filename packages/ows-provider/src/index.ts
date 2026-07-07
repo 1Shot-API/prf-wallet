@@ -11,6 +11,20 @@ export {
   type KnownEIP1193Method,
 } from "./eip1193/provider.js";
 
+export { CredentialHostClient } from "./credentials/host-client.js";
+
+export type {
+  OpenWalletCredentialProvider,
+  CredentialOfferInput,
+  CredentialReceipt,
+  PresentationRequestInput,
+  PresentationResult,
+  CredentialFilter,
+  CredentialSummary,
+  CredentialPresentationApprovalRequest,
+  CREDENTIAL_WIRE_METHODS,
+} from "@1shotapi/ows-credentials";
+
 export {
   OwsRpcError,
   OwsUnimplementedError,
