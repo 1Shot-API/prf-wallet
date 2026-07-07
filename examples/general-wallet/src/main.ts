@@ -38,9 +38,9 @@ const DEMO_CHAINS: ReadonlyArray<{
     rpcUrl: "https://sepolia.base.org",
   },
   {
-    chainId: EVMChainId("0x4ce152"), // 5042002
+    chainId: EVMChainId("0x4cef52"), // 5042002
     label: "Arc Testnet",
-    rpcUrl: "https://sepolia.base.org",
+    rpcUrl: "https://rpc.testnet.arc.network",
   },
 ];
 
