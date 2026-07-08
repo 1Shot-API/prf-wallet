@@ -5,26 +5,20 @@ import {
   OwsUserRejectedError,
   PresentationRequestUri,
   UriString,
-} from "@1shotapi/ows-types";
-import type {
-  CredentialPresentationApprovalRequest,
-  CredentialStore,
-  Oid4vciClient,
-  Oid4vpClient,
-  CredentialStatusValidator,
-  HolderSigner,
-} from "@1shotapi/ows-credentials";
-import {
-  MockOid4vciClient,
-  MockOid4vpClient,
   NoopCredentialStatusValidator,
-  createOwsEd25519HolderSigner,
-} from "@1shotapi/ows-credentials";
+  type CredentialPresentationApprovalRequest,
+  type CredentialStore,
+  type Oid4vciClient,
+  type Oid4vpClient,
+  type CredentialStatusValidator,
+  type HolderSigner,
+} from "@1shotapi/ows-types";
+import { createOwsEd25519HolderSigner } from "@1shotapi/ows-wallet-utils";
 
 export type CredentialsProviderModuleOptions = {
   store: CredentialStore;
-  oid4vci?: Oid4vciClient;
-  oid4vp?: Oid4vpClient;
+  oid4vci: Oid4vciClient;
+  oid4vp: Oid4vpClient;
   status?: CredentialStatusValidator;
   /** Holder key for SD-JWT VC key binding. Defaults to OWS signer Ed25519 when omitted. */
   holderSigner?: HolderSigner | (() => Promise<HolderSigner>);
@@ -33,8 +27,7 @@ export type CredentialsProviderModuleOptions = {
 export function createCredentialsProviderModule(
   options: CredentialsProviderModuleOptions,
 ): BrandingModule {
-  const oid4vci = options.oid4vci ?? new MockOid4vciClient();
-  const oid4vp = options.oid4vp ?? new MockOid4vpClient();
+  const { oid4vci, oid4vp } = options;
   const status = options.status ?? new NoopCredentialStatusValidator();
 
   return {

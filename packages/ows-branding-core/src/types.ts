@@ -1,15 +1,11 @@
 import type { OWSSigner } from "@1shotapi/ows-signer-utils";
 import type { OWSWallet } from "@1shotapi/ows-wallet-utils";
-import type { EVMAccountAddress } from "@1shotapi/ows-types";
+import type {
+  CredentialPresentationApprovalRequest,
+  EVMAccountAddress,
+} from "@1shotapi/ows-types";
 
-/** OID4VP presentation consent request (mirrors `@1shotapi/ows-credentials`). */
-export type CredentialPresentationApprovalRequest = {
-  verifierName: string;
-  verifierId: string;
-  requestedClaims: string[];
-  credentialType: string;
-  credentialIssuer: string;
-};
+export type { CredentialPresentationApprovalRequest };
 
 /** When the module may register handlers on `OWSWallet`. */
 export type BrandingModulePhase = "pre-start" | "post-start";

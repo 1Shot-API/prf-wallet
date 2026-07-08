@@ -18,7 +18,7 @@ import {
 } from "./display/child-client.js";
 import { debugLog, setOwsWalletDebugFromOptions } from "./debug.js";
 import { CredentialWalletRegistrar } from "./credentials/wallet-registrar.js";
-import type { CredentialHandlers } from "@1shotapi/ows-credentials";
+import type { OpenWalletCredentialProvider } from "@1shotapi/ows-types";
 
 export type { DisplaySession, RequestDisplayParams };
 
@@ -77,7 +77,7 @@ export class OWSWallet {
 
   /** Namespaced verifiable credential handlers (not generic `registerRpc`). */
   readonly credentials = {
-    register: (handlers: CredentialHandlers): void => {
+    register: (handlers: OpenWalletCredentialProvider): void => {
       this.assertNotConnected();
       this.credentialRegistrar.register(handlers);
     },

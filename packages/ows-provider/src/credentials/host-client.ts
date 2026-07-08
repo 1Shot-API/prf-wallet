@@ -7,7 +7,7 @@ import {
   type PresentationResult,
   type CredentialFilter,
   type CredentialSummary,
-} from "@1shotapi/ows-credentials";
+} from "@1shotapi/ows-types";
 import type { CredentialId } from "@1shotapi/ows-types";
 import type { RpcHostClient } from "../rpc/host-client.js";
 

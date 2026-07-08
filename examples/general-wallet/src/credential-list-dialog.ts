@@ -1,4 +1,4 @@
-import type { CredentialSummary } from "@1shotapi/ows-credentials";
+import type { CredentialSummary } from "@1shotapi/ows-types";
 
 export type CredentialListDialogOptions = {
   container?: HTMLElement;

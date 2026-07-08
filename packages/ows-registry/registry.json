@@ -86,8 +86,8 @@
       "registryDependencies": ["credential-consent"],
       "dependencies": [
         "@1shotapi/ows-branding-core",
-        "@1shotapi/ows-credentials",
-        "@1shotapi/ows-types"
+        "@1shotapi/ows-types",
+        "@1shotapi/ows-wallet-utils"
       ],
       "files": [
         {

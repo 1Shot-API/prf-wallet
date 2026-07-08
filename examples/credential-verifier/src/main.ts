@@ -1,7 +1,7 @@
 import {
   MOCK_KYC_ISSUER_ID,
   MOCK_KYC_POLICY,
-} from "@1shotapi/ows-credentials/mock";
+} from "../../credentials-shared/src/index.js";
 import { validateMockPresentation, getMockVerifierRequestUri } from "./mock-verifier";
 import { OWSProxy } from "@1shotapi/ows-provider";
 import { PresentationRequestUri } from "@1shotapi/ows-types";

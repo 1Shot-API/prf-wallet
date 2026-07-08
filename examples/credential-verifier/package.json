@@ -11,9 +11,9 @@
     "lint": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@1shotapi/ows-credentials": "*",
     "@1shotapi/ows-provider": "*",
-    "@1shotapi/ows-types": "*"
+    "@1shotapi/ows-types": "*",
+    "@1shotapi/ows-wallet-utils": "*"
   },
   "devDependencies": {
     "css-loader": "^7.1.2",

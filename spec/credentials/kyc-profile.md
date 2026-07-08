@@ -27,7 +27,7 @@ Avoid placing full legal name, government ID numbers, or biometrics in default r
 
 ## Trust framework
 
-`IssuerTrustMetadata` (in `@1shotapi/ows-credentials`) describes issuers the wallet or verifier may trust:
+`IssuerTrustMetadata` (in `@1shotapi/ows-types`) describes issuers the wallet or verifier may trust:
 
 ```json
 {

@@ -79,4 +79,12 @@ export type {
   GetPublicKeyParams,
 } from "./protocol/signer.js";
 
+export {
+  CREDENTIAL_WIRE_METHODS,
+  type CredentialWireMethod,
+  type OpenWalletCredentialProvider,
+} from "./protocol/credentials.js";
+
+export * from "./credentials/index.js";
+
 export * from "./primitives/index.js";

@@ -12,10 +12,11 @@ examples/general-wallet       Branding Layer — general-purpose wallet demo
 packages/ows-signer           Signing Layer (plain JS, zero deps, on-chain)
 packages/ows-signer-utils     Branding Layer ↔ Signing Layer (evm.signMessage, etc.)
 packages/ows-types            Shared types and errors across OWS SDKs
-packages/ows-wallet-utils     Host Layer ↔ Branding Layer (postmate wrappers)
+packages/ows-wallet-utils     Host Layer ↔ Branding Layer (postmate wrappers); credential wire + SD-JWT presentation
+packages/ows-provider         Host Layer EIP-1193 + credentials proxy; SD-JWT verify
 packages/ows-branding-core    Branding module contracts + install helpers
 packages/ows-registry         Copy-paste Branding Layer modules (not published)
-packages/ows-credentials      Verifiable credentials extension (types, mocks, OID4VCI/OID4VP abstractions)
+examples/credentials-shared   Demo-only mock OID4 clients, stores, and fixtures (not published)
 packages/ows-onchain          EIP-8244 deploy pipeline for ows-signer
 spec/credentials/             OWS Credentials Extension normative docs
 ```

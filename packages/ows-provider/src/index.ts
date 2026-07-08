@@ -12,18 +12,37 @@ export {
 } from "./eip1193/provider.js";
 
 export { CredentialHostClient } from "./credentials/host-client.js";
+export {
+  verifySdJwtVcPresentation,
+  type VerifySdJwtVcPresentationInput,
+  type VerifySdJwtVcPresentationResult,
+} from "./credentials/verify.js";
 
-export type {
-  OpenWalletCredentialProvider,
-  CredentialOfferInput,
-  CredentialReceipt,
-  PresentationRequestInput,
-  PresentationResult,
-  CredentialFilter,
-  CredentialSummary,
-  CredentialPresentationApprovalRequest,
+export {
   CREDENTIAL_WIRE_METHODS,
-} from "@1shotapi/ows-credentials";
+  type OpenWalletCredentialProvider,
+  type CredentialOfferInput,
+  type CredentialReceipt,
+  type PresentationRequestInput,
+  type PresentationResult,
+  type CredentialFilter,
+  type CredentialSummary,
+  type CredentialPresentationApprovalRequest,
+  type StoredCredential,
+  type CredentialStore,
+  type HolderSigner,
+  type Oid4vciClient,
+  type Oid4vpClient,
+} from "@1shotapi/ows-types";
+
+export {
+  buildSdJwtVcPresentation,
+  createOwsEd25519HolderSigner,
+  extractHolderJwkFromSdJwtVc,
+  type BuildSdJwtVcPresentationInput,
+  type BuildSdJwtVcPresentationResult,
+  type OwsEd25519SignerDeps,
+} from "@1shotapi/ows-wallet-utils";
 
 export {
   OwsRpcError,

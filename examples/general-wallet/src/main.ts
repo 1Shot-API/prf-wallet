@@ -14,7 +14,7 @@ import { credentialConsentModule } from "./ows/credential-consent/install";
 import {
   createCredentialsProviderModule,
 } from "./ows/credentials-provider/install";
-import { LocalStorageCredentialStore } from "@1shotapi/ows-credentials/mock";
+import { LocalStorageCredentialStore, MockOid4vciClient, MockOid4vpClient } from "../../credentials-shared/src/index.js";
 import { showCredentialListDialog } from "./credential-list-dialog";
 import {
   isWalletCreated,
@@ -201,7 +201,11 @@ async function main(): Promise<void> {
       rpcProvider,
       approvalDialogModule,
       credentialConsentModule,
-      createCredentialsProviderModule({ store: credentialStore }),
+      createCredentialsProviderModule({
+        store: credentialStore,
+        oid4vci: new MockOid4vciClient(),
+        oid4vp: new MockOid4vpClient(),
+      }),
       createCreateBackupModule({
         triggerButton: "#create-backup",
         signerContainer: "#signer-container",

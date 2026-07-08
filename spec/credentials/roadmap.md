@@ -7,9 +7,11 @@ This document tracks implementation phases for the OWS Credentials Extension. No
 | Layer | Responsibility |
 |-------|----------------|
 | **Branding Layer** | Owns `CredentialStore` — save, get, list, delete. Storage may be client-side (IndexedDB, `localStorage`), server-backed, or hybrid. Mediates consent UI. |
-| **`@1shotapi/ows-credentials`** | Standardized credential work: types, OID4VCI/OID4VP client contracts, SD-JWT VC presentation assembly, status/trust hooks. No storage implementation. |
+| **`@1shotapi/ows-types`** | Credential wire contracts, domain types, OID4VCI/OID4VP client interfaces, status/trust hooks. |
+| **`@1shotapi/ows-wallet-utils`** | Zod param schemas, `wallet.credentials` registrar, SD-JWT VC presentation assembly + holder binding. |
+| **`@1shotapi/ows-provider`** | `proxy.credentials` host client, SD-JWT VC presentation verification. |
 | **Host Layer** | Calls `proxy.credentials.*`; never touches credential payloads or signing keys directly. |
-| **Signing Layer** | Signs digests/curves only (`signDigest` with `ed25519` for SD-JWT key binding). JWT assembly stays in `ows-credentials` / `ows-signer-utils`. |
+| **Signing Layer** | Signs digests/curves only (`signDigest` with `ed25519` for SD-JWT key binding). JWT assembly stays in `ows-wallet-utils` / `ows-signer-utils`. |
 
 Branding registers handlers on `wallet.credentials`. The library builds presentations; branding fetches the stored credential and supplies a `HolderSigner` adapter wired to the OWS signer.
 
@@ -23,7 +25,7 @@ Branding registers handlers on `wallet.credentials`. The library builds presenta
 
 **Deliverables:**
 
-- [x] `HolderSigner` interface and `buildSdJwtVcPresentation()` in `@1shotapi/ows-credentials`
+- [x] `HolderSigner` interface and `buildSdJwtVcPresentation()` in `@1shotapi/ows-wallet-utils`
 - [x] Mock OID4VCI issues real SD-JWT VCs (demo issuer key; `cnf.jwk` binds holder)
 - [x] Mock OID4VP builds real presentations with selective disclosure + `kb+jwt`
 - [x] `createOwsEd25519HolderSigner()` bridges `BrandingSignerHost` → `HolderSigner`
@@ -75,8 +77,10 @@ Branding registers handlers on `wallet.credentials`. The library builds presenta
 
 | Path | Role |
 |------|------|
-| `packages/ows-credentials/src/sd-jwt-vc/` | SD-JWT VC issue (mock), present, verify |
-| `packages/ows-credentials/src/storage.ts` | `CredentialStore` interface (branding implements) |
+| `packages/ows-types/src/credentials/` | Domain types, OID4 client interfaces |
+| `packages/ows-wallet-utils/src/credentials/` | Wire schemas, registrar, SD-JWT present |
+| `packages/ows-provider/src/credentials/` | Host client, SD-JWT verify |
 | `packages/ows-registry/items/credentials-provider` | Wires store + OID4 clients + holder signer |
+| `examples/credentials-shared/` | Demo mocks (OID4 clients, stores, fixtures) |
 | `examples/credential-issuer` | Host demo — mock issuance |
 | `examples/credential-verifier` | Host demo — mock verification |

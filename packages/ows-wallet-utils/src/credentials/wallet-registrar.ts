@@ -1,9 +1,9 @@
 import type { z } from "zod";
 import {
-  CREDENTIAL_PARAM_SCHEMAS,
   CREDENTIAL_WIRE_METHODS,
-  type CredentialHandlers,
-} from "@1shotapi/ows-credentials";
+  type OpenWalletCredentialProvider,
+} from "@1shotapi/ows-types";
+import { CREDENTIAL_PARAM_SCHEMAS } from "./schemas.js";
 
 type RpcHandlerRegistration = {
   handler: (params: unknown) => Promise<unknown>;
@@ -29,8 +29,10 @@ const PARAM_SCHEMAS: Record<CredentialMethod, z.ZodType> = {
 export class CredentialWalletRegistrar {
   private readonly handlers = new Map<string, RpcHandlerRegistration>();
 
-  register(handlers: CredentialHandlers): void {
-    const entries: Array<[CredentialMethod, CredentialHandlers[CredentialMethod]]> =
+  register(handlers: OpenWalletCredentialProvider): void {
+    const entries: Array<
+      [CredentialMethod, OpenWalletCredentialProvider[CredentialMethod]]
+    > =
       [
         ["acceptOffer", handlers.acceptOffer],
         ["present", handlers.present],
