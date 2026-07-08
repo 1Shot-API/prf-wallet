@@ -1,11 +1,11 @@
 import { SDJwtVcInstance } from "@sd-jwt/sd-jwt-vc";
-import type { CredentialClaimName } from "@1shotapi/ows-types";
+import type { CredentialClaimName } from "../src/primitives/CredentialClaimName.js";
 import {
   createEd25519SignerFromJwk,
   createEd25519VerifierFromJwk,
   sdJwtHasher,
   sdJwtSaltGenerator,
-} from "../src/credentials/sd-jwt-vc/crypto.js";
+} from "../src/utils/credentials/sd-jwt-vc/crypto.js";
 
 /** TEST ONLY — matches examples/credentials-shared demo issuer key. */
 export const DEMO_ISSUER_PRIVATE_JWK: JsonWebKey = {
@@ -73,7 +73,7 @@ export function createDemoHolderSigner() {
       return publicJwk;
     },
     async signKbJwt(unsignedJwt: string) {
-      const { signEd25519 } = await import("../src/credentials/sd-jwt-vc/crypto.js");
+      const { signEd25519 } = await import("../src/utils/credentials/sd-jwt-vc/crypto.js");
       return signEd25519(DEMO_HOLDER_PRIVATE_JWK, unsignedJwt);
     },
   };

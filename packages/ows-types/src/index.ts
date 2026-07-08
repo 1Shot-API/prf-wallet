@@ -88,3 +88,16 @@ export {
 export * from "./credentials/index.js";
 
 export * from "./primitives/index.js";
+
+export {
+  buildSdJwtVcPresentation,
+  extractHolderJwkFromSdJwtVc,
+  sdJwtHasher,
+  sdJwtSaltGenerator,
+  createEd25519SignerFromJwk,
+  createEd25519VerifierFromJwk,
+  signEd25519,
+  holderSignerToKbSigner,
+  type BuildSdJwtVcPresentationInput,
+  type BuildSdJwtVcPresentationResult,
+} from "./utils/index.js";

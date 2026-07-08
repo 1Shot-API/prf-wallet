@@ -23,7 +23,7 @@ import {
   NoopCredentialStatusValidator,
 } from "@1shotapi/ows-types";
 import { verifySdJwtVcPresentation } from "@1shotapi/ows-provider";
-import { extractHolderJwkFromSdJwtVc } from "@1shotapi/ows-wallet-utils";
+import { extractHolderJwkFromSdJwtVc } from "@1shotapi/ows-types";
 import { MockOid4vciClient } from "./mock/oid4vci.js";
 import { MockOid4vpClient } from "./mock/oid4vp.js";
 import { InMemoryCredentialStore } from "./in-memory-store.js";

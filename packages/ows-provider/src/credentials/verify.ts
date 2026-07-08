@@ -4,7 +4,7 @@ import type { SdJwtVcPresentationString } from "@1shotapi/ows-types";
 import {
   createEd25519VerifierFromJwk,
   sdJwtHasher,
-} from "@1shotapi/ows-wallet-utils";
+} from "@1shotapi/ows-types";
 
 export type VerifySdJwtVcPresentationInput = {
   presentation: SdJwtVcPresentationString;

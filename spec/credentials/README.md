@@ -57,8 +57,8 @@ Host apps must **not** call `proxy.rpc()` for credential operations.
 | Path | Purpose |
 |------|---------|
 | `spec/credentials/` | Normative extension docs |
-| `packages/ows-types` | Credential types and OID4 client interfaces |
-| `packages/ows-wallet-utils` | Branding wire + SD-JWT presentation |
+| `packages/ows-types` | Credential types, OID4 client interfaces, SD-JWT VC utils |
+| `packages/ows-wallet-utils` | Branding wire + holder signer bridge |
 | `packages/ows-provider` | Host credentials proxy + SD-JWT verify |
 | `packages/ows-registry/items/credentials-provider` | Branding module — wires wallet.credentials |
 | `packages/ows-registry/items/credential-consent` | Presentation consent UI |

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { CredentialClaimName, CredentialIssuer } from "@1shotapi/ows-types";
-import { buildSdJwtVcPresentation } from "@1shotapi/ows-wallet-utils";
+import { buildSdJwtVcPresentation } from "@1shotapi/ows-types";
 import { verifySdJwtVcPresentation } from "../src/credentials/verify.js";
 import {
   issueDemoSdJwtVc,

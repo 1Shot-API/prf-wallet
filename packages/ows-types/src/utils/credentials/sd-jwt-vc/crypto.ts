@@ -1,4 +1,4 @@
-import { Base64UrlEncodedString } from "@1shotapi/ows-types";
+import { Base64UrlEncodedString } from "../../../primitives/Base64UrlEncodedString.js";
 import type { Hasher, SaltGenerator, Signer, Verifier } from "@sd-jwt/core";
 
 export function bytesToBase64Url(bytes: Uint8Array): Base64UrlEncodedString {

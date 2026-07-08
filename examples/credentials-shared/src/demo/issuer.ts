@@ -5,7 +5,7 @@ import {
   createEd25519VerifierFromJwk,
   sdJwtHasher,
   sdJwtSaltGenerator,
-} from "@1shotapi/ows-wallet-utils";
+} from "@1shotapi/ows-types";
 import { DEMO_ISSUER_PRIVATE_JWK, DEMO_ISSUER_PUBLIC_JWK } from "./demo-keys.js";
 
 export type IssueSdJwtVcInput = {

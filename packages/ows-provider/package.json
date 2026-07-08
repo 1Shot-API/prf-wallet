@@ -23,7 +23,6 @@
   },
   "dependencies": {
     "@1shotapi/ows-types": "*",
-    "@1shotapi/ows-wallet-utils": "*",
     "@sd-jwt/sd-jwt-vc": "^0.20.0",
     "postmate": "^1.5.2"
   },

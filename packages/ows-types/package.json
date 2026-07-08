@@ -40,6 +40,8 @@
     "access": "public"
   },
   "dependencies": {
+    "@sd-jwt/core": "^0.20.0",
+    "@sd-jwt/sd-jwt-vc": "^0.20.0",
     "ts-brand": "^0.2.0"
   }
 }

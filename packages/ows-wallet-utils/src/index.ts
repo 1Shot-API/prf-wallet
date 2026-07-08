@@ -45,23 +45,9 @@ export {
 export { CREDENTIAL_WIRE_METHODS } from "@1shotapi/ows-types";
 export { CredentialWalletRegistrar } from "./credentials/wallet-registrar.js";
 export {
-  buildSdJwtVcPresentation,
-  type BuildSdJwtVcPresentationInput,
-  type BuildSdJwtVcPresentationResult,
-} from "./credentials/sd-jwt-vc/presentation.js";
-export {
   createOwsEd25519HolderSigner,
   type OwsEd25519SignerDeps,
 } from "./credentials/sd-jwt-vc/ows-holder-signer.js";
-export { extractHolderJwkFromSdJwtVc } from "./credentials/sd-jwt-vc/decode.js";
-export { holderSignerToKbSigner } from "./credentials/sd-jwt-vc/holder-signer.js";
-export {
-  sdJwtHasher,
-  sdJwtSaltGenerator,
-  createEd25519SignerFromJwk,
-  createEd25519VerifierFromJwk,
-  signEd25519,
-} from "./credentials/sd-jwt-vc/crypto.js";
 
 export type {
   OpenWalletCredentialProvider,

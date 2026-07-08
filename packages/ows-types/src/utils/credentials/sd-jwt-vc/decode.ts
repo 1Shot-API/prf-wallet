@@ -1,5 +1,5 @@
 import { decodeJwt, splitSdJwt } from "@sd-jwt/core";
-import type { SdJwtVcPresentationString } from "@1shotapi/ows-types";
+import type { SdJwtVcPresentationString } from "../../../primitives/SdJwtVcPresentationString.js";
 
 /** Reads `cnf.jwk` from an SD-JWT VC (presentation or full credential). */
 export function extractHolderJwkFromSdJwtVc(

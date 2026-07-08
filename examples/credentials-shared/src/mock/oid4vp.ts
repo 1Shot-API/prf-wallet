@@ -7,7 +7,7 @@ import type {
   PresentationResult,
   CredentialSummary,
 } from "@1shotapi/ows-types";
-import { buildSdJwtVcPresentation } from "@1shotapi/ows-wallet-utils";
+import { buildSdJwtVcPresentation } from "@1shotapi/ows-types";
 import {
   MOCK_KYC_PRESENTATION_REQUEST,
   MOCK_KYC_PRESENTATION_URI,

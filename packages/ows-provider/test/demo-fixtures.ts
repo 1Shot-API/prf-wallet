@@ -6,7 +6,7 @@ import {
   sdJwtHasher,
   sdJwtSaltGenerator,
   signEd25519,
-} from "@1shotapi/ows-wallet-utils";
+} from "@1shotapi/ows-types";
 
 /** TEST ONLY — matches examples/credentials-shared demo issuer key. */
 export const DEMO_ISSUER_PRIVATE_JWK: JsonWebKey = {

@@ -36,15 +36,6 @@ export {
 } from "@1shotapi/ows-types";
 
 export {
-  buildSdJwtVcPresentation,
-  createOwsEd25519HolderSigner,
-  extractHolderJwkFromSdJwtVc,
-  type BuildSdJwtVcPresentationInput,
-  type BuildSdJwtVcPresentationResult,
-  type OwsEd25519SignerDeps,
-} from "@1shotapi/ows-wallet-utils";
-
-export {
   OwsRpcError,
   OwsUnimplementedError,
   OwsInvalidParamsError,

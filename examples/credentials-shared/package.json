@@ -10,7 +10,6 @@
   "dependencies": {
     "@1shotapi/ows-provider": "*",
     "@1shotapi/ows-types": "*",
-    "@1shotapi/ows-wallet-utils": "*",
     "@sd-jwt/sd-jwt-vc": "^0.20.0"
   },
   "devDependencies": {

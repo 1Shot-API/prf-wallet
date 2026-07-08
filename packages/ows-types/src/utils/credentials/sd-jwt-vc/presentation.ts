@@ -1,12 +1,10 @@
 import type { PresentationFrame } from "@sd-jwt/core";
 import { SDJwtVcInstance } from "@sd-jwt/sd-jwt-vc";
-import {
-  SdJwtVcPresentationString,
-  type CredentialClaimName,
-  type HolderSigner,
-  type PresentationDefinition,
-  type StoredCredential,
-} from "@1shotapi/ows-types";
+import { SdJwtVcPresentationString } from "../../../primitives/SdJwtVcPresentationString.js";
+import type { CredentialClaimName } from "../../../primitives/CredentialClaimName.js";
+import type { HolderSigner } from "../../../credentials/holder-signer.js";
+import type { PresentationDefinition } from "../../../credentials/presentation.js";
+import type { StoredCredential } from "../../../credentials/credential.js";
 import { sdJwtHasher, sdJwtSaltGenerator } from "./crypto.js";
 import { holderSignerToKbSigner } from "./holder-signer.js";
 

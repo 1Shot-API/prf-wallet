@@ -7,7 +7,7 @@
     "examples/*"
   ],
   "scripts": {
-    "build": "npm run build --workspaces --if-present",
+    "build": "npm run build -w @1shotapi/ows-types && npm run build --workspaces --if-present",
     "clean": "npm run clean --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present",
