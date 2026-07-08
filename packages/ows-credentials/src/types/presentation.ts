@@ -3,6 +3,7 @@ import type {
   CredentialIssuer,
   CredentialTypeName,
   PresentationRequestUri,
+  SdJwtVcPresentationString,
   UriString,
 } from "@1shotapi/ows-types";
 import type { CredentialFormat } from "./format.js";
@@ -25,7 +26,7 @@ export type PresentationRequestInput = {
 };
 
 export type PresentationResult = {
-  presentation: string;
+  presentation: SdJwtVcPresentationString;
   format: CredentialFormat;
   disclosedClaims: CredentialClaimName[];
 };

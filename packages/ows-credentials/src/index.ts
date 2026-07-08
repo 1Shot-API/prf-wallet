@@ -39,8 +39,16 @@ export type {
 export type { KycProfilePolicy } from "./types/kyc-profile.js";
 
 export type { CredentialStore } from "./storage.js";
-export type { Oid4vciClient, IssuerMetadata, CredentialConfigurationMetadata } from "./oid4vci/client.js";
-export type { Oid4vpClient } from "./oid4vp/client.js";
+export type {
+  Oid4vciClient,
+  IssuerMetadata,
+  CredentialConfigurationMetadata,
+  CredentialIssuanceContext,
+} from "./oid4vci/client.js";
+export type {
+  Oid4vpClient,
+  PresentationBuildContext,
+} from "./oid4vp/client.js";
 export {
   type CredentialStatusValidator,
   NoopCredentialStatusValidator,
@@ -49,3 +57,16 @@ export type { IssuerTrustRegistry } from "./trust/registry.js";
 
 export { MockOid4vciClient } from "./oid4vci/mock.js";
 export { MockOid4vpClient } from "./oid4vp/mock.js";
+
+export type { HolderSigner } from "./sd-jwt-vc/holder-signer.js";
+export {
+  buildSdJwtVcPresentation,
+  verifySdJwtVcPresentation,
+  createOwsEd25519HolderSigner,
+  issueDemoSdJwtVc,
+  extractHolderJwkFromSdJwtVc,
+  type BuildSdJwtVcPresentationInput,
+  type VerifySdJwtVcPresentationInput,
+  type VerifySdJwtVcPresentationResult,
+  type OwsEd25519SignerDeps,
+} from "./sd-jwt-vc/index.js";

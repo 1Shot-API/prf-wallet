@@ -10,7 +10,7 @@ import { createMockStoredCredential } from "../src/mock/fixtures.js";
 describe("LocalStorageCredentialStore", () => {
   it("persists credentials across store instances", async () => {
     const storage = createMemoryStorageBackend();
-    const credential = createMockStoredCredential();
+    const credential = await createMockStoredCredential();
 
     const writer = new LocalStorageCredentialStore({ storage });
     await writer.save(credential);
@@ -28,7 +28,7 @@ describe("LocalStorageCredentialStore", () => {
   it("filters and deletes like the in-memory store", async () => {
     const storage = createMemoryStorageBackend();
     const store = new LocalStorageCredentialStore({ storage });
-    await store.save(createMockStoredCredential());
+    await store.save(await createMockStoredCredential());
 
     const match = await store.list({
       issuer: CredentialIssuer("https://kyc.demo.issuer.example"),
@@ -40,7 +40,8 @@ describe("LocalStorageCredentialStore", () => {
     });
     assert.equal(byWrongType.length, 0);
 
-    await store.delete(createMockStoredCredential().credentialId);
+    const saved = await createMockStoredCredential();
+    await store.delete(saved.credentialId);
     assert.equal((await store.list()).length, 0);
     assert.equal(storage.getItem("ows.mock.credentials.v1"), null);
   });

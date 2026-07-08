@@ -27,6 +27,8 @@
   },
   "dependencies": {
     "@1shotapi/ows-types": "*",
+    "@sd-jwt/core": "^0.20.0",
+    "@sd-jwt/sd-jwt-vc": "^0.20.0",
     "zod": "^4.4.0"
   },
   "devDependencies": {

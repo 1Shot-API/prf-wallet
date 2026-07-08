@@ -21,11 +21,17 @@ export type IssuerMetadata = {
   >;
 };
 
+export type CredentialIssuanceContext = {
+  /** Holder public key (`cnf.jwk`) bound into the issued SD-JWT VC. */
+  holderPublicKeyJwk?: JsonWebKey;
+};
+
 export interface Oid4vciClient {
   resolveOffer(uri: UriString): Promise<CredentialOffer>;
   fetchIssuerMetadata(issuer: CredentialIssuer): Promise<IssuerMetadata>;
   requestCredential(
     offer: CredentialOffer,
     metadata: IssuerMetadata,
+    context?: CredentialIssuanceContext,
   ): Promise<StoredCredential>;
 }

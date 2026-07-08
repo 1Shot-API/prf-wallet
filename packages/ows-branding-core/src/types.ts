@@ -63,6 +63,8 @@ export type BrandingSignerHost = {
   evm: Pick<OWSSigner["evm"], "signMessage" | "signTypedData">;
   createRecoveryData: OWSSigner["createRecoveryData"];
   recoverKey: OWSSigner["recoverKey"];
+  getPublicKey: OWSSigner["getPublicKey"];
+  signDigest: OWSSigner["signDigest"];
 };
 
 export type BrandingContext = {

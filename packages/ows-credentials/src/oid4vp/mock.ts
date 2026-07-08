@@ -1,5 +1,5 @@
 import type { UriString } from "@1shotapi/ows-types";
-import type { Oid4vpClient } from "./client.js";
+import type { Oid4vpClient, PresentationBuildContext } from "./client.js";
 import type { StoredCredential } from "../types/credential.js";
 import type {
   PresentationDefinition,
@@ -9,10 +9,11 @@ import type { CredentialSummary } from "../types/filter.js";
 import {
   MOCK_KYC_PRESENTATION_REQUEST,
   MOCK_KYC_PRESENTATION_URI,
-  MOCK_PRESENTATION_PAYLOAD,
 } from "../mock/fixtures.js";
+import { buildSdJwtVcPresentation } from "../sd-jwt-vc/presentation.js";
+import { createDemoHolderSigner } from "../sd-jwt-vc/jwk-holder-signer.js";
 
-/** MOCK OID4VP client — resolves mock:// URIs to fixtures only. */
+/** MOCK OID4VP client — resolves mock:// URIs and builds real SD-JWT VC presentations. */
 export class MockOid4vpClient implements Oid4vpClient {
   async resolveRequest(uri: UriString): Promise<PresentationDefinition> {
     if (
@@ -40,16 +41,25 @@ export class MockOid4vpClient implements Oid4vpClient {
   async buildPresentation(
     credential: StoredCredential,
     definition: PresentationDefinition,
+    context?: PresentationBuildContext,
   ): Promise<PresentationResult> {
-    const disclosedClaims = definition.requestedClaims.filter((claim) => {
-      const subject = credential.semantic.credentialSubject;
-      return claim in subject;
-    });
+    const holderSigner = context?.holderSigner ?? createDemoHolderSigner();
 
-    return {
-      presentation: MOCK_PRESENTATION_PAYLOAD,
-      format: credential.format,
-      disclosedClaims,
-    };
+    if (credential.format === "sd-jwt-vc") {
+      const built = await buildSdJwtVcPresentation({
+        credential,
+        definition,
+        holderSigner,
+      });
+      return {
+        presentation: built.presentation,
+        format: credential.format,
+        disclosedClaims: built.disclosedClaims,
+      };
+    }
+
+    throw new Error(
+      `MockOid4vpClient: unsupported credential format ${credential.format}`,
+    );
   }
 }

@@ -9,7 +9,7 @@ export function getMockVerifierRequestUri(): string {
   return MOCK_KYC_PRESENTATION_URI;
 }
 
-export function validateMockPresentation(
+export async function validateMockPresentation(
   presentation: PresentationResult,
   policy: KycProfilePolicy,
   issuerId: CredentialIssuer,

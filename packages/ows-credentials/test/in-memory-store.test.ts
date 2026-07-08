@@ -7,7 +7,7 @@ import { createMockStoredCredential } from "../src/mock/fixtures.js";
 describe("InMemoryCredentialStore", () => {
   it("saves, lists, gets, and deletes credentials", async () => {
     const store = new InMemoryCredentialStore();
-    const credential = createMockStoredCredential();
+    const credential = await createMockStoredCredential();
 
     await store.save(credential);
 
@@ -31,7 +31,7 @@ describe("InMemoryCredentialStore", () => {
 
   it("filters by issuer", async () => {
     const store = new InMemoryCredentialStore();
-    await store.save(createMockStoredCredential());
+    await store.save(await createMockStoredCredential());
 
     const match = await store.list({
       issuer: CredentialIssuer("https://kyc.demo.issuer.example"),

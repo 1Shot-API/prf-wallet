@@ -12,11 +12,13 @@ import type {
   Oid4vciClient,
   Oid4vpClient,
   CredentialStatusValidator,
+  HolderSigner,
 } from "@1shotapi/ows-credentials";
 import {
   MockOid4vciClient,
   MockOid4vpClient,
   NoopCredentialStatusValidator,
+  createOwsEd25519HolderSigner,
 } from "@1shotapi/ows-credentials";
 
 export type CredentialsProviderModuleOptions = {
@@ -24,6 +26,8 @@ export type CredentialsProviderModuleOptions = {
   oid4vci?: Oid4vciClient;
   oid4vp?: Oid4vpClient;
   status?: CredentialStatusValidator;
+  /** Holder key for SD-JWT VC key binding. Defaults to OWS signer Ed25519 when omitted. */
+  holderSigner?: HolderSigner | (() => Promise<HolderSigner>);
 };
 
 export function createCredentialsProviderModule(
@@ -37,6 +41,22 @@ export function createCredentialsProviderModule(
     name: "credentials-provider",
     phase: "pre-start",
     install(ctx: BrandingContext): void {
+      const resolveHolderSigner = async (): Promise<HolderSigner> => {
+        if (options.holderSigner) {
+          return typeof options.holderSigner === "function"
+            ? options.holderSigner()
+            : options.holderSigner;
+        }
+        return createOwsEd25519HolderSigner({
+          getEd25519PublicKeyHex: async () => {
+            const keys = await ctx.signer.getPublicKey();
+            return keys.ed25519PublicKey;
+          },
+          signDigest: (digest, scheme) =>
+            ctx.signer.signDigest(digest, scheme ?? "ed25519"),
+        });
+      };
+
       const requestPresentationApproval = async (
         request: CredentialPresentationApprovalRequest,
       ): Promise<boolean> => {
@@ -66,7 +86,10 @@ export function createCredentialsProviderModule(
             const metadata = await oid4vci.fetchIssuerMetadata(
               offer.credentialIssuer,
             );
-            const stored = await oid4vci.requestCredential(offer, metadata);
+            const holderSigner = await resolveHolderSigner();
+            const stored = await oid4vci.requestCredential(offer, metadata, {
+              holderPublicKeyJwk: await holderSigner.publicKeyJwk(),
+            });
             await status.checkStatus(stored);
             await options.store.save(stored);
 
@@ -122,9 +145,12 @@ export function createCredentialsProviderModule(
               throw new Error("Credential not found");
             }
 
-            return oid4vp.buildPresentation(credential, definition);
+            const holderSigner = await resolveHolderSigner();
+            return oid4vp.buildPresentation(credential, definition, {
+              holderSigner,
+            });
           } finally {
-            display.hide();
+            await display.hide();
           }
         },
 

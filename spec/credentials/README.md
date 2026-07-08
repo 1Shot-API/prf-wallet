@@ -65,4 +65,4 @@ Host apps must **not** call `proxy.rpc()` for credential operations.
 
 ## Future integration (post-stub)
 
-See the "What remains" section in the implementation plan and notes in each flow doc. Real libraries for SD-JWT VC, OID4VCI/OID4VP HTTP, and encrypted credential storage are swappable behind the interfaces in `@1shotapi/ows-credentials`.
+See [roadmap.md](./roadmap.md) for phased delivery. Real OID4VCI/OID4VP HTTP and encrypted credential storage are swappable behind the interfaces in `@1shotapi/ows-credentials`.

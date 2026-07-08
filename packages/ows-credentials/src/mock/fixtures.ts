@@ -12,8 +12,10 @@ import type { CredentialOffer } from "../types/offer.js";
 import type { PresentationDefinition } from "../types/presentation.js";
 import type { IssuerTrustMetadata } from "../types/trust.js";
 import type { KycProfilePolicy } from "../types/kyc-profile.js";
+import { issueDemoSdJwtVc } from "../sd-jwt-vc/issuer.js";
+import { DEMO_HOLDER_PUBLIC_JWK } from "../sd-jwt-vc/demo-keys.js";
 
-/** MOCK — not a valid SD-JWT VC or cryptographic credential. */
+/** MOCK KYC issuer — signs demo SD-JWT VCs with a fixed test keypair. */
 export const MOCK_KYC_ISSUER_ID = CredentialIssuer(
   "https://kyc.demo.issuer.example",
 );
@@ -43,6 +45,7 @@ export const MOCK_KYC_PRESENTATION_REQUEST: PresentationDefinition = {
   ],
   credentialTypes: [CredentialTypeName("KycCredential")],
   nonce: "mock-nonce-abc",
+  audience: "https://verifier.demo.example",
 };
 
 export const MOCK_ISSUER_TRUST: IssuerTrustMetadata = {
@@ -62,19 +65,29 @@ export const MOCK_KYC_POLICY: KycProfilePolicy = {
   allowedIssuers: [MOCK_KYC_ISSUER_ID],
 };
 
-/** MOCK — opaque blob, not a valid SD-JWT VC. */
-export const MOCK_CREDENTIAL_PAYLOAD =
-  "MOCK_SD_JWT_VC~eyJ0eXAiOiJKV1QifQ~MOCK_DISCLOSURES";
-
-/** MOCK — opaque presentation blob. */
-export const MOCK_PRESENTATION_PAYLOAD =
-  "MOCK_PRESENTATION~eyJ0eXAiOiJKV1QifQ~ageOver18,country";
-
-export function createMockStoredCredential(): StoredCredential {
+export async function createMockStoredCredential(): Promise<StoredCredential> {
   const issuedAt = ISO8601DateTime(new Date().toISOString());
   const validUntil = ISO8601DateTime(
     new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
   );
+  const subject = {
+    ageOver18: true,
+    country: "US",
+    assuranceLevel: "substantial",
+    verifiedAt: issuedAt,
+  };
+  const payload = await issueDemoSdJwtVc({
+    issuer: MOCK_KYC_ISSUER_ID,
+    vct: "KycCredential",
+    claims: subject,
+    disclosableClaims: [
+      CredentialClaimName("ageOver18"),
+      CredentialClaimName("country"),
+      CredentialClaimName("assuranceLevel"),
+      CredentialClaimName("verifiedAt"),
+    ],
+    holderPublicKeyJwk: DEMO_HOLDER_PUBLIC_JWK,
+  });
   return {
     credentialId: MOCK_CREDENTIAL_ID,
     format: "sd-jwt-vc",
@@ -85,7 +98,7 @@ export function createMockStoredCredential(): StoredCredential {
     issuer: MOCK_KYC_ISSUER_ID,
     issuedAt,
     validUntil,
-    payload: MOCK_CREDENTIAL_PAYLOAD,
+    payload,
     semantic: {
       type: [
         CredentialTypeName("VerifiableCredential"),
@@ -94,12 +107,7 @@ export function createMockStoredCredential(): StoredCredential {
       issuer: MOCK_KYC_ISSUER_ID,
       validFrom: issuedAt,
       validUntil,
-      credentialSubject: {
-        ageOver18: true,
-        country: "US",
-        assuranceLevel: "substantial",
-        verifiedAt: issuedAt,
-      },
+      credentialSubject: subject,
       credentialSchema: {
         id: UriString("https://schemas.ows.example/kyc/v1"),
         type: "JsonSchema",

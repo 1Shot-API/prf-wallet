@@ -26,10 +26,10 @@ describe("mock credential e2e flow", () => {
       requestUri: PresentationRequestUri("mock://kyc-presentation/demo"),
     });
 
-    assert.ok(presentation.presentation.startsWith("MOCK_PRESENTATION"));
+    assert.ok(presentation.presentation.startsWith("eyJ"));
     assert.deepEqual(presentation.disclosedClaims, ["ageOver18", "country"]);
 
-    const verification = validateMockPresentation(
+    const verification = await validateMockPresentation(
       presentation,
       MOCK_KYC_POLICY,
       MOCK_KYC_ISSUER_ID,

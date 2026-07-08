@@ -1,4 +1,5 @@
 import { EVMAccountAddress, SolanaAccountAddress } from "@1shotapi/ows-types";
+import type { ED25519PublicKey, SECP256K1PublicKey } from "@1shotapi/ows-types";
 import type { Hex } from "viem";
 import { publicKeyToAddress } from "viem/utils";
 import { createSignerIframe, getSignerOrigin, prepareSignerIframeForWebAuthn } from "./iframe.js";
@@ -6,7 +7,9 @@ import { EvmSigner } from "./evm/namespace.js";
 import { addressFromEd25519PublicKey } from "./solana/address.js";
 import { SolanaSigner } from "./solana/namespace.js";
 import {
-  cacheKeyDerivedFromEvent,
+  keyDerivedDataFromEvent,
+  credentialCreatedDataFromEvent,
+  publicKeyDataFromEvent,
   SignerRpcClient,
 } from "./rpc/client.js";
 import type {
@@ -89,7 +92,7 @@ export class OWSSigner {
   }
 
   private onKeyDerived = (data: Record<string, unknown>): void => {
-    const derived = cacheKeyDerivedFromEvent(data);
+    const derived = keyDerivedDataFromEvent(data);
     if (derived) {
       this.cacheAddressesFromPublicKeys(
         derived.secp256k1PublicKey,
@@ -99,8 +102,8 @@ export class OWSSigner {
   };
 
   private cacheAddressesFromPublicKeys(
-    secp256k1PublicKey: Hex,
-    ed25519PublicKey: Hex,
+    secp256k1PublicKey: SECP256K1PublicKey,
+    ed25519PublicKey: ED25519PublicKey,
   ): void {
     if (!this.cachedAddress) {
       this.cachedAddress = EVMAccountAddress(
@@ -113,7 +116,7 @@ export class OWSSigner {
     }
   }
 
-  private cacheAddressFromPublicKey(publicKey: Hex): void {
+  private cacheAddressFromPublicKey(publicKey: SECP256K1PublicKey): void {
     if (this.cachedAddress) return;
     this.cachedAddress = EVMAccountAddress(publicKeyToAddress(publicKey));
   }
@@ -130,7 +133,7 @@ export class OWSSigner {
   ): Promise<CredentialCreatedData> {
     const restoreSignerDisplay = prepareSignerIframeForWebAuthn(this.iframe);
     try {
-      const result = await this.rpc.request<CredentialCreatedData>(
+      const result = await this.rpc.request<Record<string, unknown>>(
         "createCredential",
         { name, options },
         {
@@ -138,9 +141,13 @@ export class OWSSigner {
           onIntermediate: (_event, data) => this.onKeyDerived(data),
         },
       );
-      this.credentialId = result.credentialId;
-      this.cacheAddressFromPublicKey(result.secp256k1PublicKey);
-      return result;
+      const created = credentialCreatedDataFromEvent(result);
+      if (!created) {
+        throw new Error("createCredential: invalid CredentialCreated payload");
+      }
+      this.credentialId = created.credentialId;
+      this.cacheAddressFromPublicKey(created.secp256k1PublicKey);
+      return created;
     } finally {
       restoreSignerDisplay();
     }
@@ -179,9 +186,7 @@ export class OWSSigner {
   ): Promise<PublicKeyData & { challengeSignature?: string }> {
     const hasChallenge = params?.challenge !== undefined;
 
-    const result = await this.rpc.request<
-      PublicKeyData & { signature?: string }
-    >(
+    const result = await this.rpc.request<Record<string, unknown>>(
       "getPublicKey",
       {
         credentialId: params?.credentialId ?? this.credentialId,
@@ -194,12 +199,18 @@ export class OWSSigner {
       },
     );
 
+    const publicKeyData = publicKeyDataFromEvent(result);
+    if (!publicKeyData) {
+      throw new Error("getPublicKey: invalid PublicKey payload");
+    }
+
     this.cacheAddressesFromPublicKeys(
-      result.secp256k1PublicKey,
-      result.ed25519PublicKey,
+      publicKeyData.secp256k1PublicKey,
+      publicKeyData.ed25519PublicKey,
     );
 
-    const { signature, ...publicKeyData } = result;
+    const signature =
+      typeof result.signature === "string" ? result.signature : undefined;
     return signature
       ? { ...publicKeyData, challengeSignature: signature }
       : publicKeyData;

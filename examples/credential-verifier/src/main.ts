@@ -39,7 +39,7 @@ async function main(): Promise<void> {
 
       try {
         const presentation = await proxy.credentials.present({ requestUri });
-        const validation = validateMockPresentation(
+        const validation = await validateMockPresentation(
           presentation,
           MOCK_KYC_POLICY,
           MOCK_KYC_ISSUER_ID,
