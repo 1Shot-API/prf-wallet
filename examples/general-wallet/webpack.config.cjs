@@ -21,6 +21,9 @@ module.exports = (_env, argv) => {
     },
     resolve: {
       extensions: [".ts", ".js"],
+      extensionAlias: {
+        ".js": [".ts", ".js"],
+      },
       conditionNames: ["import", "module", "browser", "default"],
     },
     module: {

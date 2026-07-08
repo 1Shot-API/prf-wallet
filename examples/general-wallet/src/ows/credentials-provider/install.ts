@@ -76,7 +76,7 @@ export function createCredentialsProviderModule(
               type: stored.type,
             };
           } finally {
-            display.hide();
+            await display.hide();
           }
         },
 

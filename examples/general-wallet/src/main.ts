@@ -15,6 +15,7 @@ import {
   createCredentialsProviderModule,
 } from "./ows/credentials-provider/install";
 import { InMemoryCredentialStore } from "@1shotapi/ows-credentials/mock";
+import { showCredentialListDialog } from "./credential-list-dialog";
 import {
   isWalletCreated,
   loadBackup,
@@ -240,7 +241,11 @@ async function main(): Promise<void> {
 
   if (listCredentialsButton instanceof HTMLButtonElement) {
     listCredentialsButton.addEventListener("click", () => {
-      void refreshCredentialCount().catch((error: unknown) => {
+      void (async () => {
+        const listed = await credentialStore.list();
+        credentialCountEl.textContent = String(listed.length);
+        showCredentialListDialog(listed);
+      })().catch((error: unknown) => {
         console.error("[ows-example-general-wallet] list credentials failed", error);
       });
     });
