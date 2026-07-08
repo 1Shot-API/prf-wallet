@@ -14,7 +14,7 @@ import { credentialConsentModule } from "./ows/credential-consent/install";
 import {
   createCredentialsProviderModule,
 } from "./ows/credentials-provider/install";
-import { InMemoryCredentialStore } from "@1shotapi/ows-credentials/mock";
+import { LocalStorageCredentialStore } from "@1shotapi/ows-credentials/mock";
 import { showCredentialListDialog } from "./credential-list-dialog";
 import {
   isWalletCreated,
@@ -61,7 +61,7 @@ const restoreBackupButton = document.getElementById("restore-backup");
 const listCredentialsButton = document.getElementById("list-credentials");
 const credentialCountEl = document.getElementById("credential-count")!;
 
-const credentialStore = new InMemoryCredentialStore();
+const credentialStore = new LocalStorageCredentialStore();
 
 /**
  * Whether keys are available this tab. How they were obtained (passkey vs

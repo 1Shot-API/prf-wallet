@@ -81,6 +81,7 @@ export class OWSProxy {
       walletSizeX: options?.walletSizeX ?? DEFAULT_WALLET_SIZE_X,
       walletSizeY: options?.walletSizeY ?? DEFAULT_WALLET_SIZE_Y,
     });
+    displayHandler.initializeHidden();
     const rpcClient = new RpcHostClient(
       parent,
       options?.rpcTimeoutMs ?? DEFAULT_RPC_TIMEOUT_MS,

@@ -94,6 +94,20 @@ export class DisplayHostHandler {
   }
 
   /**
+   * Collapse the host container and iframe until {@link show} or a branding display
+   * request. Call once after Postmate creates the iframe so hosts need no wallet CSS.
+   */
+  initializeHidden(): void {
+    const frame = this.parent.frame;
+    if (!(frame instanceof HTMLIFrameElement)) {
+      return;
+    }
+
+    this.applyHiddenLayout(frame);
+    this.captureOriginalLayout(frame);
+  }
+
+  /**
    * Host-initiated lower-right flyout (visible branding panel).
    * Kept open until {@link hide} or the branding layer requests hide.
    * Uses the configured {@link DisplayHostHandlerOptions.walletSizeX} /
@@ -339,6 +353,53 @@ export class DisplayHostHandler {
     frame.style.removeProperty("box-shadow");
   }
 
+  /** Default hidden embed: zero-size clipped container; iframe loaded but not visible. */
+  private applyHiddenLayout(frame: HTMLIFrameElement): void {
+    const container = frame.parentElement;
+
+    if (container) {
+      container.style.setProperty("display", "block", "important");
+      container.style.setProperty("position", "fixed", "important");
+      container.style.setProperty("inset", "auto", "important");
+      container.style.setProperty("top", "0", "important");
+      container.style.setProperty("left", "0", "important");
+      container.style.setProperty("bottom", "auto", "important");
+      container.style.setProperty("right", "auto", "important");
+      container.style.setProperty("width", "0", "important");
+      container.style.setProperty("height", "0", "important");
+      container.style.setProperty("overflow", "hidden", "important");
+      container.style.setProperty("clip-path", "inset(50%)", "important");
+      container.style.setProperty("pointer-events", "none", "important");
+      container.style.setProperty("opacity", "0", "important");
+      container.style.setProperty("z-index", "-1", "important");
+      container.style.removeProperty("border-radius");
+      container.style.removeProperty("box-shadow");
+      container.style.removeProperty("background");
+      container.setAttribute("aria-hidden", "true");
+    }
+
+    frame.style.setProperty("display", "block", "important");
+    frame.style.setProperty("position", "static", "important");
+    frame.style.setProperty("width", "100%", "important");
+    frame.style.setProperty("height", "100%", "important");
+    frame.style.setProperty("border", "none", "important");
+    frame.style.setProperty("margin", "0", "important");
+    frame.style.setProperty("padding", "0", "important");
+    frame.style.setProperty("transform", "none", "important");
+    frame.style.setProperty("pointer-events", "none", "important");
+    frame.style.setProperty("opacity", "0", "important");
+    frame.style.removeProperty("top");
+    frame.style.removeProperty("left");
+    frame.style.removeProperty("right");
+    frame.style.removeProperty("bottom");
+    frame.style.removeProperty("z-index");
+    frame.style.removeProperty("border-radius");
+    frame.style.removeProperty("box-shadow");
+    frame.style.removeProperty("background");
+    frame.style.removeProperty("color-scheme");
+    frame.removeAttribute("aria-hidden");
+  }
+
   private focusFrame(): void {
     const frame = this.parent.frame;
     if (!(frame instanceof HTMLIFrameElement)) {
@@ -355,6 +416,10 @@ export class DisplayHostHandler {
 
   private hideLayout(): void {
     if (!this.originalLayout) {
+      const frame = this.parent.frame;
+      if (frame instanceof HTMLIFrameElement) {
+        this.applyHiddenLayout(frame);
+      }
       return;
     }
 

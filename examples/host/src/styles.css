@@ -151,11 +151,3 @@ body {
   word-break: break-all;
   white-space: pre-wrap;
 }
-
-.wallet-container {
-  position: absolute;
-  width: 0;
-  height: 0;
-  overflow: hidden;
-  clip-path: inset(50%);
-}

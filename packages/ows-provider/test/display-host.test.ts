@@ -177,6 +177,28 @@ describe("DisplayHostHandler", () => {
     assert.equal(mock.calls[0]?.method, OWS_HIDE_READY_MODEL_METHOD);
   });
 
+  it("initializeHidden collapses a full-screen host container", () => {
+    const mock = createMockParent();
+    Object.setPrototypeOf(mock.frame, MockHTMLIFrameElement.prototype);
+    const containerStyle = mock.frame.parentElement.style as unknown as Record<
+      string,
+      string
+    >;
+    containerStyle.inset = "0";
+    containerStyle.width = "100%";
+    containerStyle.height = "100%";
+
+    const handler = new DisplayHostHandler(mock.parent);
+    handler.initializeHidden();
+
+    assert.equal(containerStyle.width, "0");
+    assert.equal(containerStyle.height, "0");
+    assert.equal(containerStyle["clip-path"], "inset(50%)");
+    assert.equal(containerStyle.opacity, "0");
+    assert.equal(containerStyle["pointer-events"], "none");
+    handler.destroy();
+  });
+
   it("prepareForRpcAccess overrides clip-path for hidden containers", () => {
     const mock = createMockParent();
     Object.setPrototypeOf(mock.frame, MockHTMLIFrameElement.prototype);

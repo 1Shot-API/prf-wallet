@@ -48,13 +48,3 @@ button {
   overflow: auto;
   font-size: 0.8rem;
 }
-
-.wallet-container {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-}
-
-.wallet-container iframe {
-  pointer-events: auto;
-}
