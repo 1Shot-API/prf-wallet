@@ -2,12 +2,17 @@ const path = require("node:path");
 const webpack = require("webpack");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const dotenv = require("dotenv");
+const { resolveHttpsOptions } = require("../dev-https.cjs");
 
 dotenv.config({ path: path.resolve(__dirname, "../../.env") });
 
 /** @param {import('webpack').Configuration} env */
 module.exports = (_env, argv) => {
   const isProd = argv.mode === "production";
+  const https = resolveHttpsOptions({
+    certsDir: path.resolve(__dirname, "certs"),
+    exampleLabel: "examples/host",
+  });
 
   return {
     entry: path.resolve(__dirname, "src/main.ts"),
@@ -57,6 +62,14 @@ module.exports = (_env, argv) => {
       host: "0.0.0.0",
       allowedHosts: "all",
       historyApiFallback: true,
+      ...(https
+        ? {
+            server: {
+              type: "https",
+              options: https,
+            },
+          }
+        : {}),
     },
   };
 };
@@ -81,3 +94,8 @@ function normalizeNgrokDomain(value) {
 }
 
 module.exports.walletIframeUrl = walletIframeUrl;
+module.exports.resolveHttpsOptions = () =>
+  resolveHttpsOptions({
+    certsDir: path.resolve(__dirname, "certs"),
+    exampleLabel: "examples/host",
+  });

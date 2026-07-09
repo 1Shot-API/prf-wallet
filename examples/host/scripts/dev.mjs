@@ -80,9 +80,17 @@ process.on("SIGTERM", () => {
 
 try {
   await startDevServer();
-  const walletUrl = require("../webpack.config.cjs").walletIframeUrl();
-  console.log(`OWS example host: http://localhost:${port}`);
+  const { walletIframeUrl, resolveHttpsOptions } = require("../webpack.config.cjs");
+  const scheme = resolveHttpsOptions() ? "https" : "http";
+  const walletUrl = walletIframeUrl();
+  console.log(`OWS example host: ${scheme}://localhost:${port}`);
+  console.log(`  Also try: ${scheme}://ows-host.com:${port} (hosts file → 127.0.0.1)`);
   console.log(`  Branding Layer iframe: ${walletUrl}`);
+  if (scheme === "http") {
+    console.log(
+      "  Tip: HTTPS host is required for passkeys in nested HTTPS iframes — see examples/host/README.md",
+    );
+  }
 } catch (error) {
   console.error("Failed to start host dev server:", error);
   process.exit(1);

@@ -63,8 +63,17 @@ try {
   devServer = new WebpackDevServer(config.devServer, webpack(config));
   await devServer.start();
   await waitForPort("127.0.0.1", port);
-  console.log(`OWS credential issuer demo: http://localhost:${port}`);
+  const scheme = webpackConfig.resolveHttpsOptions() ? "https" : "http";
+  console.log(`OWS credential issuer demo: ${scheme}://localhost:${port}`);
+  console.log(
+    `  Also try: ${scheme}://ows-host.com:${port} (hosts file → 127.0.0.1)`,
+  );
   console.log(`  Branding Layer iframe: ${webpackConfig.walletIframeUrl()}`);
+  if (scheme === "http") {
+    console.log(
+      "  Tip: HTTPS host is required for passkeys in nested HTTPS iframes — see examples/host/README.md",
+    );
+  }
 } catch (error) {
   console.error("Failed to start credential issuer dev server:", error);
   process.exit(1);
