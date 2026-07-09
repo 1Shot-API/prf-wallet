@@ -38,6 +38,17 @@ function createBackdrop(container: HTMLElement): HTMLDivElement {
   return backdrop;
 }
 
+function attachBackdropDismiss(
+  backdrop: HTMLElement,
+  onDismiss: () => void,
+): void {
+  backdrop.addEventListener("click", (event) => {
+    if (event.target === backdrop) {
+      onDismiss();
+    }
+  });
+}
+
 export function requestCredentialOfferApproval(
   request: CredentialOfferApprovalRequest,
   options?: CredentialConsentDialogOptions,
@@ -90,13 +101,18 @@ export function requestCredentialOfferApproval(
     approveBtn.textContent = "Accept";
     approveBtn.style.cssText = `${buttonStyle};background:Highlight;color:HighlightText`;
 
+    let settled = false;
+
     const cleanup = (approved: boolean) => {
+      if (settled) return;
+      settled = true;
       backdrop.remove();
       resolve(approved);
     };
 
     rejectBtn.addEventListener("click", () => cleanup(false));
     approveBtn.addEventListener("click", () => cleanup(true));
+    attachBackdropDismiss(backdrop, () => cleanup(false));
 
     actions.append(rejectBtn, approveBtn);
     panel.append(title, issuer, offeredLabel, offeredList, note, actions);
@@ -112,31 +128,11 @@ export function requestCredentialPresentationApproval(
   const container = options?.container ?? document.body;
 
   return new Promise((resolve) => {
-    const backdrop = document.createElement("div");
-    backdrop.className = "ows-credential-consent-backdrop";
-    backdrop.style.cssText = [
-      "position:fixed",
-      "inset:0",
-      "z-index:10000",
-      "display:flex",
-      "align-items:center",
-      "justify-content:center",
-      "background:color-mix(in srgb, CanvasText 25%, transparent)",
-    ].join(";");
+    const backdrop = createBackdrop(container);
 
     const panel = document.createElement("div");
     panel.className = "ows-credential-consent-panel";
-    panel.style.cssText = [
-      "max-width:28rem",
-      "width:calc(100% - 2rem)",
-      "padding:1.25rem",
-      "border-radius:8px",
-      "background:Canvas",
-      "color:CanvasText",
-      "border:1px solid color-mix(in srgb, CanvasText 20%, transparent)",
-      "font:system-ui,sans-serif",
-      "line-height:1.5",
-    ].join(";");
+    panel.style.cssText = panelStyle;
 
     const title = document.createElement("h2");
     title.textContent = "Share credential?";
@@ -173,27 +169,29 @@ export function requestCredentialPresentationApproval(
     const rejectBtn = document.createElement("button");
     rejectBtn.type = "button";
     rejectBtn.textContent = "Reject";
-    rejectBtn.style.cssText =
-      "padding:0.5rem 0.875rem;border:1px solid color-mix(in srgb, CanvasText 25%, transparent);border-radius:6px;background:transparent;color:inherit;font:inherit;cursor:pointer";
+    rejectBtn.style.cssText = `${buttonStyle};background:transparent;color:inherit`;
 
     const approveBtn = document.createElement("button");
     approveBtn.type = "button";
     approveBtn.textContent = "Share";
-    approveBtn.style.cssText =
-      "padding:0.5rem 0.875rem;border:1px solid color-mix(in srgb, CanvasText 25%, transparent);border-radius:6px;background:Highlight;color:HighlightText;font:inherit;cursor:pointer";
+    approveBtn.style.cssText = `${buttonStyle};background:Highlight;color:HighlightText`;
+
+    let settled = false;
 
     const cleanup = (approved: boolean) => {
+      if (settled) return;
+      settled = true;
       backdrop.remove();
       resolve(approved);
     };
 
     rejectBtn.addEventListener("click", () => cleanup(false));
     approveBtn.addEventListener("click", () => cleanup(true));
+    attachBackdropDismiss(backdrop, () => cleanup(false));
 
     actions.append(rejectBtn, approveBtn);
     panel.append(title, verifier, credential, claimsLabel, claimsList, note, actions);
     backdrop.append(panel);
-    container.append(backdrop);
     approveBtn.focus();
   });
 }
