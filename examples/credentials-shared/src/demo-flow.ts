@@ -17,9 +17,6 @@ import type {
   CredentialIssuer,
 } from "@1shotapi/ows-types";
 import {
-  CredentialOfferUri,
-  PresentationRequestUri,
-  UriString,
   NoopCredentialStatusValidator,
 } from "@1shotapi/ows-types";
 import { verifySdJwtVcPresentation } from "@1shotapi/ows-provider";
@@ -78,13 +75,13 @@ export class DemoCredentialFlow {
 
   async acceptOffer(
     input: CredentialOfferInput = {
-      credentialOfferUri: CredentialOfferUri(MOCK_KYC_OFFER_URI),
+      credentialOfferUri: MOCK_KYC_OFFER_URI,
     },
   ): Promise<CredentialReceipt> {
     const uri = input.credentialOfferUri;
     const offer =
       input.offer ??
-      (uri ? await this.oid4vci.resolveOffer(UriString(uri)) : undefined);
+      (uri ? await this.oid4vci.resolveOffer(uri) : undefined);
     if (!offer) {
       throw new Error("credentialOfferUri or offer is required");
     }
@@ -109,13 +106,13 @@ export class DemoCredentialFlow {
 
   async present(
     input: PresentationRequestInput = {
-      requestUri: PresentationRequestUri(MOCK_KYC_PRESENTATION_URI),
+      requestUri: MOCK_KYC_PRESENTATION_URI,
     },
   ): Promise<PresentationResult> {
     const uri = input.requestUri;
     const definition =
       input.request ??
-      (uri ? await this.oid4vp.resolveRequest(UriString(uri)) : undefined);
+      (uri ? await this.oid4vp.resolveRequest(uri) : undefined);
     if (!definition) {
       throw new Error("requestUri or request is required");
     }

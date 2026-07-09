@@ -3,8 +3,10 @@ import {
   CredentialConfigurationId,
   CredentialId,
   CredentialIssuer,
+  CredentialOfferUri,
   CredentialTypeName,
   ISO8601DateTime,
+  PresentationRequestUri,
   UriString,
   type StoredCredential,
   type CredentialOffer,
@@ -20,9 +22,9 @@ export const MOCK_KYC_ISSUER_ID = CredentialIssuer(
   "https://kyc.demo.issuer.example",
 );
 
-export const MOCK_KYC_OFFER_URI = UriString("mock://kyc-offer/demo");
+export const MOCK_KYC_OFFER_URI = CredentialOfferUri("mock://kyc-offer/demo");
 
-export const MOCK_KYC_PRESENTATION_URI = UriString(
+export const MOCK_KYC_PRESENTATION_URI = PresentationRequestUri(
   "mock://kyc-presentation/demo",
 );
 

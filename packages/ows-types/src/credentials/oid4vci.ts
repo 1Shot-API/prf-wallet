@@ -2,8 +2,8 @@ import type {
   CredentialConfigurationId,
   CredentialFormatId,
   CredentialIssuer,
+  CredentialOfferUri,
   CredentialScope,
-  UriString,
 } from "../primitives/index.js";
 import type { StoredCredential } from "./credential.js";
 import type { CredentialOffer } from "./offer.js";
@@ -27,7 +27,7 @@ export type CredentialIssuanceContext = {
 };
 
 export interface Oid4vciClient {
-  resolveOffer(uri: UriString): Promise<CredentialOffer>;
+  resolveOffer(uri: CredentialOfferUri): Promise<CredentialOffer>;
   fetchIssuerMetadata(issuer: CredentialIssuer): Promise<IssuerMetadata>;
   requestCredential(
     offer: CredentialOffer,

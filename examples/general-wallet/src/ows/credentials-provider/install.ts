@@ -6,7 +6,6 @@ import {
   HexString,
   OwsUserRejectedError,
   PresentationRequestUri,
-  UriString,
   NoopCredentialStatusValidator,
   type CredentialOffer,
   type CredentialOfferApprovalRequest,
@@ -87,7 +86,7 @@ export function createCredentialsProviderModule(
           const uri = input.credentialOfferUri;
           const offer =
             input.offer ??
-            (uri ? await oid4vci.resolveOffer(UriString(uri)) : undefined);
+            (uri ? await oid4vci.resolveOffer(uri) : undefined);
           if (!offer) {
             throw new Error("credentialOfferUri or offer is required");
           }
@@ -131,7 +130,7 @@ export function createCredentialsProviderModule(
           const uri = input.requestUri;
           const definition =
             input.request ??
-            (uri ? await oid4vp.resolveRequest(UriString(uri)) : undefined);
+            (uri ? await oid4vp.resolveRequest(uri) : undefined);
           if (!definition) {
             throw new Error("requestUri or request is required");
           }

@@ -6,7 +6,8 @@ import {
   CredentialScope,
   CredentialTypeName,
   ISO8601DateTime,
-  type UriString,
+  UriString,
+  type CredentialOfferUri,
   type CredentialIssuer,
   type Oid4vciClient,
   type CredentialIssuanceContext,
@@ -25,7 +26,7 @@ import { DEMO_HOLDER_PUBLIC_JWK } from "../demo/demo-keys.js";
 
 /** MOCK OID4VCI client — resolves mock:// URIs and issues real demo SD-JWT VCs. */
 export class MockOid4vciClient implements Oid4vciClient {
-  async resolveOffer(uri: UriString): Promise<CredentialOffer> {
+  async resolveOffer(uri: CredentialOfferUri): Promise<CredentialOffer> {
     if (uri === MOCK_KYC_OFFER_URI || uri.startsWith("mock://kyc-offer")) {
       return { ...MOCK_KYC_OFFER };
     }
@@ -99,7 +100,7 @@ export class MockOid4vciClient implements Oid4vciClient {
         validUntil,
         credentialSubject: subject,
         credentialSchema: {
-          id: "https://schemas.ows.example/kyc/v1" as UriString,
+          id: UriString("https://schemas.ows.example/kyc/v1"),
           type: "JsonSchema",
         },
       },
