@@ -88,6 +88,10 @@ reference/                1ShotPay reference (not published)
 
 See `@1shotapi/ows-onchain`.
 
+## Integrity (planned)
+
+Client-side confirmation that official signer bytes are loaded (signed manifest + verify-before-execute, optional EIP-8244 pin) is **specced and tabled** — see [docs/trusted-loader-plan.md](docs/trusted-loader-plan.md). Not implemented yet.
+
 ## Tests
 
 ```bash
