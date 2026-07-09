@@ -34,6 +34,8 @@ spec/credentials/             OWS Credentials Extension normative docs
 
 Prefer **methods on objects** over standalone exported functions when the logic belongs to a single class or module (e.g. serialize an RPC envelope inside `RpcHostClient`, not as a public `createRpcRequest` helper). Export free functions only when they are genuinely shared utilities with multiple independent call sites.
 
+**No deprecations during active development.** OWS is pre-1.0 and not yet published for external consumers. When a pattern is renamed or superseded, update all call sites to the new API — do not leave `@deprecated` aliases, re-exports, or compatibility shims. Remove old names once migrations are complete.
+
 ## Branded types
 
 Use **branded primitives** from `@1shotapi/ows-types` (`ts-brand`) anywhere a value is semantically more than a raw `string`, `number`, or `bigint`.

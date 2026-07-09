@@ -128,9 +128,3 @@ function parseTypedData(
 
 /** Default export for registry `install.ts` convention. */
 export const approvalDialogModule = createApprovalDialogModule();
-
-/** @deprecated Use {@link approvalDialogModule}. */
-export const personalSignApprovalModule = approvalDialogModule;
-
-/** @deprecated Use {@link createApprovalDialogModule}. */
-export const createPersonalSignApprovalModule = createApprovalDialogModule;
