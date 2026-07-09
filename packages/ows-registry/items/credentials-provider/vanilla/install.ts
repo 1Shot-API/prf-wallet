@@ -1,13 +1,18 @@
 import type { BrandingContext, BrandingModule } from "@1shotapi/ows-branding-core";
 import {
+  CredentialFormatId,
   CredentialOfferUri,
   CredentialTypeName,
+  HexString,
   OwsUserRejectedError,
   PresentationRequestUri,
   UriString,
   NoopCredentialStatusValidator,
+  type CredentialOffer,
+  type CredentialOfferApprovalRequest,
   type CredentialPresentationApprovalRequest,
   type CredentialStore,
+  type IssuerMetadata,
   type Oid4vciClient,
   type Oid4vpClient,
   type CredentialStatusValidator,
@@ -40,14 +45,32 @@ export function createCredentialsProviderModule(
             ? options.holderSigner()
             : options.holderSigner;
         }
+
         return createOwsEd25519HolderSigner({
           getEd25519PublicKeyHex: async () => {
-            const keys = await ctx.signer.getPublicKey();
+            const cached = ctx.signer.getLastPublicKeyData?.();
+            if (cached?.ed25519PublicKey) {
+              return cached.ed25519PublicKey;
+            }
+            const keys = await ctx.signer.getPublicKey({
+              credentialId: ctx.signer.getCredentialId(),
+            });
             return keys.ed25519PublicKey;
           },
-          signDigest: (digest, scheme) =>
-            ctx.signer.signDigest(digest, scheme ?? "ed25519"),
+          signDigest: async (digest, scheme) => {
+            const result = await ctx.signer.signDigest(digest, scheme ?? "ed25519");
+            return { signature: HexString(result.signature) };
+          },
         });
+      };
+
+      const requestOfferApproval = async (
+        request: CredentialOfferApprovalRequest,
+      ): Promise<boolean> => {
+        if (ctx.ui?.requestCredentialOfferApproval) {
+          return ctx.ui.requestCredentialOfferApproval(request);
+        }
+        return true;
       };
 
       const requestPresentationApproval = async (
@@ -61,24 +84,32 @@ export function createCredentialsProviderModule(
 
       ctx.wallet.credentials.register({
         acceptOffer: async (input) => {
-          await ctx.ensureReady?.();
+          const uri = input.credentialOfferUri;
+          const offer =
+            input.offer ??
+            (uri ? await oid4vci.resolveOffer(UriString(uri)) : undefined);
+          if (!offer) {
+            throw new Error("credentialOfferUri or offer is required");
+          }
+
+          const metadata = await oid4vci.fetchIssuerMetadata(
+            offer.credentialIssuer,
+          );
 
           const display = await ctx.wallet.requestDisplay({
             width: 400,
-            height: 420,
+            height: 460,
           });
           try {
-            const uri = input.credentialOfferUri;
-            const offer =
-              input.offer ??
-              (uri ? await oid4vci.resolveOffer(UriString(uri)) : undefined);
-            if (!offer) {
-              throw new Error("credentialOfferUri or offer is required");
+            const approved = await requestOfferApproval(
+              buildOfferApprovalRequest(offer, metadata),
+            );
+            if (!approved) {
+              throw new OwsUserRejectedError("User rejected credential offer");
             }
 
-            const metadata = await oid4vci.fetchIssuerMetadata(
-              offer.credentialIssuer,
-            );
+            await ctx.ensureReady?.();
+
             const holderSigner = await resolveHolderSigner();
             const stored = await oid4vci.requestCredential(offer, metadata, {
               holderPublicKeyJwk: await holderSigner.publicKeyJwk(),
@@ -97,8 +128,6 @@ export function createCredentialsProviderModule(
         },
 
         present: async (input) => {
-          await ctx.ensureReady?.();
-
           const uri = input.requestUri;
           const definition =
             input.request ??
@@ -116,7 +145,7 @@ export function createCredentialsProviderModule(
           const match = matches[0]!;
           const display = await ctx.wallet.requestDisplay({
             width: 420,
-            height: 480,
+            height: 500,
           });
           try {
             const approved = await requestPresentationApproval({
@@ -132,6 +161,8 @@ export function createCredentialsProviderModule(
             if (!approved) {
               throw new OwsUserRejectedError("User rejected credential presentation");
             }
+
+            await ctx.ensureReady?.();
 
             const credential = await options.store.get(match.credentialId);
             if (!credential) {
@@ -153,6 +184,32 @@ export function createCredentialsProviderModule(
       });
     },
   };
+}
+
+function buildOfferApprovalRequest(
+  offer: CredentialOffer,
+  metadata: IssuerMetadata,
+): CredentialOfferApprovalRequest {
+  return {
+    issuerName: formatIssuerName(offer.credentialIssuer),
+    issuerId: offer.credentialIssuer,
+    offeredCredentials: offer.credentialConfigurationIds.map((configurationId) => {
+      const config = metadata.credentialConfigurationsSupported[configurationId];
+      return {
+        configurationId,
+        format: config?.format ?? CredentialFormatId("sd-jwt-vc"),
+        scope: config?.scope,
+      };
+    }),
+  };
+}
+
+function formatIssuerName(issuer: CredentialOffer["credentialIssuer"]): string {
+  try {
+    return new URL(issuer).hostname;
+  } catch {
+    return issuer;
+  }
 }
 
 /** Convenience for demos — uses mock URI constants. */

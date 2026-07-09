@@ -14,13 +14,18 @@ import { credentialConsentModule } from "./ows/credential-consent/install";
 import {
   createCredentialsProviderModule,
 } from "./ows/credentials-provider/install";
+import { createAccountConnectModule } from "./ows/account-connect/install";
+import { createWalletSetupModule } from "./ows/wallet-setup/install";
 import { LocalStorageCredentialStore, MockOid4vciClient, MockOid4vpClient } from "../../credentials-shared/src/index.js";
 import { showCredentialListDialog } from "./credential-list-dialog";
 import {
   isWalletCreated,
   loadBackup,
+  loadCachedEvmAddress,
+  loadCachedSolanaAddress,
   loadCredentialId,
   saveBackup,
+  saveCachedAddresses,
   saveWalletCreated,
 } from "./storage";
 
@@ -63,11 +68,13 @@ const credentialCountEl = document.getElementById("credential-count")!;
 
 const credentialStore = new LocalStorageCredentialStore();
 
-/**
- * Whether keys are available this tab. How they were obtained (passkey vs
- * recovery) stays inside the Signing Layer — branding only tracks unlocked.
- */
-let unlocked = false;
+const walletStorage = {
+  isWalletCreated,
+  loadCredentialId,
+  saveWalletCreated,
+  saveCachedAddresses,
+  loadCachedEvmAddress,
+};
 
 function setAddresses(
   evm: EVMAccountAddress,
@@ -82,8 +89,8 @@ async function refreshCredentialCount(): Promise<void> {
   credentialCountEl.textContent = String(listed.length);
 }
 
-function refreshStatusUi(): void {
-  if (unlocked) {
+function refreshStatusUi(walletSetup: { isUnlocked: () => boolean }): void {
+  if (walletSetup.isUnlocked()) {
     walletStatusEl.textContent = "Unlocked";
   } else if (isWalletCreated()) {
     walletStatusEl.textContent = "Created (locked)";
@@ -92,10 +99,21 @@ function refreshStatusUi(): void {
   }
 
   if (createBackupButton instanceof HTMLElement) {
-    createBackupButton.hidden = !unlocked;
+    createBackupButton.hidden = !walletSetup.isUnlocked();
   }
   if (restoreBackupButton instanceof HTMLElement) {
-    restoreBackupButton.hidden = unlocked;
+    restoreBackupButton.hidden = walletSetup.isUnlocked();
+  }
+}
+
+function revealMainWalletPanel(): void {
+  const onboarding = document.getElementById("wallet-onboarding");
+  const mainPanel = document.getElementById("wallet-main");
+  if (onboarding instanceof HTMLElement) {
+    onboarding.hidden = true;
+  }
+  if (mainPanel instanceof HTMLElement) {
+    mainPanel.hidden = false;
   }
 }
 
@@ -106,9 +124,16 @@ function setChainSelectValue(chainId: EVMChainId): void {
 async function main(): Promise<void> {
   const signerUrl = new URL("/signer/", window.location.origin).href;
 
-  // Do not auto-prompt WebAuthn on load — show locked/created status only.
-  refreshStatusUi();
-  setAddresses(EVMAccountAddress("0x0"), SolanaAccountAddress("—"));
+  const cachedEvm = loadCachedEvmAddress();
+  const cachedSolana = loadCachedSolanaAddress();
+  if (cachedEvm) {
+    setAddresses(
+      cachedEvm,
+      cachedSolana ?? SolanaAccountAddress("—"),
+    );
+  } else {
+    setAddresses(EVMAccountAddress("0x0"), SolanaAccountAddress("—"));
+  }
 
   const signer = await OWSSigner.create(
     document.getElementById("signer-container")!,
@@ -119,54 +144,29 @@ async function main(): Promise<void> {
     },
   );
 
-  /**
-   * Addresses come only from the signer SDK. Passkey unlock and recoverKey both
-   * emit KeyDerived, which warms the address cache — getAccountAddress() is
-   * identical either way.
-   */
-  async function refreshAddresses(): Promise<void> {
-    // Sequential: a cold EVM call runs one getPublicKey ceremony and caches both.
-    const evm = await signer.evm.getAccountAddress();
-    const solana = await signer.solana.getAccountAddress();
-    setAddresses(evm, solana);
-  }
-
-  /** Unlock existing passkey wallet or create one. Does not run on page load. */
-  async function ensureWalletReady(): Promise<void> {
-    if (unlocked) {
-      return;
-    }
-
-    if (isWalletCreated()) {
-      console.info(
-        "[ows-example-general-wallet] unlocking existing passkey wallet",
-      );
-      await refreshAddresses();
-      unlocked = true;
-      refreshStatusUi();
-      return;
-    }
-
-    console.debug(
-      "[ows-example-general-wallet] navigator.userActivation.isActive",
-      navigator.userActivation.isActive,
-    );
-    console.info(
-      "[ows-example-general-wallet] createCredential via Signing Layer",
-    );
-    await signer.createCredential("ows-wallet", { rpName: "Open Wallet" });
-    const credentialId = signer.getCredentialId();
-    if (!credentialId) {
-      throw new Error("Passkey created but credential id missing");
-    }
-
-    saveWalletCreated(credentialId);
-    await refreshAddresses();
-    unlocked = true;
-    refreshStatusUi();
-  }
-
   const wallet = OWSWallet.prepare({ debug: true });
+
+  const walletSetup = createWalletSetupModule({
+    storage: walletStorage,
+    wallet,
+    signer,
+    onUnlocked: async () => {
+      revealMainWalletPanel();
+      const evm = await signer.evm.getAccountAddress();
+      const solana = await signer.solana.getAccountAddress();
+      setAddresses(evm, solana);
+      saveCachedAddresses(evm, solana);
+      refreshStatusUi(walletSetup);
+    },
+  });
+
+  refreshStatusUi(walletSetup);
+
+  const accountConnect = createAccountConnectModule({
+    storage: walletStorage,
+    ensureReady: walletSetup.ensureReady,
+    signer,
+  });
 
   const defaultChainId = DEMO_CHAINS[0]!.chainId;
   const rpcProvider = createRpcProviderModule({
@@ -195,9 +195,10 @@ async function main(): Promise<void> {
     {
       wallet,
       signer,
-      ensureReady: ensureWalletReady,
+      ensureReady: walletSetup.ensureReady,
     },
     [
+      accountConnect,
       rpcProvider,
       approvalDialogModule,
       credentialConsentModule,
@@ -218,28 +219,25 @@ async function main(): Promise<void> {
         signerContainer: "#signer-container",
         getEncryptedPrivateKey: () => loadBackup(),
         onRestored: async () => {
-          unlocked = true;
-          refreshStatusUi();
-          await refreshAddresses();
+          walletSetup.setUnlocked(true);
+          revealMainWalletPanel();
+          refreshStatusUi(walletSetup);
+          const evm = await signer.evm.getAccountAddress();
+          const solana = await signer.solana.getAccountAddress();
+          setAddresses(evm, solana);
+          saveCachedAddresses(evm, solana);
         },
       }),
     ],
   );
 
-  wallet.registerEip1193("eth_requestAccounts", async () => {
-    await ensureWalletReady();
-    return [await signer.evm.getAccountAddress()];
-  });
-
-  wallet.registerEip1193("eth_accounts", async () => {
-    // Silent: do not prompt WebAuthn when locked.
-    if (!unlocked) {
-      return [];
-    }
-    return [await signer.evm.getAccountAddress()];
-  });
-
   await wallet.start();
+
+  await installBrandingModules(
+    { wallet, signer, ensureReady: walletSetup.ensureReady },
+    [walletSetup.module],
+    "post-start",
+  );
 
   void refreshCredentialCount();
 
@@ -255,9 +253,6 @@ async function main(): Promise<void> {
     });
   }
 
-  // Branding is a direct child of the host (`parent === top`), unlike the
-  // Signing Layer which is nested (`parent !== top`). Show chrome whenever we
-  // are embedded in any iframe.
   if (window.parent !== window) {
     document.getElementById("wallet-chrome")?.classList.add("wallet-chrome--embedded");
     document.getElementById("wallet-close")?.addEventListener("click", () => {

@@ -1,11 +1,13 @@
 import type { OWSSigner } from "@1shotapi/ows-signer-utils";
 import type { OWSWallet } from "@1shotapi/ows-wallet-utils";
 import type {
+  CredentialOfferApprovalRequest,
   CredentialPresentationApprovalRequest,
+  ED25519PublicKey,
   EVMAccountAddress,
+  PasskeyPublicKey,
+  SECP256K1PublicKey,
 } from "@1shotapi/ows-types";
-
-export type { CredentialPresentationApprovalRequest };
 
 /** When the module may register handlers on `OWSWallet`. */
 export type BrandingModulePhase = "pre-start" | "post-start";
@@ -46,6 +48,10 @@ export type UiHost = {
   requestCredentialPresentationApproval(
     request: CredentialPresentationApprovalRequest,
   ): Promise<boolean>;
+  /** Credential issuance consent before OID4VCI acceptance. */
+  requestCredentialOfferApproval(
+    request: CredentialOfferApprovalRequest,
+  ): Promise<boolean>;
 };
 
 /** Wallet surface registry modules may call (subset of `OWSWallet`). */
@@ -56,10 +62,24 @@ export type BrandingWalletHost = Pick<
 
 /** Signer surface registry modules may call (subset of `OWSSigner`). */
 export type BrandingSignerHost = {
-  evm: Pick<OWSSigner["evm"], "signMessage" | "signTypedData">;
+  evm: Pick<
+    OWSSigner["evm"],
+    "getAccountAddress" | "signMessage" | "signTypedData"
+  >;
+  solana: Pick<OWSSigner["solana"], "getAccountAddress">;
+  createCredential: OWSSigner["createCredential"];
+  getCredentialId: OWSSigner["getCredentialId"];
   createRecoveryData: OWSSigner["createRecoveryData"];
   recoverKey: OWSSigner["recoverKey"];
   getPublicKey: OWSSigner["getPublicKey"];
+  getLastPublicKeyData?: () =>
+    | {
+        passkeyPublicKey: PasskeyPublicKey | null;
+        secp256k1PublicKey: SECP256K1PublicKey;
+        ed25519PublicKey: ED25519PublicKey;
+        credentialId?: string;
+      }
+    | undefined;
   signDigest: OWSSigner["signDigest"];
 };
 

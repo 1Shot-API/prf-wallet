@@ -61,6 +61,9 @@ export function createApprovalDialogModule(
           if (!approved) {
             throw new OwsUserRejectedError("User rejected the signing request");
           }
+          if (ctx.ensureReady) {
+            await ctx.ensureReady();
+          }
           return ctx.signer.evm.signMessage({ message });
         });
       });
@@ -87,6 +90,9 @@ export function createApprovalDialogModule(
                   "User rejected the signing request",
                 );
               }
+              if (ctx.ensureReady) {
+                await ctx.ensureReady();
+              }
               return ctx.signer.evm.signTypedData(
                 typedData as unknown as SignTypedDataInput,
               );
@@ -103,10 +109,6 @@ async function withSigningApproval<T>(
   size: { width: number; height: number },
   run: () => Promise<T>,
 ): Promise<T> {
-  if (ctx.ensureReady) {
-    await ctx.ensureReady();
-  }
-
   const display = await ctx.wallet.requestDisplay(size);
   try {
     return await run();

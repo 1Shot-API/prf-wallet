@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { DisplayRequestId, EVMSignatureHex, ED25519PublicKey, SECP256K1PublicKey } from "@1shotapi/ows-types";
+import { DisplayRequestId, EVMAccountAddress, EVMSignatureHex, ED25519PublicKey, SECP256K1PublicKey, SolanaAccountAddress } from "@1shotapi/ows-types";
 import { installBrandingModules } from "../src/install.ts";
 import type { BrandingContext, BrandingModule } from "../src/types.ts";
 
@@ -20,9 +20,20 @@ function createTestContext(
     },
     signer: {
       evm: {
+        getAccountAddress: async () =>
+          EVMAccountAddress(`0x${"01".repeat(20)}`),
         signMessage: async () => EVMSignatureHex("0x"),
         signTypedData: async () => EVMSignatureHex("0x"),
       },
+      solana: {
+        getAccountAddress: async () => SolanaAccountAddress("test"),
+      },
+      createCredential: async () => ({
+        credentialId: "cred",
+        passkeyPublicKey: null,
+        secp256k1PublicKey: SECP256K1PublicKey(`0x${"04".repeat(32)}`),
+      }),
+      getCredentialId: () => "cred",
       createRecoveryData: async () => ({ encryptedPrivateKey: "ows1:0x" }),
       recoverKey: async () => {},
       getPublicKey: async () => ({

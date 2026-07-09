@@ -98,6 +98,41 @@
       ]
     },
     {
+      "name": "wallet-setup",
+      "type": "registry:component",
+      "title": "Wallet setup and unlock",
+      "description": "Login / create passkey setup screen and ensureReady gate before signer ceremonies.",
+      "registryDependencies": [],
+      "dependencies": ["@1shotapi/ows-branding-core", "@1shotapi/ows-types"],
+      "files": [
+        {
+          "path": "items/wallet-setup/vanilla/install.ts",
+          "type": "registry:file",
+          "target": "src/ows/wallet-setup/install.ts"
+        },
+        {
+          "path": "items/wallet-setup/vanilla/dialog.ts",
+          "type": "registry:file",
+          "target": "src/ows/wallet-setup/dialog.ts"
+        }
+      ]
+    },
+    {
+      "name": "account-connect",
+      "type": "registry:component",
+      "title": "EIP-1193 account connect",
+      "description": "Cached eth_accounts and eth_requestAccounts with connect dialog before unlock.",
+      "registryDependencies": ["wallet-setup"],
+      "dependencies": ["@1shotapi/ows-branding-core", "@1shotapi/ows-types"],
+      "files": [
+        {
+          "path": "items/account-connect/vanilla/install.ts",
+          "type": "registry:file",
+          "target": "src/ows/account-connect/install.ts"
+        }
+      ]
+    },
+    {
       "name": "credential-consent",
       "type": "registry:component",
       "title": "Credential presentation consent",

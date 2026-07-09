@@ -12,6 +12,8 @@ export type CreateBackupDialogOptions = {
   minPasswordLength?: number;
   /** App-owned hook when a backup blob is created (e.g. persist to localStorage). */
   onBackupCreated?: (result: CreateBackupResult) => void | Promise<void>;
+  /** Run before signer ceremonies (e.g. passkey unlock). */
+  ensureReady?: () => Promise<void>;
   /** Override result presentation (default: in-dialog copy UI). */
   showResult?: (result: CreateBackupResult) => Promise<void>;
 };
@@ -124,6 +126,8 @@ export async function runCreateBackupFlow(
           options.signerContainer,
         );
         await waitForPaint();
+
+        await options.ensureReady?.();
 
         const result = await signer.createRecoveryData(
           `Passphrase (min ${minPasswordLength} characters)`,

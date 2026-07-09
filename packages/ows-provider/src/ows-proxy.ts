@@ -3,6 +3,8 @@ import { DEFAULT_RPC_TIMEOUT_MS } from "@1shotapi/ows-types";
 import { RpcHostClient } from "./rpc/host-client.js";
 import { EIP1193Provider } from "./eip1193/provider.js";
 import {
+  applyHiddenWalletContainerStyles,
+  applyHiddenWalletFrameStyles,
   DEFAULT_WALLET_SIZE_X,
   DEFAULT_WALLET_SIZE_Y,
   DisplayHostHandler,
@@ -65,6 +67,10 @@ export class OWSProxy {
     if (typeof window === "undefined") {
       throw new Error("OWSProxy requires a browser environment");
     }
+
+    // Hide the container before Postmate appends the iframe so wallet content
+    // does not flash while the cross-frame handshake completes.
+    applyHiddenWalletContainerStyles(container);
 
     // Postmate sets a minimal `allow` then appendChild, then assigns `src`.
     // Permissions Policy is fixed at navigation — patch allow on append, before src.
@@ -131,6 +137,7 @@ async function withWalletIframeAllow(
   container.appendChild = (<T extends Node>(node: T): T => {
     if (node instanceof HTMLIFrameElement) {
       node.allow = WALLET_IFRAME_ALLOW;
+      applyHiddenWalletFrameStyles(node);
     }
     return originalAppend(node) as T;
   }) as typeof container.appendChild;

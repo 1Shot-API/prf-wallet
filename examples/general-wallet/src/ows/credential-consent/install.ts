@@ -1,9 +1,12 @@
+import type { BrandingContext, BrandingModule } from "@1shotapi/ows-branding-core";
 import type {
-  BrandingContext,
-  BrandingModule,
+  CredentialOfferApprovalRequest,
   CredentialPresentationApprovalRequest,
-} from "@1shotapi/ows-branding-core";
-import { requestCredentialPresentationApproval } from "./dialog";
+} from "@1shotapi/ows-types";
+import {
+  requestCredentialOfferApproval,
+  requestCredentialPresentationApproval,
+} from "./dialog";
 
 export type CredentialConsentModuleOptions = {
   container?: HTMLElement;
@@ -23,6 +26,12 @@ export function createCredentialConsentModule(
       ctx.ui.requestCredentialPresentationApproval ??=
         (request: CredentialPresentationApprovalRequest) =>
           requestCredentialPresentationApproval(request, {
+            container: options?.container,
+          });
+
+      ctx.ui.requestCredentialOfferApproval ??=
+        (request: CredentialOfferApprovalRequest) =>
+          requestCredentialOfferApproval(request, {
             container: options?.container,
           });
     },

@@ -87,10 +87,6 @@ async function runBackupClick(
     "signerContainer",
   );
 
-  if (ctx.ensureReady) {
-    await ctx.ensureReady();
-  }
-
   const display = await ctx.wallet.requestDisplay({
     width: 480,
     height: 420,
@@ -104,6 +100,7 @@ async function runBackupClick(
       signerContainer,
       minPasswordLength: options.minPasswordLength,
       onBackupCreated: options.onBackupCreated,
+      ensureReady: ctx.ensureReady,
       showResult: hostShowResult
         ? (result: CreateBackupResult) => hostShowResult(result)
         : undefined,

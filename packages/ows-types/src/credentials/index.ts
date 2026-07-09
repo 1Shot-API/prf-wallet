@@ -1,6 +1,7 @@
 export type { CredentialFormat } from "./format.js";
 export type {
   CredentialOffer,
+  CredentialOfferApprovalRequest,
   CredentialOfferInput,
   CredentialReceipt,
 } from "./offer.js";

@@ -1,5 +1,4 @@
 export { OWSSigner, type OWSSignerOptions } from "./owssigner.js";
-export type { OwsSignerHostConfig, OwsSignerEvmApi } from "./owssigner.js";
 export {
   OwsSignerError,
   OwsInvalidRequestError,
