@@ -70,3 +70,13 @@ npm run dev -w @1shotapi/ows-example-credential-verifier
 ## Status
 
 Bootstrapped; OWS signer logic and SDKs not yet implemented.
+
+## Agent Skills
+
+Branding Layer scaffolding skill (install in a consumer repo):
+
+```bash
+npx skills add 1Shot-API/open-wallet@ows-branding-layer
+```
+
+See [skills/ows-branding-layer](skills/ows-branding-layer/).

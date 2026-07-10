@@ -87,6 +87,16 @@ npm run release            # build + publish to npm
 
 **Scaffold only** — package structure and OWS branding are in place. Signer logic, SDKs, and on-chain pipeline are forthcoming.
 
+## Agent Skills
+
+Build a Branding Layer in another repository with the published skill:
+
+```bash
+npx skills add 1Shot-API/open-wallet@ows-branding-layer
+```
+
+Source: [skills/ows-branding-layer](skills/ows-branding-layer/).
+
 ## License
 
 MIT — see [LICENSE](LICENSE).
