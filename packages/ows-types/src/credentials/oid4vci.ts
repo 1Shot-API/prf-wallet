@@ -21,9 +21,23 @@ export type IssuerMetadata = {
   >;
 };
 
+/** OID4VCI credential-request proof (`proof_type: jwt`). */
+export type Oid4vciJwtProof = {
+  proof_type: "jwt";
+  jwt: string;
+};
+
+/**
+ * Wallet-supplied holder key material and proof-of-possession for issuance.
+ * Mock and HTTP clients verify {@link proof} before embedding `cnf.jwk`.
+ */
 export type CredentialIssuanceContext = {
-  /** Holder public key (`cnf.jwk`) bound into the issued SD-JWT VC. */
-  holderPublicKeyJwk?: JsonWebKey;
+  /** Holder public key embedded as SD-JWT VC `cnf.jwk` after PoP verification. */
+  holderPublicKeyJwk: JsonWebKey;
+  /** OID4VCI JWT proof proving possession of {@link holderPublicKeyJwk}. */
+  proof: Oid4vciJwtProof;
+  /** Issuer C-nonce echoed in the proof when the issuer supplied one. */
+  nonce?: string;
 };
 
 export interface Oid4vciClient {

@@ -17,7 +17,7 @@ Branding registers handlers on `wallet.credentials`. The library builds presenta
 
 ---
 
-## Phase 1 — Real SD-JWT VC presentations (current)
+## Phase 1 — Real SD-JWT VC presentations
 
 **Goal:** Replace mock presentation blobs with standards-compliant SD-JWT VC selective disclosure and holder key binding (`kb+jwt`).
 
@@ -39,9 +39,12 @@ Branding registers handlers on `wallet.credentials`. The library builds presenta
 
 **Goal:** Bind credentials to the wallet key at issuance time per OID4VCI (`proof` / `cnf` in token request).
 
-- Extend `Oid4vciClient.requestCredential` with wallet-provided holder key material
-- Real issuers validate `cnf.jwk` matches presentation `kb+jwt` signer
-- Remove demo-only fixed keypairs where a live issuer is used
+- [x] Extend `Oid4vciClient.requestCredential` with wallet-provided holder key material + JWT proof
+- [x] Mock issuer verifies OID4VCI proof before embedding matching `cnf.jwk`
+- [x] Live wallet path (`registerCredentialsProvider`) builds proof via `HolderSigner` (no silent demo-holder fallback)
+- [x] Verifier demo inspects disclosed claims and highlights issuer → `cnf` → `kb+jwt` custody
+
+**Out of scope for Phase 2:** Real HTTP OID4VCI token endpoint (Phase 4); multi-credential presentations.
 
 ---
 
@@ -81,8 +84,8 @@ Branding registers handlers on `wallet.credentials`. The library builds presenta
 | `packages/ows-types/src/utils/credentials/sd-jwt-vc/` | SD-JWT VC presentation and crypto helpers |
 | `packages/ows-wallet-utils/src/credentials/` | Wire schemas, registrar, holder signer bridge |
 | `packages/ows-provider/src/credentials/` | Host client, SD-JWT verify |
-| `examples/general-wallet/src/ows/credentials-provider/` | Demo wire: store + OID4 + holder signer |
+| `examples/general-wallet/src/ows/registerCredentialsProvider.ts` | Demo wire: store + OID4 + holder signer + issuance PoP |
 | `examples/shared/` | Demo mocks (OID4 clients, stores, fixtures) |
 
 | `examples/credential-issuer` | Host demo — mock issuance |
-| `examples/credential-verifier` | Host demo — mock verification |
+| `examples/credential-verifier` | Host demo — mock verification + custody UI |

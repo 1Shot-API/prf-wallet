@@ -18,9 +18,15 @@ import type {
 } from "@1shotapi/ows-types";
 import {
   NoopCredentialStatusValidator,
+  ProofUtils,
+  decodeSdJwtVcIssuerClaims,
+  extractHolderJwkFromSdJwtVc,
+  extractKbJwtClaims,
+  type CredentialClaimName,
+  type JWKThumbprint,
 } from "@1shotapi/ows-types";
 import { verifySdJwtVcPresentation } from "@1shotapi/ows-provider";
-import { extractHolderJwkFromSdJwtVc } from "@1shotapi/ows-types";
+import type { SdJwtVcPayload } from "@sd-jwt/sd-jwt-vc";
 import { MockOid4vciClient } from "./mock/oid4vci.js";
 import { MockOid4vpClient } from "./mock/oid4vp.js";
 import { InMemoryCredentialStore } from "./in-memory-store.js";
@@ -29,6 +35,7 @@ import {
   MOCK_KYC_OFFER_URI,
   MOCK_KYC_PRESENTATION_URI,
   MOCK_KYC_PRESENTATION_REQUEST,
+  MOCK_OID4VCI_PROOF_NONCE,
 } from "./fixtures.js";
 import { createDemoHolderSigner } from "./demo/jwk-holder-signer.js";
 import { DEMO_ISSUER_PUBLIC_JWK } from "./demo/demo-keys.js";
@@ -63,9 +70,20 @@ export class DemoCredentialFlow {
     this.holderSigner = deps.holderSigner ?? createDemoHolderSigner();
   }
 
-  private async buildIssuanceContext(): Promise<CredentialIssuanceContext> {
+  private async buildIssuanceContext(
+    credentialIssuer: string,
+  ): Promise<CredentialIssuanceContext> {
+    const holderPublicKeyJwk = await this.holderSigner.publicKeyJwk();
+    const nonce = MOCK_OID4VCI_PROOF_NONCE;
+    const jwt = await ProofUtils.buildOid4vciProofJwt({
+      holderSigner: this.holderSigner,
+      audience: credentialIssuer,
+      nonce,
+    });
     return {
-      holderPublicKeyJwk: await this.holderSigner.publicKeyJwk(),
+      holderPublicKeyJwk,
+      proof: { proof_type: "jwt", jwt },
+      nonce,
     };
   }
 
@@ -92,7 +110,7 @@ export class DemoCredentialFlow {
     const stored = await this.oid4vci.requestCredential(
       offer,
       metadata,
-      await this.buildIssuanceContext(),
+      await this.buildIssuanceContext(metadata.credentialIssuer),
     );
     await this.status.checkStatus(stored);
     await this.store.save(stored);
@@ -149,12 +167,54 @@ export class DemoCredentialFlow {
   }
 }
 
+export type CustodyStepId =
+  | "issuer_signature"
+  | "issuer_allowed"
+  | "required_claims"
+  | "holder_cnf"
+  | "kb_signature"
+  | "kb_binding";
+
+export type CustodyStep = {
+  id: CustodyStepId;
+  label: string;
+  ok: boolean;
+  detail: string;
+};
+
 export type MockVerifierResult = {
   valid: boolean;
   reasons: string[];
+  /** Disclosed claim name → value (from crypto verify payload). */
+  disclosedClaims: Record<string, unknown>;
+  issuer?: string;
+  vct?: string;
+  format: string;
+  holderJwk?: JsonWebKey;
+  holderThumbprint?: JWKThumbprint;
+  kb?: {
+    nonce?: string;
+    aud?: string;
+    iat?: number;
+  };
+  custody: CustodyStep[];
 };
 
-/** MOCK verifier — checks presentation against KycProfilePolicy and SD-JWT VC crypto. */
+function claimValuesFromPayload(
+  payload: Record<string, unknown> | undefined,
+  requested: CredentialClaimName[],
+): Record<string, unknown> {
+  const out: Record<string, unknown> = {};
+  if (!payload) return out;
+  for (const name of requested) {
+    if (name in payload) {
+      out[name] = payload[name];
+    }
+  }
+  return out;
+}
+
+/** MOCK verifier — policy + crypto + chain-of-custody inspection. */
 export async function validateMockPresentation(
   presentation: PresentationResult,
   policy: KycProfilePolicy,
@@ -162,38 +222,143 @@ export async function validateMockPresentation(
   holderPublicKeyJwk?: JsonWebKey,
 ): Promise<MockVerifierResult> {
   const reasons: string[] = [];
+  const expectedNonce = MOCK_KYC_PRESENTATION_REQUEST.nonce!;
+  const expectedAudience =
+    MOCK_KYC_PRESENTATION_REQUEST.audience ??
+    MOCK_KYC_PRESENTATION_REQUEST.verifier.id;
 
-  if (!policy.allowedIssuers.includes(issuerId)) {
-    reasons.push(`Issuer not in allowed list: ${issuerId}`);
-  }
-
-  for (const claim of policy.requiredClaims) {
-    if (!presentation.disclosedClaims.includes(claim)) {
-      reasons.push(`Missing required claim: ${claim}`);
-    }
-  }
+  const issuerClaims = decodeSdJwtVcIssuerClaims(presentation.presentation);
+  const presentationIssuer = issuerClaims.iss ?? String(issuerId);
+  const vct = issuerClaims.vct;
 
   const holderJwk =
     holderPublicKeyJwk ??
-    extractHolderJwkFromSdJwtVc(presentation.presentation);
+    extractHolderJwkFromSdJwtVc(presentation.presentation) ??
+    issuerClaims.cnf?.jwk;
+
+  const kb = extractKbJwtClaims(presentation.presentation);
+  const holderThumbprint = holderJwk
+    ? await ProofUtils.jwkThumbprint(holderJwk)
+    : undefined;
+
+  const missingClaims = policy.requiredClaims.filter(
+    (claim) => !presentation.disclosedClaims.includes(claim),
+  );
+  const issuerAllowed = policy.allowedIssuers.some(
+    (allowed) => allowed === presentationIssuer || allowed === issuerId,
+  );
+
+  for (const claim of missingClaims) {
+    reasons.push(`Missing required claim: ${claim}`);
+  }
+  if (!issuerAllowed) {
+    reasons.push(`Issuer not in allowed list: ${presentationIssuer}`);
+  }
   if (!holderJwk) {
     reasons.push("Missing holder cnf.jwk in SD-JWT VC presentation");
-    return { valid: false, reasons };
   }
 
-  const cryptoResult = await verifySdJwtVcPresentation({
-    presentation: presentation.presentation,
-    issuerPublicKeyJwk: DEMO_ISSUER_PUBLIC_JWK,
-    holderPublicKeyJwk: holderJwk,
-    nonce: MOCK_KYC_PRESENTATION_REQUEST.nonce!,
-    audience:
-      MOCK_KYC_PRESENTATION_REQUEST.audience ??
-      MOCK_KYC_PRESENTATION_REQUEST.verifier.id,
-  });
+  let cryptoValid = false;
+  let cryptoReasons: string[] = [];
+  let payload: SdJwtVcPayload | undefined;
 
-  if (!cryptoResult.valid) {
-    reasons.push(...cryptoResult.reasons);
+  if (holderJwk) {
+    const cryptoResult = await verifySdJwtVcPresentation({
+      presentation: presentation.presentation,
+      issuerPublicKeyJwk: DEMO_ISSUER_PUBLIC_JWK,
+      holderPublicKeyJwk: holderJwk,
+      nonce: expectedNonce,
+      audience: expectedAudience,
+    });
+    cryptoValid = cryptoResult.valid;
+    cryptoReasons = cryptoResult.reasons;
+    payload = cryptoResult.payload;
+    if (!cryptoValid) {
+      reasons.push(...cryptoReasons);
+    }
   }
 
-  return { valid: reasons.length === 0, reasons };
+  const disclosedClaims = claimValuesFromPayload(
+    payload,
+    policy.requiredClaims,
+  );
+  for (const name of presentation.disclosedClaims) {
+    if (!(name in disclosedClaims) && payload && name in payload) {
+      disclosedClaims[name] = payload[name];
+    }
+  }
+
+  const kbBindingOk =
+    kb?.nonce === expectedNonce && kb?.aud === expectedAudience;
+
+  const custody: CustodyStep[] = [
+    {
+      id: "issuer_signature",
+      label: "Issuer signed SD-JWT VC",
+      ok: cryptoValid,
+      detail: cryptoValid
+        ? `Verified with demo issuer key (${presentationIssuer})`
+        : (cryptoReasons.find((r) => !/audience|nonce/i.test(r)) ??
+          (holderJwk
+            ? "Issuer or presentation signature failed"
+            : "Skipped — no holder key")),
+    },
+    {
+      id: "issuer_allowed",
+      label: "Issuer allowed by policy",
+      ok: issuerAllowed,
+      detail: issuerAllowed
+        ? `${presentationIssuer} is on the allow list`
+        : `${presentationIssuer} is not allowed`,
+    },
+    {
+      id: "required_claims",
+      label: "Required claims disclosed",
+      ok: missingClaims.length === 0,
+      detail:
+        missingClaims.length === 0
+          ? policy.requiredClaims.join(", ")
+          : `Missing: ${missingClaims.join(", ")}`,
+    },
+    {
+      id: "holder_cnf",
+      label: "Holder bound via cnf.jwk",
+      ok: Boolean(holderJwk),
+      detail: holderThumbprint
+        ? `thumbprint ${holderThumbprint}`
+        : "No cnf.jwk in credential",
+    },
+    {
+      id: "kb_signature",
+      label: "kb+jwt verifies under cnf.jwk",
+      ok: cryptoValid,
+      detail: cryptoValid
+        ? "Key-binding signature valid"
+        : (cryptoReasons.find((r) => /kb|key.?binding|signature/i.test(r)) ??
+          "Key-binding verification failed"),
+    },
+    {
+      id: "kb_binding",
+      label: "kb+jwt nonce and audience match request",
+      ok: kbBindingOk,
+      detail: kb
+        ? `nonce=${kb.nonce ?? "—"} aud=${kb.aud ?? "—"} (expected nonce=${expectedNonce} aud=${expectedAudience})`
+        : "Missing kb+jwt",
+    },
+  ];
+
+  return {
+    valid: reasons.length === 0 && custody.every((step) => step.ok),
+    reasons,
+    disclosedClaims,
+    issuer: presentationIssuer,
+    vct,
+    format: presentation.format,
+    holderJwk,
+    holderThumbprint,
+    kb: kb
+      ? { nonce: kb.nonce, aud: kb.aud, iat: kb.iat }
+      : undefined,
+    custody,
+  };
 }

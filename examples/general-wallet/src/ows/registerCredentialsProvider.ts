@@ -8,6 +8,7 @@ import {
   OwsUserRejectedError,
   PresentationRequestUri,
   NoopCredentialStatusValidator,
+  ProofUtils,
   type CredentialOffer,
   type CredentialOfferApprovalRequest,
   type CredentialPresentationApprovalRequest,
@@ -19,6 +20,7 @@ import {
   type HolderSigner,
 } from "@1shotapi/ows-types";
 import { createOwsEd25519HolderSigner } from "@1shotapi/ows-wallet-utils";
+import { MOCK_OID4VCI_PROOF_NONCE } from "@ows-shared";
 
 export type RegisterCredentialsProviderOptions = {
   store: CredentialStore;
@@ -115,8 +117,17 @@ export function registerCredentialsProvider(
         await options.ensureReady?.();
 
         const holderSigner = await resolveHolderSigner();
+        const holderPublicKeyJwk = await holderSigner.publicKeyJwk();
+        const nonce = MOCK_OID4VCI_PROOF_NONCE;
+        const proofJwt = await ProofUtils.buildOid4vciProofJwt({
+          holderSigner,
+          audience: metadata.credentialIssuer,
+          nonce,
+        });
         const stored = await oid4vci.requestCredential(offer, metadata, {
-          holderPublicKeyJwk: await holderSigner.publicKeyJwk(),
+          holderPublicKeyJwk,
+          proof: { proof_type: "jwt", jwt: proofJwt },
+          nonce,
         });
         await status.checkStatus(stored);
         await options.store.save(stored);

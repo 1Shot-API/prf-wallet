@@ -21,6 +21,19 @@ export function base64UrlToBytes(value: Base64UrlEncodedString): Uint8Array {
   return bytes;
 }
 
+/** UTF-8 JSON → base64url (JWT header/payload segments). */
+export function encodeJsonBase64Url(value: unknown): string {
+  return bytesToBase64Url(
+    new TextEncoder().encode(JSON.stringify(value)),
+  );
+}
+
+/** Decode a base64url JSON segment (unpadded JWT header/payload). */
+export function decodeJsonBase64Url<T>(segment: string): T {
+  const bytes = base64UrlToBytes(Base64UrlEncodedString(segment));
+  return JSON.parse(new TextDecoder().decode(bytes)) as T;
+}
+
 function toHashBytes(data: string | ArrayBuffer): Uint8Array {
   return typeof data === "string"
     ? new TextEncoder().encode(data)

@@ -14,4 +14,6 @@ export {
   validateMockPresentation,
   type DemoCredentialFlowDeps,
   type MockVerifierResult,
+  type CustodyStep,
+  type CustodyStepId,
 } from "./demo-flow.js";

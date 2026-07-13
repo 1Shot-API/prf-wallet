@@ -32,8 +32,15 @@ export type {
   CredentialConfigurationMetadata,
   IssuerMetadata,
   CredentialIssuanceContext,
+  Oid4vciJwtProof,
   Oid4vciClient,
 } from "./oid4vci.js";
+export {
+  OID4VCI_PROOF_JWT_TYP,
+  type BuildOid4vciProofJwtInput,
+  type VerifyOid4vciProofJwtInput,
+  type VerifyOid4vciProofJwtResult,
+} from "./oid4vci-proof.js";
 export type {
   PresentationBuildContext,
   Oid4vpClient,

@@ -7,6 +7,7 @@ import {
   CredentialTypeName,
   ISO8601DateTime,
   UriString,
+  ProofUtils,
   type CredentialOfferUri,
   type CredentialIssuer,
   type Oid4vciClient,
@@ -19,9 +20,9 @@ import {
   MOCK_KYC_OFFER,
   MOCK_KYC_OFFER_URI,
   MOCK_KYC_ISSUER_ID,
+  MOCK_OID4VCI_PROOF_NONCE,
 } from "../fixtures.js";
 import { issueDemoSdJwtVc } from "../demo/issuer.js";
-import { createDemoHolderSigner } from "../demo/jwk-holder-signer.js";
 import { DEMO_HOLDER_PUBLIC_JWK } from "../demo/demo-keys.js";
 
 /** MOCK OID4VCI client — resolves mock:// URIs and issues real demo SD-JWT VCs. */
@@ -47,13 +48,38 @@ export class MockOid4vciClient implements Oid4vciClient {
 
   async requestCredential(
     _offer: CredentialOffer,
-    _metadata: IssuerMetadata,
+    metadata: IssuerMetadata,
     context?: CredentialIssuanceContext,
   ): Promise<StoredCredential> {
-    const holderJwk =
-      context?.holderPublicKeyJwk ??
-      (await createDemoHolderSigner().publicKeyJwk());
+    if (!context?.proof || !context.holderPublicKeyJwk) {
+      throw new Error(
+        "MockOid4vciClient: CredentialIssuanceContext with proof and holderPublicKeyJwk is required",
+      );
+    }
 
+    const expectedNonce = context.nonce ?? MOCK_OID4VCI_PROOF_NONCE;
+    const proofResult = await ProofUtils.verifyOid4vciProofJwt({
+      jwt: context.proof.jwt,
+      expectedAudience: metadata.credentialIssuer,
+      expectedNonce,
+    });
+    if (!proofResult.valid || !proofResult.holderPublicKeyJwk) {
+      throw new Error(
+        `MockOid4vciClient: OID4VCI proof rejected: ${proofResult.reasons.join("; ")}`,
+      );
+    }
+
+    const keyMatches = await ProofUtils.jwksEqualsByThumbprint(
+      proofResult.holderPublicKeyJwk,
+      context.holderPublicKeyJwk,
+    );
+    if (!keyMatches) {
+      throw new Error(
+        "MockOid4vciClient: proof jwk does not match holderPublicKeyJwk",
+      );
+    }
+
+    const holderJwk = context.holderPublicKeyJwk;
     const issuedAt = ISO8601DateTime(new Date().toISOString());
     const validUntil = ISO8601DateTime(
       new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
@@ -108,5 +134,5 @@ export class MockOid4vciClient implements Oid4vciClient {
   }
 }
 
-/** Public JWK used when mock issuance runs without a wallet holder signer. */
+/** Public JWK for offline fixtures that still use the demo holder keypair. */
 export { DEMO_HOLDER_PUBLIC_JWK };

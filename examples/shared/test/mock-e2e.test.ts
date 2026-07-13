@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 import {
   DemoCredentialFlow,
   validateMockPresentation,
+  MockOid4vciClient,
   MOCK_KYC_POLICY,
   MOCK_KYC_ISSUER_ID,
 } from "../src/index.js";
@@ -34,6 +35,22 @@ describe("mock credential e2e flow", () => {
     );
     assert.equal(verification.valid, true);
     assert.equal(verification.reasons.length, 0);
+    assert.equal(verification.disclosedClaims.country, "US");
+    assert.equal(verification.disclosedClaims.ageOver18, true);
+    assert.ok(verification.holderThumbprint);
+    assert.equal(verification.custody.every((step) => step.ok), true);
+  });
+
+  it("rejects issuance without OID4VCI proof", async () => {
+    const client = new MockOid4vciClient();
+    const offer = await client.resolveOffer(
+      CredentialOfferUri("mock://kyc-offer/demo"),
+    );
+    const metadata = await client.fetchIssuerMetadata(offer.credentialIssuer);
+    await assert.rejects(
+      () => client.requestCredential(offer, metadata),
+      /proof/,
+    );
   });
 
   it("rejects presentation when user declines", async () => {
