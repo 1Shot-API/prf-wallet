@@ -37,6 +37,17 @@ const WALLET_IFRAME_ALLOW = [
   "clipboard-write *",
 ].join("; ");
 
+/** Must match postmate's internal `messageType` (not exported). */
+const POSTMATE_MESSAGE_TYPE = "application/x-postmate-v1+json";
+
+/**
+ * Postmate only retries the parent handshake 5× (~2.5s after iframe `load`).
+ * React branding apps often register `Postmate.Model` slightly later (or after
+ * slow work). Keep pulsing until Postmate resolves or this budget elapses.
+ */
+const EXTENDED_HANDSHAKE_INTERVAL_MS = 500;
+const EXTENDED_HANDSHAKE_BUDGET_MS = 30_000;
+
 export class OWSProxy {
   public readonly ethereum: EIP1193Provider;
   public readonly credentials: CredentialHostClient;
@@ -75,12 +86,14 @@ export class OWSProxy {
     // Postmate sets a minimal `allow` then appendChild, then assigns `src`.
     // Permissions Policy is fixed at navigation — patch allow on append, before src.
     const parent = await withWalletIframeAllow(container, () =>
-      new Postmate({
-        container,
-        url: walletUrl,
-        name: options?.name ?? "ows-wallet",
-        classListArray: options?.classList ?? [],
-      }),
+      withExtendedPostmateHandshake(container, walletUrl, () =>
+        new Postmate({
+          container,
+          url: walletUrl,
+          name: options?.name ?? "ows-wallet",
+          classListArray: options?.classList ?? [],
+        }),
+      ),
     );
 
     const displayHandler = new DisplayHostHandler(parent, {
@@ -146,5 +159,69 @@ async function withWalletIframeAllow(
     return await create();
   } finally {
     container.appendChild = originalAppend;
+  }
+}
+
+/**
+ * Continue Postmate handshake `postMessage`s after stock Postmate stops at 5 tries.
+ * Parent's reply listener stays registered — extra handshakes still complete the Promise.
+ */
+async function withExtendedPostmateHandshake(
+  container: HTMLElement,
+  walletUrl: string,
+  create: () => Promise<Postmate.ParentAPI>,
+): Promise<Postmate.ParentAPI> {
+  let childOrigin: string;
+  try {
+    childOrigin = new URL(walletUrl).origin;
+  } catch {
+    return create();
+  }
+
+  let intervalId: ReturnType<typeof setInterval> | undefined;
+  let stopTimerId: ReturnType<typeof setTimeout> | undefined;
+
+  const stop = () => {
+    if (intervalId !== undefined) {
+      clearInterval(intervalId);
+      intervalId = undefined;
+    }
+    if (stopTimerId !== undefined) {
+      clearTimeout(stopTimerId);
+      stopTimerId = undefined;
+    }
+  };
+
+  const pulse = () => {
+    const iframe = container.querySelector("iframe");
+    const child = iframe?.contentWindow;
+    if (!child) return;
+    child.postMessage(
+      {
+        postmate: "handshake",
+        type: POSTMATE_MESSAGE_TYPE,
+        model: {},
+      },
+      childOrigin,
+    );
+  };
+
+  // Start extending after Postmate's native window (~2.5s) so we don't duplicate
+  // the early attempts heavily; then pulse until connected or budget expires.
+  const startExtending = () => {
+    stopTimerId = setTimeout(stop, EXTENDED_HANDSHAKE_BUDGET_MS);
+    intervalId = setInterval(pulse, EXTENDED_HANDSHAKE_INTERVAL_MS);
+  };
+  const extendDelayId = setTimeout(startExtending, 2_000);
+
+  try {
+    const parent = await create();
+    clearTimeout(extendDelayId);
+    stop();
+    return parent;
+  } catch (error) {
+    clearTimeout(extendDelayId);
+    stop();
+    throw error;
   }
 }

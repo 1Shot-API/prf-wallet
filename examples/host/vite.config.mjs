@@ -24,11 +24,13 @@ export default defineConfig({
     port: Number(process.env.PORT ?? 5173),
     host: "0.0.0.0",
     allowedHosts: true,
+    strictPort: true,
     ...(https ? { https } : {}),
   },
   preview: {
     port: Number(process.env.PORT ?? 5173),
     host: "0.0.0.0",
+    strictPort: true,
     ...(https ? { https } : {}),
   },
   build: {

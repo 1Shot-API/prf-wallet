@@ -6,19 +6,20 @@ Task-oriented guidance — not a 1:1 map of old registry modules. Specialize fre
 
 1. Install `@1shotapi/ows-types`, `ows-wallet-utils`, `ows-signer-utils` (+ `zod` as needed).
 2. Serve `@1shotapi/ows-signer` as static `/signer/` on the **same origin** as branding (`rpId === location.hostname`).
-3. Create a hidden `#signer-container`, then:
+3. Create a hidden `#signer-container`, then register handlers and **start the Postmate child before awaiting the nested Signing Layer** (Postmate parents stop after ~5 handshake attempts):
 
 ```typescript
-const signer = await OWSSigner.create(container, signerUrl, {
+const wallet = OWSWallet.prepare();
+const signerPromise = OWSSigner.create(container, signerUrl, {
   hidden: true,
   credentialId: loadCredentialId(),
 });
-const wallet = OWSWallet.prepare();
-// …register handlers…
-await wallet.start();
+// …register handlers (ensureReady should await signerPromise)…
+void wallet.start(); // registers Model immediately
+const signer = await signerPromise;
 ```
 
-Reference: `examples/general-wallet` Vite plugin / static map for `/signer/`.
+See `examples/general-wallet` `WalletProvider` for the deferred-signer pattern.
 
 ## 2. Unlock (`ensureReady`)
 

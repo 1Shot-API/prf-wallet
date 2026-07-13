@@ -8,7 +8,6 @@
  */
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import net from "node:net";
 import { createServer } from "vite";
 import dotenv from "dotenv";
 
@@ -16,52 +15,38 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const repoRoot = path.resolve(__dirname, "../../..");
 dotenv.config({ path: path.join(repoRoot, ".env") });
 
-const port = Number(process.env.PORT ?? 5174);
+const preferredPort = Number(process.env.PORT ?? 5174);
 const noTunnel = process.argv.includes("--no-tunnel");
 let viteServer;
 let ngrokListener;
 let shuttingDown = false;
-
-function waitForPort(host, listenPort, timeoutMs = 30_000) {
-  const started = Date.now();
-
-  return new Promise((resolve, reject) => {
-    const tryConnect = () => {
-      const socket = net.connect({ host, port: listenPort }, () => {
-        socket.end();
-        resolve(undefined);
-      });
-
-      socket.on("error", () => {
-        if (Date.now() - started > timeoutMs) {
-          reject(new Error(`Timed out waiting for port ${listenPort}`));
-          return;
-        }
-        setTimeout(tryConnect, 200);
-      });
-    };
-
-    tryConnect();
-  });
-}
+/** Port Vite actually bound (must match ngrok `addr`). */
+let listenPort = preferredPort;
 
 async function startDevServer() {
   viteServer = await createServer({
     configFile: path.join(__dirname, "../vite.config.ts"),
     server: {
-      port,
+      port: preferredPort,
+      strictPort: true,
       host: "0.0.0.0",
     },
   });
   await viteServer.listen();
-  await waitForPort("127.0.0.1", port);
+
+  const address = viteServer.httpServer?.address();
+  if (address && typeof address === "object") {
+    listenPort = address.port;
+  } else {
+    listenPort = preferredPort;
+  }
 }
 
 async function startTunnel() {
   const ngrok = (await import("@ngrok/ngrok")).default;
   const domain = normalizeNgrokDomain(process.env.NGROK_DOMAIN);
   const options = {
-    addr: port,
+    addr: listenPort,
     authtoken_from_env: true,
   };
   if (domain) {
@@ -84,10 +69,10 @@ function normalizeNgrokDomain(value) {
 }
 
 function printUrls(tunnelUrl) {
-  const localWallet = `http://localhost:${port}/wallet/`;
-  const localSigner = `http://localhost:${port}/signer/`;
+  const localWallet = `http://localhost:${listenPort}/wallet/`;
+  const localSigner = `http://localhost:${listenPort}/signer/`;
 
-  console.log(`OWS general-wallet dev server: http://localhost:${port}`);
+  console.log(`OWS general-wallet dev server: http://localhost:${listenPort}`);
   console.log(`  Branding Layer (local):  ${localWallet}`);
   console.log(`  Signing Layer (local):   ${localSigner}`);
 
@@ -143,6 +128,14 @@ try {
 
   printUrls(tunnelUrl);
 } catch (error) {
+  const message = error instanceof Error ? error.message : String(error);
+  if (/Port .* is already in use|EADDRINUSE/i.test(message)) {
+    console.error(
+      `Port ${preferredPort} is already in use. Stop the other general-wallet ` +
+        `(or anything on that port), then retry. A leftover \`dev:local\` / ` +
+        `\`--no-tunnel\` process will steal ngrok traffic and break the host handshake.`,
+    );
+  }
   console.error("Failed to start wallet dev server:", error);
   process.exit(1);
 }

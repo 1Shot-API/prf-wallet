@@ -84,6 +84,7 @@ export default defineConfig({
   },
   server: {
     port: Number(process.env.PORT ?? 5174),
+    strictPort: true,
     host: "0.0.0.0",
     allowedHosts: true,
     fs: {
@@ -92,6 +93,7 @@ export default defineConfig({
   },
   preview: {
     port: Number(process.env.PORT ?? 5174),
+    strictPort: true,
     host: "0.0.0.0",
   },
   build: {

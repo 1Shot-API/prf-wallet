@@ -58,6 +58,38 @@ const walletStorage = {
   loadCachedEvmAddress,
 };
 
+/**
+ * Proxy that forwards to a real {@link OWSSigner} once `awaitSigner` resolves.
+ * Register Postmate handlers with this so `wallet.start()` can run before the
+ * nested Signing Layer iframe finishes loading (Postmate parents give up after
+ * ~2.5s of handshake retries).
+ */
+function createDeferredSigner(
+  awaitSigner: () => Promise<OWSSigner>,
+): OWSSigner {
+  let instance: OWSSigner | undefined;
+  void awaitSigner().then((signer) => {
+    instance = signer;
+  });
+  return new Proxy({} as OWSSigner, {
+    get(_target, property) {
+      // Avoid looking like a thenable if someone awaits the proxy.
+      if (property === "then") {
+        return undefined;
+      }
+      if (!instance) {
+        throw new Error(
+          "Signing Layer not ready — await ensureReady() before using the signer",
+        );
+      }
+      const value = Reflect.get(instance, property, instance);
+      return typeof value === "function"
+        ? (value as (...args: unknown[]) => unknown).bind(instance)
+        : value;
+    },
+  });
+}
+
 export type WalletContextValue = {
   ready: boolean;
   bootError: string | null;
@@ -411,16 +443,25 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         throw new Error("#signer-container not mounted");
       }
 
+      // Kick off Signing Layer load without blocking the host Postmate handshake.
+      // Postmate parents only retry ~5 times (~2.5s after iframe load); awaiting
+      // the nested /signer/ iframe (especially over ngrok) exceeds that window.
       const signerUrl = new URL("/signer/", window.location.origin).href;
-      const signer = await OWSSigner.create(container, signerUrl, {
+      const signerPromise = OWSSigner.create(container, signerUrl, {
         hidden: true,
         credentialId: loadCredentialId(),
       });
-      if (cancelled) return;
+      const awaitSigner = async (): Promise<OWSSigner> => {
+        const signer = await signerPromise;
+        signerRef.current = signer;
+        return signer;
+      };
+      // Handlers close over this proxy; they must call ensureReady (awaits signer)
+      // before touching signing APIs.
+      const signer = createDeferredSigner(awaitSigner);
 
       const wallet = OWSWallet.prepare({ debug: true });
       walletRef.current = wallet;
-      signerRef.current = signer;
 
       const ask = <T,>(
         build: (handlers: {
@@ -430,9 +471,14 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         }) => ActiveModal,
       ) => uiBridgeRef.current.pushModal(build);
 
+      const ensureReadyAfterSigner = async (): Promise<void> => {
+        await awaitSigner();
+        await ensureReadyRef.current();
+      };
+
       registerAccountConnect(wallet, signer, {
         storage: walletStorage,
-        ensureReady: () => ensureReadyRef.current(),
+        ensureReady: ensureReadyAfterSigner,
         requestConnectApproval: () =>
           ask<boolean>(({ id, resolve }) => ({
             id,
@@ -442,7 +488,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       });
 
       registerApprovalSigning(wallet, signer, {
-        ensureReady: () => ensureReadyRef.current(),
+        ensureReady: ensureReadyAfterSigner,
         requestPersonalSignApproval: (request: PersonalSignApprovalRequest) =>
           ask<boolean>(({ id, resolve }) => ({
             id,
@@ -465,7 +511,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         store: credentialStore,
         oid4vci: new MockOid4vciClient(),
         oid4vp: new MockOid4vpClient(),
-        ensureReady: () => ensureReadyRef.current(),
+        ensureReady: ensureReadyAfterSigner,
         requestCredentialOfferApproval: (
           request: CredentialOfferApprovalRequest,
         ) =>
@@ -499,16 +545,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         setChainId(next);
       });
 
-      // Paint UI before Postmate handshake — standalone /wallet/ has no host
-      // parent, and start() awaits the child handshake until a host embeds us.
-      const listed = await credentialStore.list();
-      if (cancelled) return;
-      setCredentialCount(listed.length);
-      setReady(true);
-      console.info("[ows-example-general-wallet] ready", {
-        chainId: rpcHelper.getChainId(),
-      });
-
+      // Register Postmate.Model immediately — before nested signer iframe load.
       void wallet.start().catch((error: unknown) => {
         if (cancelled) return;
         console.error(
@@ -516,6 +553,25 @@ export function WalletProvider({ children }: { children: ReactNode }) {
           error,
         );
         setBootError(error instanceof Error ? error.message : String(error));
+      });
+
+      // Finish Signing Layer init in the background; UI can paint meanwhile.
+      void awaitSigner().catch((error: unknown) => {
+        if (cancelled) return;
+        console.error(
+          "[ows-example-general-wallet] Signing Layer failed to load",
+          error,
+        );
+        setBootError(error instanceof Error ? error.message : String(error));
+      });
+
+      // Paint UI without awaiting host handshake — standalone /wallet/ has no parent.
+      const listed = await credentialStore.list();
+      if (cancelled) return;
+      setCredentialCount(listed.length);
+      setReady(true);
+      console.info("[ows-example-general-wallet] ready", {
+        chainId: rpcHelper.getChainId(),
       });
     }
 

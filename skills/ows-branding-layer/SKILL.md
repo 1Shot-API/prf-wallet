@@ -76,24 +76,27 @@ Task details: [references/tasks.md](references/tasks.md)
 
 ### Minimal boot sequence
 
+Postmate parents only retry the handshake ~5 times (~2.5s after branding iframe `load`). **Register `Postmate.Model` via `wallet.start()` before awaiting the nested Signing Layer iframe** (especially over ngrok). See `examples/general-wallet` `WalletProvider` for the deferred-signer pattern.
+
 ```typescript
 import { OWSSigner, SignHelper } from "@1shotapi/ows-signer-utils";
 import { OWSWallet, RpcHelper } from "@1shotapi/ows-wallet-utils";
 
-const signerUrl = new URL("/signer/", window.location.origin).href;
-const signer = await OWSSigner.create(signerContainer, signerUrl, {
-  hidden: true,
-  credentialId: loadCredentialId(), // optional
-});
-
 const wallet = OWSWallet.prepare({ debug: false });
+const signerPromise = OWSSigner.create(signerContainer, signerUrl, {
+  hidden: true,
+  credentialId: loadCredentialId(),
+});
+// Prefer a deferred/lazy signer so `start()` is not blocked on signerPromise.
+const signer = /* await after start, or deferred proxy — see general-wallet */;
 
-// Optional EIP-1193 reads / chain switch
 new RpcHelper(providers, wallet, signer, { defaultChainId });
 
-// Optional personal_sign / typed data (app supplies consent UI)
 const signHelper = new SignHelper(signer, wallet, {
-  ensureReady,
+  ensureReady: async () => {
+    await signerPromise;
+    await ensureReady();
+  },
   requestPersonalSignApproval,
   requestSignTypedDataApproval,
 });
@@ -101,8 +104,8 @@ for (const [method, handler] of Object.entries(signHelper.handlers)) {
   wallet.registerEip1193(method, handler);
 }
 
-// Register custom host RPC and other handlers, then:
-await wallet.start();
+void wallet.start(); // registers Model immediately
+await signerPromise;
 ```
 
 Prefer **`OWSWallet.prepare()` → register handlers → `start()`**. Do not use a module install runtime.
