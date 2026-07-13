@@ -114,7 +114,7 @@ new RpcHelper(providers, wallet, signer?, {
 
 ---
 
-## Phase 6 — Delete packages + docs/skills
+## Phase 6 — Delete packages + docs/skills ✅
 
 1. Remove `packages/ows-branding-core` and `packages/ows-registry`.
 2. Update `AGENTS.md`, `README.md`, `CONTRIBUTING.md`, spec references.

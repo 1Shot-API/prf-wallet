@@ -49,7 +49,7 @@ async function main(): Promise<void> {
     })();
   });
 
-  setStatus("Ready — embeds general-wallet with credentials modules.");
+  setStatus("Ready — embeds general-wallet with credentials support.");
 }
 
 main().catch((error: unknown) => {

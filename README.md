@@ -60,13 +60,12 @@ packages/
   ows-signer/           Plain JS Signing Layer — no build step
   ows-signer-utils/     Branding Layer ↔ Signing Layer (evm.signMessage, etc.)
   ows-wallet-utils/     Host Layer ↔ Branding Layer (Postmate RPC wrappers)
-  ows-branding-core/    Branding module contracts + install helpers
-  ows-registry/         Copy-paste Branding Layer UI modules (registry)
   ows-provider/         EIP-1193 provider for Host Layer apps
   ows-onchain/          EIP-8244 compress → deploy → serve
 examples/
   general-wallet/       General-purpose Branding Layer demo (MetaMask-style)
   host/                 Host Layer reference application
+  shared/               Demo mocks for credentials (not published)
 ```
 
 ## Signing Layer design

@@ -5,7 +5,7 @@ Host Layer demo that sends a mock OID4VCI credential offer to the wallet via `pr
 ## Run
 
 ```bash
-# Terminal 1 — branding wallet with credentials modules
+# Terminal 1 — branding wallet with credentials
 npm run dev:general-wallet
 
 # Terminal 2 — issuer host

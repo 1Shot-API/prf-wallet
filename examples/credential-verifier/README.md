@@ -5,7 +5,7 @@ Host Layer demo that requests a mock OID4VP presentation from the wallet via `pr
 ## Run
 
 ```bash
-# Terminal 1 — branding wallet with credentials modules
+# Terminal 1 — branding wallet with credentials
 npm run dev:general-wallet
 
 # Terminal 2 — issue a demo credential first (optional but recommended)

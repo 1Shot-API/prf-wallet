@@ -55,7 +55,7 @@ export function clearWalletStorage(): void {
   localStorage.removeItem(SOLANA_ADDRESS_KEY);
 }
 
-/** App-owned backup blob (`ows1:…`) — not part of registry module contracts. */
+/** App-owned backup blob (`ows1:…`). */
 export function saveBackup(encryptedPrivateKey: string): void {
   localStorage.setItem(BACKUP_KEY, encryptedPrivateKey);
 }

@@ -5,7 +5,7 @@
 | Layer | Runs where | Trust / UX |
 |-------|------------|------------|
 | Host | Integrator dapp | EIP-1193; must be secure context if it embeds HTTPS wallet |
-| Branding | Wallet origin (your product) | Branding, consent, module composition |
+| Branding | Wallet origin (your product) | Branding, consent, app-owned UI + SDK helpers |
 | Signing | Nested iframe (often same origin as branding) | Passkeys / PRF; minimal attack surface |
 
 ## Origins and `rpId`

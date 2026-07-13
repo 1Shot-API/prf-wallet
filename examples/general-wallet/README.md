@@ -57,4 +57,4 @@ Passkeys require HTTPS — use the ngrok branding URL for cross-origin host test
 
 Bootstrapped wallet with passkey creation, EIP-191 `personal_sign` (approval dialog UI), `RpcHelper` / `SignHelper`, credentials, backup/restore, and EVM/Solana address display.
 
-Example-local UI and wiring live under `src/ows/` (no BrandingModule install runtime).
+Example-local UI and wiring live under `src/ows/` (explicit registrars; no module install runtime).

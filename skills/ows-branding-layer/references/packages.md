@@ -7,7 +7,6 @@ npm install \
   @1shotapi/ows-types \
   @1shotapi/ows-wallet-utils \
   @1shotapi/ows-signer-utils \
-  @1shotapi/ows-branding-core \
   zod
 ```
 
@@ -27,11 +26,12 @@ npm install ../open-wallet/packages/ows-types
 
 | Package | Import surface | Branding uses it for |
 |---------|----------------|----------------------|
-| `ows-types` | primitives, errors, credentials | Branded addresses, offer/request URIs, shared errors |
-| `ows-wallet-utils` | `OWSWallet` | Postmate child, EIP-1193 registration, `requestDisplay` |
-| `ows-signer-utils` | `OWSSigner`, `evm.*` | Nested signer iframe, digests → signatures |
-| `ows-branding-core` | `BrandingModule`, `installBrandingModules` | Module install lifecycle |
+| `ows-types` | primitives, errors, credentials, EIP-1193 tables | Branded addresses, offer/request URIs, shared errors |
+| `ows-wallet-utils` | `OWSWallet`, `RpcHelper` | Postmate child, EIP-1193 registration, reads/chain, `requestDisplay` |
+| `ows-signer-utils` | `OWSSigner`, `SignHelper`, `overlaySignerIframe`, `evm.*` | Nested signer iframe, consent→sign wiring, digests → signatures |
 | `ows-signer` | static files | Custody kernel document under `/signer/` |
+
+There is **no** branding-core / registry package. App-local UI and wiring live in your repo (see `examples/general-wallet/src/ows/`).
 
 ## Serving the Signing Layer
 
@@ -45,12 +45,6 @@ Signer URL in app code:
 ```typescript
 const signerUrl = new URL("/signer/", window.location.origin).href;
 ```
-
-## Registry (copy-paste, not npm runtime)
-
-Source: `packages/ows-registry/items/<name>/vanilla/` in open-wallet.
-
-Copy into your app (e.g. `src/ows/<name>/`) and import the module factory / default export. Keep a sync script if you track upstream registry updates.
 
 ## Host apps (not branding)
 

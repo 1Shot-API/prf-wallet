@@ -14,8 +14,6 @@ packages/ows-signer-utils     Branding Layer ↔ Signing Layer (evm.signMessage,
 packages/ows-types            Shared types, errors, and cross-layer utils (including SD-JWT VC)
 packages/ows-wallet-utils     Branding Layer Postmate/RPC wrappers and credential wire registration
 packages/ows-provider         Host Layer EIP-1193 + credentials proxy; SD-JWT verify
-packages/ows-branding-core    Branding module contracts + install helpers
-packages/ows-registry         Copy-paste Branding Layer modules (not published)
 examples/shared               Demo-only mock OID4 clients, stores, and fixtures (not published)
 packages/ows-onchain          EIP-8244 deploy pipeline for ows-signer
 spec/credentials/             OWS Credentials Extension normative docs
