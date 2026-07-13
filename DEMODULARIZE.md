@@ -87,7 +87,7 @@ new RpcHelper(providers, wallet, signer?, {
 
 ---
 
-## Phase 3 — Signer iframe helpers in `ows-signer-utils`
+## Phase 3 — Signer iframe helpers in `ows-signer-utils` ✅
 
 - Add `overlaySignerIframe(iframe, slot, options?) → restore` (visible overlay **without reparenting**).
 - Distinct from existing `prepareSignerIframeForWebAuthn` (1×1 invisible passkey focus).

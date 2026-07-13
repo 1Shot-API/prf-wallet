@@ -1,5 +1,13 @@
 export { OWSSigner, type OWSSignerOptions } from "./owssigner.js";
 export {
+  createSignerIframe,
+  getSignerOrigin,
+  overlaySignerIframe,
+  prepareSignerIframeForWebAuthn,
+  type CreateSignerIframeOptions,
+  type OverlaySignerIframeOptions,
+} from "./iframe.js";
+export {
   OwsSignerError,
   OwsInvalidRequestError,
   OwsNotAllowedError,

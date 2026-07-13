@@ -1,4 +1,5 @@
 import type { BrandingSignerHost } from "@1shotapi/ows-branding-core";
+import { overlaySignerIframe } from "@1shotapi/ows-signer-utils";
 
 export type RestoreBackupDialogOptions = {
   /** Element to mount the dialog into (default `document.body`). */
@@ -10,13 +11,6 @@ export type RestoreBackupDialogOptions = {
 };
 
 let stylesInjected = false;
-
-type MountedIframe = {
-  iframe: HTMLIFrameElement;
-  homeContainer: HTMLElement;
-  savedFrameStyles: Record<string, string>;
-  savedContainerStyles: Record<string, string>;
-};
 
 /**
  * Run the restore-backup flow: instructions + visible signer iframe for passphrase,
@@ -40,7 +34,7 @@ export async function runRestoreBackupFlow(
   }
 
   let aborted = false;
-  let mounted: MountedIframe | null = null;
+  let restoreOverlay: (() => void) | null = null;
   let settled = false;
 
   const overlay = document.createElement("div");
@@ -85,9 +79,9 @@ export async function runRestoreBackupFlow(
   mountContainer.append(overlay);
 
   const teardown = (): void => {
-    if (mounted) {
-      restoreSignerIframe(mounted);
-      mounted = null;
+    if (restoreOverlay) {
+      restoreOverlay();
+      restoreOverlay = null;
     }
     overlay.remove();
   };
@@ -105,11 +99,9 @@ export async function runRestoreBackupFlow(
 
     void (async () => {
       try {
-        mounted = mountSignerIframe(
-          iframe,
-          signerSlot,
-          options.signerContainer,
-        );
+        restoreOverlay = overlaySignerIframe(iframe, signerSlot, {
+          homeContainer: options.signerContainer,
+        });
         await waitForPaint();
 
         await signer.recoverKey(
@@ -120,8 +112,8 @@ export async function runRestoreBackupFlow(
 
         if (aborted || settled) return;
 
-        restoreSignerIframe(mounted);
-        mounted = null;
+        restoreOverlay();
+        restoreOverlay = null;
         signerSlot.hidden = true;
         body.textContent =
           "Wallet restored. You can sign until this tab is closed.";
@@ -137,9 +129,9 @@ export async function runRestoreBackupFlow(
       } catch (error) {
         if (aborted || settled) return;
 
-        if (mounted) {
-          restoreSignerIframe(mounted);
-          mounted = null;
+        if (restoreOverlay) {
+          restoreOverlay();
+          restoreOverlay = null;
         }
         signerSlot.hidden = true;
 
@@ -157,100 +149,12 @@ export async function runRestoreBackupFlow(
   });
 }
 
-/**
- * Visually place the signer iframe over `slot` without moving it in the DOM.
- * Reparenting can reload the iframe document and drop pending signer RPCs.
- */
-function mountSignerIframe(
-  iframe: HTMLIFrameElement,
-  slot: HTMLElement,
-  homeContainer: HTMLElement,
-): MountedIframe {
-  const savedFrameStyles = captureInlineStyles(iframe);
-  const savedContainerStyles = captureInlineStyles(homeContainer);
-  const rect = slot.getBoundingClientRect();
-  const zIndex = "10001";
-
-  setImportantStyle(homeContainer, "display", "block");
-  setImportantStyle(homeContainer, "position", "fixed");
-  setImportantStyle(homeContainer, "top", `${rect.top}px`);
-  setImportantStyle(homeContainer, "left", `${rect.left}px`);
-  setImportantStyle(homeContainer, "width", `${Math.max(rect.width, 1)}px`);
-  setImportantStyle(homeContainer, "height", `${Math.max(rect.height, 1)}px`);
-  setImportantStyle(homeContainer, "clip-path", "none");
-  setImportantStyle(homeContainer, "overflow", "visible");
-  setImportantStyle(homeContainer, "opacity", "1");
-  setImportantStyle(homeContainer, "pointer-events", "auto");
-  setImportantStyle(homeContainer, "z-index", zIndex);
-  setImportantStyle(homeContainer, "margin", "0");
-  setImportantStyle(homeContainer, "padding", "0");
-  setImportantStyle(homeContainer, "background", "Canvas");
-  setImportantStyle(homeContainer, "border-radius", "6px");
-
-  setImportantStyle(iframe, "display", "block");
-  setImportantStyle(iframe, "position", "absolute");
-  setImportantStyle(iframe, "top", "0");
-  setImportantStyle(iframe, "left", "0");
-  setImportantStyle(iframe, "width", "100%");
-  setImportantStyle(iframe, "height", "100%");
-  setImportantStyle(iframe, "min-height", "0");
-  setImportantStyle(iframe, "border", "0");
-  setImportantStyle(iframe, "clip-path", "none");
-  setImportantStyle(iframe, "overflow", "visible");
-  setImportantStyle(iframe, "opacity", "1");
-  setImportantStyle(iframe, "pointer-events", "auto");
-  setImportantStyle(iframe, "z-index", zIndex);
-
-  try {
-    iframe.contentWindow?.focus();
-    iframe.focus();
-  } catch {
-    // ignore focus failures
-  }
-
-  return { iframe, homeContainer, savedFrameStyles, savedContainerStyles };
-}
-
-function restoreSignerIframe(mounted: MountedIframe): void {
-  const { iframe, homeContainer, savedFrameStyles, savedContainerStyles } =
-    mounted;
-  restoreInlineStyles(iframe, savedFrameStyles);
-  restoreInlineStyles(homeContainer, savedContainerStyles);
-}
-
-function setImportantStyle(
-  element: HTMLElement,
-  name: string,
-  value: string,
-): void {
-  element.style.setProperty(name, value, "important");
-}
-
 function waitForPaint(): Promise<void> {
   return new Promise((resolve) => {
     requestAnimationFrame(() => {
       requestAnimationFrame(() => resolve());
     });
   });
-}
-
-function captureInlineStyles(element: HTMLElement): Record<string, string> {
-  const styles: Record<string, string> = {};
-  for (let i = 0; i < element.style.length; i++) {
-    const name = element.style.item(i);
-    styles[name] = element.style.getPropertyValue(name);
-  }
-  return styles;
-}
-
-function restoreInlineStyles(
-  element: HTMLElement,
-  styles: Record<string, string>,
-): void {
-  element.removeAttribute("style");
-  for (const [name, value] of Object.entries(styles)) {
-    element.style.setProperty(name, value);
-  }
 }
 
 function formatRestoreError(error: unknown): string {

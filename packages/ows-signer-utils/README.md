@@ -57,6 +57,28 @@ Inbound events: validate `event.origin === signerOrigin` and `event.source === i
 - Do **not** add a restrictive `sandbox` that blocks WebAuthn.
 - Default iframe size is hidden (`0×0`); pass `{ hidden: false }` to show it.
 
+### Showing the signer over UI (passphrase / recovery)
+
+Do **not** reparent the signer iframe into a dialog — that can reload the iframe document and drop in-flight RPCs. Use:
+
+| Helper | Purpose |
+|--------|---------|
+| `overlaySignerIframe(iframe, slot, options?)` | Visible overlay: position the iframe's home container over a slot (e.g. backup dialog). Returns a restore function. |
+| `prepareSignerIframeForWebAuthn(iframe)` | Invisible 1×1 focus layer for passkey ceremonies (used internally by `OWSSigner`). |
+
+```typescript
+import { overlaySignerIframe } from "@1shotapi/ows-signer-utils";
+
+const restore = overlaySignerIframe(iframe, signerSlot, {
+  homeContainer: document.getElementById("signer-container")!,
+});
+try {
+  await signer.createRecoveryData(/* … */);
+} finally {
+  restore();
+}
+```
+
 ## API
 
 ### `OWSSigner.create(container, signerUrl, options?)`
