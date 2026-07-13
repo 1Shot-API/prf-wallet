@@ -1,5 +1,5 @@
 import { OWSSigner } from "@1shotapi/ows-signer-utils";
-import { OWSWallet } from "@1shotapi/ows-wallet-utils";
+import { OWSWallet, RpcHelper } from "@1shotapi/ows-wallet-utils";
 import { installBrandingModules } from "@1shotapi/ows-branding-core";
 import {
   EVMAccountAddress,
@@ -9,7 +9,6 @@ import {
 import { approvalDialogModule } from "./ows/approval-dialog/install";
 import { createCreateBackupModule } from "./ows/create-backup/install";
 import { createRestoreBackupModule } from "./ows/recover-backup/install";
-import { createRpcProviderModule } from "./ows/rpc-provider/install";
 import { credentialConsentModule } from "./ows/credential-consent/install";
 import {
   createCredentialsProviderModule,
@@ -32,7 +31,7 @@ import {
 // Temporary PRF / WebAuthn debugging (signer reads OWS_SIGNER_DEBUG + localStorage)
 (globalThis as { OWS_SIGNER_DEBUG?: boolean }).OWS_SIGNER_DEBUG = false;
 
-/** Demo chains for the branding-layer chain dropdown (not part of rpc-provider). */
+/** Demo chains for the branding-layer chain dropdown (fed into RpcHelper). */
 const DEMO_CHAINS: ReadonlyArray<{
   chainId: EVMChainId;
   label: string;
@@ -169,20 +168,20 @@ async function main(): Promise<void> {
   });
 
   const defaultChainId = DEMO_CHAINS[0]!.chainId;
-  const rpcProvider = createRpcProviderModule({
-    providers: new Map(
-      DEMO_CHAINS.map((chain) => [chain.chainId, chain.rpcUrl]),
-    ),
-    defaultChainId,
-  });
+  const rpcHelper = new RpcHelper(
+    new Map(DEMO_CHAINS.map((chain) => [chain.chainId, chain.rpcUrl])),
+    wallet,
+    signer,
+    { defaultChainId },
+  );
 
-  setChainSelectValue(rpcProvider.getChainId());
-  rpcProvider.events.on("chainChanged", (chainId) => {
+  setChainSelectValue(rpcHelper.getChainId());
+  rpcHelper.events.on("chainChanged", (chainId) => {
     setChainSelectValue(chainId);
   });
   chainSelect.addEventListener("change", () => {
-    const previous = rpcProvider.getChainId();
-    void rpcProvider.switchChain(chainSelect.value).catch((error: unknown) => {
+    const previous = rpcHelper.getChainId();
+    void rpcHelper.switchChain(chainSelect.value).catch((error: unknown) => {
       setChainSelectValue(previous);
       console.error(
         "[ows-example-general-wallet] chain switch failed",
@@ -199,7 +198,6 @@ async function main(): Promise<void> {
     },
     [
       accountConnect,
-      rpcProvider,
       approvalDialogModule,
       credentialConsentModule,
       createCredentialsProviderModule({
@@ -261,7 +259,7 @@ async function main(): Promise<void> {
   }
 
   console.info("[ows-example-general-wallet] ready", {
-    chainId: rpcProvider.getChainId(),
+    chainId: rpcHelper.getChainId(),
   });
 }
 

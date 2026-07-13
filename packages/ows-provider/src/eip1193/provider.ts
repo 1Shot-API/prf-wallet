@@ -3,13 +3,7 @@ import type {
   EIP1193RequestArgsFor,
   EIP1193Requests,
   KnownEIP1193Method,
-} from "./requests.js";
-
-export type {
-  EIP1193RequestArgs,
-  EIP1193Requests,
-  KnownEIP1193Method,
-} from "./requests.js";
+} from "@1shotapi/ows-types";
 
 type RpcInvoker = (method: string, params: unknown) => Promise<unknown>;
 

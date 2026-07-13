@@ -1,6 +1,5 @@
-import { EVMAccountAddress } from "@1shotapi/ows-types";
+import { EVMAccountAddress, type Eip1193Method } from "@1shotapi/ows-types";
 import { z } from "zod";
-import type { Eip1193Method } from "./methods.js";
 
 const addressSchema = z
   .string()

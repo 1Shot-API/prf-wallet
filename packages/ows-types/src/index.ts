@@ -90,6 +90,19 @@ export * from "./credentials/index.js";
 export * from "./primitives/index.js";
 
 export {
+  EIP1193_METHODS,
+  EIP1193_READ_METHODS,
+  EIP1193_UNRECOGNIZED_CHAIN_ID,
+  isEip1193Method,
+  type Eip1193Method,
+  type Eip1193ReadMethod,
+  type EIP1193RequestArgs,
+  type EIP1193RequestArgsFor,
+  type EIP1193Requests,
+  type KnownEIP1193Method,
+} from "./eip1193/index.js";
+
+export {
   buildSdJwtVcPresentation,
   extractHolderJwkFromSdJwtVc,
   sdJwtHasher,

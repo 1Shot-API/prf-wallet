@@ -69,8 +69,11 @@ localStorage.setItem("ows-wallet-utils:debug", "1");
 ## Exports
 
 - `OWSWallet` — child-side Postmate model
+- `RpcHelper` — EIP-1193 read methods + chain switching against JSON-RPC URLs
 - `EIP1193_PARAM_SCHEMAS`, `getEip1193ParamSchema` — Zod validators for standard methods
-- `OwsRpcError`, `OwsUnimplementedError`, `OwsInvalidParamsError` — shared error types
+- `CredentialWalletRegistrar`, `createOwsEd25519HolderSigner` — credentials wire helpers
+
+Shared protocol types and errors live in `@1shotapi/ows-types`.
 
 ## Related
 

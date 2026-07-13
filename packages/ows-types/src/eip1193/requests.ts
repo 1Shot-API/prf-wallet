@@ -2,10 +2,10 @@ import type {
   EVMAccountAddress,
   EVMChainId,
   EVMSignatureHex,
-} from "@1shotapi/ows-types";
+} from "../primitives/index.js";
 
 /**
- * Typed EIP-1193 methods supported by `EIP1193Provider.request`.
+ * Typed EIP-1193 methods supported by host `EIP1193Provider.request`.
  * Add entries here (with branded params/results) instead of casting at call sites.
  */
 export type EIP1193Requests = {
