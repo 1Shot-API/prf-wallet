@@ -11,11 +11,14 @@ examples/host                 Host Layer — @1shotapi/ows-provider (EIP-1193)
 examples/general-wallet       Branding Layer — general-purpose wallet demo
 packages/ows-signer           Signing Layer (plain JS, zero deps, on-chain)
 packages/ows-signer-utils     Branding Layer ↔ Signing Layer (evm.signMessage, etc.)
-packages/ows-types            Shared types and errors across OWS SDKs
-packages/ows-wallet-utils     Host Layer ↔ Branding Layer (postmate wrappers)
+packages/ows-types            Shared types, errors, and cross-layer utils (including SD-JWT VC)
+packages/ows-wallet-utils     Branding Layer Postmate/RPC wrappers and credential wire registration
+packages/ows-provider         Host Layer EIP-1193 + credentials proxy; SD-JWT verify
 packages/ows-branding-core    Branding module contracts + install helpers
 packages/ows-registry         Copy-paste Branding Layer modules (not published)
+examples/credentials-shared   Demo-only mock OID4 clients, stores, and fixtures (not published)
 packages/ows-onchain          EIP-8244 deploy pipeline for ows-signer
+spec/credentials/             OWS Credentials Extension normative docs
 ```
 
 ## Hard rules
@@ -58,6 +61,8 @@ Do not introduce parallel branded types in consumer packages — add or extend p
 npm install && npm run build && npm test
 npm run dev -w @1shotapi/ows-example-general-wallet
 npm run dev -w @1shotapi/ows-example-host
+npm run dev -w @1shotapi/ows-example-credential-issuer
+npm run dev -w @1shotapi/ows-example-credential-verifier
 ```
 
 ## Status

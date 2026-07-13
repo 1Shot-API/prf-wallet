@@ -1,3 +1,7 @@
+import type { ED25519PublicKey } from "../primitives/ED25519PublicKey.js";
+import type { PasskeyPublicKey } from "../primitives/PasskeyPublicKey.js";
+import type { SECP256K1PublicKey } from "../primitives/SECP256K1PublicKey.js";
+
 export const API_VERSION = 1 as const;
 
 export type SignScheme =
@@ -52,14 +56,14 @@ export type VersionData = {
 };
 
 export type KeyDerivedData = {
-  secp256k1PublicKey: `0x${string}`;
-  ed25519PublicKey: `0x${string}`;
+  secp256k1PublicKey: SECP256K1PublicKey;
+  ed25519PublicKey: ED25519PublicKey;
 };
 
 export type CredentialCreatedData = {
   credentialId: string;
-  passkeyPublicKey: string | null;
-  secp256k1PublicKey: `0x${string}`;
+  passkeyPublicKey: PasskeyPublicKey | null;
+  secp256k1PublicKey: SECP256K1PublicKey;
 };
 
 export type DigestSignedData = {
@@ -82,9 +86,9 @@ export type RecoverySessionClearedData = {
 };
 
 export type PublicKeyData = {
-  passkeyPublicKey: string | null;
-  secp256k1PublicKey: `0x${string}`;
-  ed25519PublicKey: `0x${string}`;
+  passkeyPublicKey: PasskeyPublicKey | null;
+  secp256k1PublicKey: SECP256K1PublicKey;
+  ed25519PublicKey: ED25519PublicKey;
 };
 
 export type ChallengeSignedData = {

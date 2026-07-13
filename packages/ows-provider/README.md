@@ -12,6 +12,8 @@ npm install @1shotapi/ows-provider
 
 Your host app must also have a Branding Layer iframe running [`OWSWallet`](https://github.com/1Shot-API/open-wallet/tree/main/packages/ows-wallet-utils) from `@1shotapi/ows-wallet-utils`.
 
+For SD-JWT VC presentation building and crypto helpers, import from `@1shotapi/ows-types`. Use `verifySdJwtVcPresentation` from this package for host-side verification.
+
 ## Quick start
 
 ```typescript

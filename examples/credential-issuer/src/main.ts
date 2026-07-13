@@ -1,0 +1,58 @@
+import { OWSProxy } from "@1shotapi/ows-provider";
+import { CredentialOfferUri } from "@1shotapi/ows-types";
+import { MOCK_KYC_OFFER_URI } from "../../credentials-shared/src/index.js";
+import { getMockIssuerOfferUri } from "./mock-issuer.js";
+import "./styles.css";
+
+const offerUriEl = document.getElementById("offer-uri")!;
+const issueButton = document.getElementById("issue-button") as HTMLButtonElement;
+const showWalletButton = document.getElementById(
+  "show-wallet-button",
+) as HTMLButtonElement;
+const statusEl = document.getElementById("status") as HTMLParagraphElement;
+const resultOutput = document.getElementById("result-output") as HTMLPreElement;
+const walletContainer = document.getElementById("wallet-container")!;
+
+const offerUri = CredentialOfferUri(getMockIssuerOfferUri() ?? MOCK_KYC_OFFER_URI);
+offerUriEl.textContent = `Offer URI: ${offerUri}`;
+
+function setStatus(message: string, isError = false): void {
+  statusEl.textContent = message;
+  statusEl.classList.toggle("status--error", isError);
+}
+
+async function main(): Promise<void> {
+  const proxy = await OWSProxy.create(walletContainer, __WALLET_IFRAME_URL__);
+
+  showWalletButton.addEventListener("click", () => {
+    proxy.showWallet();
+  });
+
+  issueButton.addEventListener("click", () => {
+    void (async () => {
+      issueButton.disabled = true;
+      resultOutput.hidden = true;
+      setStatus("Sending credential offer to wallet…");
+
+      try {
+        const receipt = await proxy.credentials.acceptOffer({ credentialOfferUri: offerUri });
+        resultOutput.textContent = JSON.stringify(receipt, null, 2);
+        resultOutput.hidden = false;
+        setStatus("Credential stored in wallet.");
+      } catch (error: unknown) {
+        const message =
+          error instanceof Error ? error.message : "Credential offer failed";
+        setStatus(message, true);
+      } finally {
+        issueButton.disabled = false;
+      }
+    })();
+  });
+
+  setStatus("Ready — embeds general-wallet with credentials modules.");
+}
+
+main().catch((error: unknown) => {
+  console.error("[ows-example-credential-issuer] failed", error);
+  setStatus("Failed to start", true);
+});

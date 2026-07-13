@@ -4,13 +4,18 @@ import {
   OwsTimeoutError,
 } from "../errors.js";
 import type {
-  KeyDerivedData,
   SignerEvent,
   SignerEventMessage,
   SignerMethod,
   SignerRequest,
 } from "./types.js";
 import { API_VERSION } from "./types.js";
+
+export { keyDerivedDataFromEvent } from "./parse-public-keys.js";
+export {
+  publicKeyDataFromEvent,
+  credentialCreatedDataFromEvent,
+} from "./parse-public-keys.js";
 
 export type RequestOptions = {
   terminalEvent: SignerEvent;
@@ -233,19 +238,4 @@ export function isSignerEventMessage(data: unknown): data is SignerEventMessage 
     typeof msg.data === "object" &&
     msg.data !== null
   );
-}
-
-export function cacheKeyDerivedFromEvent(
-  data: Record<string, unknown>,
-): KeyDerivedData | null {
-  if (
-    typeof data.secp256k1PublicKey === "string" &&
-    typeof data.ed25519PublicKey === "string"
-  ) {
-    return {
-      secp256k1PublicKey: data.secp256k1PublicKey as `0x${string}`,
-      ed25519PublicKey: data.ed25519PublicKey as `0x${string}`,
-    };
-  }
-  return null;
 }

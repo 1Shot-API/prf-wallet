@@ -7,6 +7,7 @@ import {
   DEFAULT_WALLET_SIZE_Y,
   DisplayHostHandler,
 } from "./display/host-handler.js";
+import { CredentialHostClient } from "./credentials/host-client.js";
 
 export type OWSProxyOptions = {
   /** iframe `name` attribute. Default: `ows-wallet` */
@@ -35,7 +36,8 @@ const WALLET_IFRAME_ALLOW = [
 ].join("; ");
 
 export class OWSProxy {
-  readonly ethereum: EIP1193Provider;
+  public readonly ethereum: EIP1193Provider;
+  public readonly credentials: CredentialHostClient;
 
   private readonly rpcClient: RpcHostClient;
   private readonly displayHandler: DisplayHostHandler;
@@ -49,6 +51,7 @@ export class OWSProxy {
     this.parent = parent;
     this.rpcClient = rpcClient;
     this.displayHandler = displayHandler;
+    this.credentials = new CredentialHostClient(rpcClient);
     this.ethereum = new EIP1193Provider((method, params) =>
       this.rpc(method, params),
     );
@@ -78,6 +81,7 @@ export class OWSProxy {
       walletSizeX: options?.walletSizeX ?? DEFAULT_WALLET_SIZE_X,
       walletSizeY: options?.walletSizeY ?? DEFAULT_WALLET_SIZE_Y,
     });
+    displayHandler.initializeHidden();
     const rpcClient = new RpcHostClient(
       parent,
       options?.rpcTimeoutMs ?? DEFAULT_RPC_TIMEOUT_MS,

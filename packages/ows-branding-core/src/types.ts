@@ -1,6 +1,11 @@
 import type { OWSSigner } from "@1shotapi/ows-signer-utils";
 import type { OWSWallet } from "@1shotapi/ows-wallet-utils";
-import type { EVMAccountAddress } from "@1shotapi/ows-types";
+import type {
+  CredentialPresentationApprovalRequest,
+  EVMAccountAddress,
+} from "@1shotapi/ows-types";
+
+export type { CredentialPresentationApprovalRequest };
 
 /** When the module may register handlers on `OWSWallet`. */
 export type BrandingModulePhase = "pre-start" | "post-start";
@@ -35,14 +40,18 @@ export type UiHost = {
   requestSignTypedDataApproval(
     request: SignTypedDataApprovalRequest,
   ): Promise<boolean>;
-  /** Present the encrypted recovery blob after create-backup succeeds. */
+  /** Present encrypted recovery blob after create-backup succeeds. */
   showCreateBackupResult(result: CreateBackupResult): Promise<void>;
+  /** Credential presentation consent before OID4VP response. */
+  requestCredentialPresentationApproval(
+    request: CredentialPresentationApprovalRequest,
+  ): Promise<boolean>;
 };
 
 /** Wallet surface registry modules may call (subset of `OWSWallet`). */
 export type BrandingWalletHost = Pick<
   OWSWallet,
-  "registerEip1193" | "requestDisplay" | "requestHide"
+  "registerEip1193" | "requestDisplay" | "requestHide" | "credentials"
 >;
 
 /** Signer surface registry modules may call (subset of `OWSSigner`). */
@@ -50,6 +59,8 @@ export type BrandingSignerHost = {
   evm: Pick<OWSSigner["evm"], "signMessage" | "signTypedData">;
   createRecoveryData: OWSSigner["createRecoveryData"];
   recoverKey: OWSSigner["recoverKey"];
+  getPublicKey: OWSSigner["getPublicKey"];
+  signDigest: OWSSigner["signDigest"];
 };
 
 export type BrandingContext = {

@@ -182,6 +182,10 @@
             <option value="0x4cef52">Arc Testnet</option>
           </select>
         </div>
+        <div class="status-row">
+          <span class="status-label">Credentials</span>
+          <span id="credential-count" class="status-value">—</span>
+        </div>
         <div class="wallet-actions">
           <button type="button" id="create-backup" class="wallet-action">
             Create backup
@@ -193,6 +197,9 @@
             hidden
           >
             Restore backup
+          </button>
+          <button type="button" id="list-credentials" class="wallet-action">
+            My credentials
           </button>
         </div>
       </section>

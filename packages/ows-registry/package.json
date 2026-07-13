@@ -5,7 +5,7 @@
   "description": "OWS Branding Layer registry — copy-paste module templates (not a runtime npm UI package)",
   "type": "module",
   "scripts": {
-    "sync:general-wallet": "node scripts/sync-example.mjs general-wallet approval-dialog && node scripts/sync-example.mjs general-wallet create-backup && node scripts/sync-example.mjs general-wallet recover-backup && node scripts/sync-example.mjs general-wallet rpc-provider"
+    "sync:general-wallet": "node scripts/sync-example.mjs general-wallet approval-dialog && node scripts/sync-example.mjs general-wallet create-backup && node scripts/sync-example.mjs general-wallet recover-backup && node scripts/sync-example.mjs general-wallet rpc-provider && node scripts/sync-example.mjs general-wallet credential-consent && node scripts/sync-example.mjs general-wallet credentials-provider"
   },
   "keywords": [
     "ows",

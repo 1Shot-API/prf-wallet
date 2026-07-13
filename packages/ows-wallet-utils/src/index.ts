@@ -34,3 +34,23 @@ export { runHandler } from "./rpc/handler.js";
 export { handleRpcModelCall } from "./rpc/child-wrapper.js";
 export type { RpcModelRegistration } from "./rpc/child-wrapper.js";
 export { debugLog, isOwsWalletDebugEnabled } from "./debug.js";
+
+export {
+  CREDENTIAL_PARAM_SCHEMAS,
+  acceptOfferParamsSchema,
+  presentParamsSchema,
+  listParamsSchema,
+  deleteParamsSchema,
+} from "./credentials/schemas.js";
+export { CREDENTIAL_WIRE_METHODS } from "@1shotapi/ows-types";
+export { CredentialWalletRegistrar } from "./credentials/wallet-registrar.js";
+export {
+  createOwsEd25519HolderSigner,
+  type OwsEd25519SignerDeps,
+} from "./credentials/sd-jwt-vc/ows-holder-signer.js";
+
+export type {
+  OpenWalletCredentialProvider,
+  CredentialWireMethod,
+  HolderSigner,
+} from "@1shotapi/ows-types";

@@ -10,6 +10,12 @@ import { approvalDialogModule } from "./ows/approval-dialog/install";
 import { createCreateBackupModule } from "./ows/create-backup/install";
 import { createRestoreBackupModule } from "./ows/recover-backup/install";
 import { createRpcProviderModule } from "./ows/rpc-provider/install";
+import { credentialConsentModule } from "./ows/credential-consent/install";
+import {
+  createCredentialsProviderModule,
+} from "./ows/credentials-provider/install";
+import { LocalStorageCredentialStore, MockOid4vciClient, MockOid4vpClient } from "../../credentials-shared/src/index.js";
+import { showCredentialListDialog } from "./credential-list-dialog";
 import {
   isWalletCreated,
   loadBackup,
@@ -52,6 +58,10 @@ const chainSelect = document.getElementById(
 ) as HTMLSelectElement;
 const createBackupButton = document.getElementById("create-backup");
 const restoreBackupButton = document.getElementById("restore-backup");
+const listCredentialsButton = document.getElementById("list-credentials");
+const credentialCountEl = document.getElementById("credential-count")!;
+
+const credentialStore = new LocalStorageCredentialStore();
 
 /**
  * Whether keys are available this tab. How they were obtained (passkey vs
@@ -65,6 +75,11 @@ function setAddresses(
 ): void {
   evmAddressEl.textContent = evm;
   solanaAddressEl.textContent = solana;
+}
+
+async function refreshCredentialCount(): Promise<void> {
+  const listed = await credentialStore.list();
+  credentialCountEl.textContent = String(listed.length);
 }
 
 function refreshStatusUi(): void {
@@ -185,6 +200,12 @@ async function main(): Promise<void> {
     [
       rpcProvider,
       approvalDialogModule,
+      credentialConsentModule,
+      createCredentialsProviderModule({
+        store: credentialStore,
+        oid4vci: new MockOid4vciClient(),
+        oid4vp: new MockOid4vpClient(),
+      }),
       createCreateBackupModule({
         triggerButton: "#create-backup",
         signerContainer: "#signer-container",
@@ -219,6 +240,20 @@ async function main(): Promise<void> {
   });
 
   await wallet.start();
+
+  void refreshCredentialCount();
+
+  if (listCredentialsButton instanceof HTMLButtonElement) {
+    listCredentialsButton.addEventListener("click", () => {
+      void (async () => {
+        const listed = await credentialStore.list();
+        credentialCountEl.textContent = String(listed.length);
+        showCredentialListDialog(listed);
+      })().catch((error: unknown) => {
+        console.error("[ows-example-general-wallet] list credentials failed", error);
+      });
+    });
+  }
 
   // Branding is a direct child of the host (`parent === top`), unlike the
   // Signing Layer which is nested (`parent !== top`). Show chrome whenever we
