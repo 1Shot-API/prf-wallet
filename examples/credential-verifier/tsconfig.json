@@ -4,7 +4,12 @@
     "noEmit": true,
     "rootDir": "..",
     "module": "ESNext",
-    "moduleResolution": "bundler"
+    "moduleResolution": "bundler",
+    "types": ["vite/client"],
+    "baseUrl": ".",
+    "paths": {
+      "@ows-shared": ["../shared/src/index.ts"]
+    }
   },
   "include": ["src/**/*", "../shared/src/**/*"]
 }

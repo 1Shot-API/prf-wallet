@@ -48,7 +48,7 @@ Optional hosts entry (`C:\Windows\System32\drivers\etc\hosts`):
 127.0.0.1  ows-host.com
 ```
 
-If `examples/host/certs/dev-cert.pem` and `dev-key.pem` exist, `npm run dev` enables HTTPS automatically for **host, credential-issuer, and credential-verifier** (shared helper in `examples/dev-https.cjs`). Or set in repo root `.env`:
+If `examples/host/certs/dev-cert.pem` and `dev-key.pem` exist, `npm run dev` enables HTTPS automatically for **host, credential-issuer, and credential-verifier** (shared helper in `examples/host-dev.mjs`). Or set in repo root `.env`:
 
 ```bash
 HOST_HTTPS=1

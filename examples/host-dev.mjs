@@ -1,27 +1,29 @@
 /**
- * Shared optional HTTPS for OWS Host Layer example webpack-dev-servers.
+ * Shared helpers for OWS Host Layer example Vite servers
+ * (host, credential-issuer, credential-verifier).
  *
- * Enable when HOST_HTTPS=1/true, or when default mkcert files exist under
+ * HTTPS: enable when HOST_HTTPS=1/true, or when default mkcert files exist under
  * the example's certs/ directory (or HOST_SSL_CERT / HOST_SSL_KEY).
- *
+ */
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+
+const examplesDir = path.dirname(fileURLToPath(import.meta.url));
+
+/**
  * @param {{ certsDir: string, exampleLabel: string }} options
  * @returns {{ key: Buffer, cert: Buffer } | undefined}
  */
-const fs = require("node:fs");
-const path = require("node:path");
-
-function resolveHttpsOptions({ certsDir, exampleLabel }) {
+export function resolveHttpsOptions({ certsDir, exampleLabel }) {
   const flag = process.env.HOST_HTTPS?.trim().toLowerCase();
   const forceOn = flag === "1" || flag === "true" || flag === "yes";
   const forceOff = flag === "0" || flag === "false" || flag === "no";
 
   const defaultCert = path.join(certsDir, "dev-cert.pem");
   const defaultKey = path.join(certsDir, "dev-key.pem");
-  const hostFallbackCert = path.resolve(
-    __dirname,
-    "host/certs/dev-cert.pem",
-  );
-  const hostFallbackKey = path.resolve(__dirname, "host/certs/dev-key.pem");
+  const hostFallbackCert = path.join(examplesDir, "host/certs/dev-cert.pem");
+  const hostFallbackKey = path.join(examplesDir, "host/certs/dev-key.pem");
 
   let certPath = process.env.HOST_SSL_CERT?.trim()
     ? path.resolve(process.env.HOST_SSL_CERT.trim())
@@ -66,4 +68,23 @@ function resolveHttpsOptions({ certsDir, exampleLabel }) {
   };
 }
 
-module.exports = { resolveHttpsOptions };
+/** Hostname only — accepts `immune-sheep-light.ngrok-free.app` or a full URL. */
+export function normalizeNgrokDomain(value) {
+  const raw = value?.trim();
+  if (!raw) return undefined;
+  try {
+    const url = raw.includes("://") ? raw : `https://${raw}`;
+    return new URL(url).hostname;
+  } catch {
+    return raw.replace(/^https?:\/\//, "").replace(/\/+$/, "");
+  }
+}
+
+/** Branding Layer iframe URL (ngrok when NGROK_DOMAIN is set). */
+export function walletIframeUrl() {
+  const domain = normalizeNgrokDomain(process.env.NGROK_DOMAIN);
+  if (domain) {
+    return `https://${domain}/wallet/`;
+  }
+  return "http://localhost:5174/wallet/";
+}
