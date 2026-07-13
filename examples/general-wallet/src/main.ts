@@ -29,9 +29,6 @@ import {
   saveWalletCreated,
 } from "./storage";
 
-// Temporary PRF / WebAuthn debugging (signer reads OWS_SIGNER_DEBUG + localStorage)
-(globalThis as { OWS_SIGNER_DEBUG?: boolean }).OWS_SIGNER_DEBUG = false;
-
 /** Demo chains for the branding-layer chain dropdown (fed into RpcHelper). */
 const DEMO_CHAINS: ReadonlyArray<{
   chainId: EVMChainId;
