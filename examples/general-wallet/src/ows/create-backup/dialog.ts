@@ -133,10 +133,13 @@ export async function runCreateBackupFlow(
         restoreOverlay = null;
         signerSlot.hidden = true;
         body.hidden = true;
-        cancelButton.remove();
 
+        // Keep Cancel mounted until persistence succeeds — if onBackupCreated
+        // throws, the catch path still needs a connected Close control.
         await options.onBackupCreated?.(result);
         if (aborted || settled) return;
+
+        cancelButton.remove();
 
         if (options.showResult) {
           overlay.remove();
@@ -158,9 +161,13 @@ export async function runCreateBackupFlow(
           restoreOverlay = null;
         }
         signerSlot.hidden = true;
+        body.hidden = false;
 
         errorEl.hidden = false;
         errorEl.textContent = formatBackupError(error);
+        if (!cancelButton.isConnected) {
+          actions.append(cancelButton);
+        }
         cancelButton.textContent = "Close";
         cancelButton.focus();
       }
