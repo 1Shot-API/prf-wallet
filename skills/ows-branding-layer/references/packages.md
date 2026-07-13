@@ -37,8 +37,8 @@ There is **no** branding-core / registry package. App-local UI and wiring live i
 
 Mirror `examples/general-wallet`:
 
-- Dev: webpack `devServer.static` (or equivalent) maps `/signer/src` → `ows-signer/src` and `/signer/` → signer `index.html`
-- Prod: copy `ows-signer` HTML + `src/` into `dist/signer/`
+- Dev: Vite middleware (or equivalent) maps `/signer/src` → `ows-signer/src` and `/signer/` → signer `index.html`
+- Prod: copy `ows-signer` HTML + `src/` into `dist/signer/` (see `scripts/copy-signer.mjs`)
 
 Signer URL in app code:
 

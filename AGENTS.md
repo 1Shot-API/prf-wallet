@@ -8,7 +8,7 @@ OWS uses three iframe layers: **Host Layer**, **Branding Layer**, and **Signing 
 
 ```
 examples/host                 Host Layer — @1shotapi/ows-provider (EIP-1193)
-examples/general-wallet       Branding Layer — general-purpose wallet demo
+examples/general-wallet       Branding Layer — React + Tailwind general-purpose wallet demo
 packages/ows-signer           Signing Layer (plain JS, zero deps, on-chain)
 packages/ows-signer-utils     Branding Layer ↔ Signing Layer (evm.signMessage, etc.)
 packages/ows-types            Shared types, errors, and cross-layer utils (including SD-JWT VC)

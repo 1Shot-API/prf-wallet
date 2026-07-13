@@ -25,7 +25,6 @@ export type RegisterCredentialsProviderOptions = {
   oid4vci: Oid4vciClient;
   oid4vp: Oid4vpClient;
   status?: CredentialStatusValidator;
-  /** Holder key for SD-JWT VC key binding. Defaults to OWS signer Ed25519 when omitted. */
   holderSigner?: HolderSigner | (() => Promise<HolderSigner>);
   ensureReady?: () => Promise<void>;
   requestCredentialOfferApproval?: (
@@ -214,7 +213,6 @@ function formatIssuerName(issuer: CredentialOffer["credentialIssuer"]): string {
   }
 }
 
-/** Convenience for demos — uses mock URI constants. */
 export const DEMO_CREDENTIAL_OFFER_URI = CredentialOfferUri("mock://kyc-offer/demo");
 export const DEMO_PRESENTATION_REQUEST_URI = PresentationRequestUri(
   "mock://kyc-presentation/demo",

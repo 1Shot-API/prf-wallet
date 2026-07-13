@@ -5,7 +5,6 @@ import {
   OwsUserRejectedError,
   type SolanaAccountAddress,
 } from "@1shotapi/ows-types";
-import { showConnectAddressDialog } from "../wallet-setup/dialog.js";
 
 export type AccountConnectStorage = {
   loadCachedEvmAddress: () => EVMAccountAddress | undefined;
@@ -18,7 +17,7 @@ export type AccountConnectStorage = {
 export type RegisterAccountConnectOptions = {
   storage: AccountConnectStorage;
   ensureReady: () => Promise<void>;
-  dialogContainer?: HTMLElement;
+  requestConnectApproval: () => Promise<boolean>;
 };
 
 /**
@@ -45,9 +44,7 @@ export function registerAccountConnect(
 
     const display = await wallet.requestDisplay({ width: 420, height: 360 });
     try {
-      const approved = await showConnectAddressDialog({
-        container: options.dialogContainer,
-      });
+      const approved = await options.requestConnectApproval();
       if (!approved) {
         throw new OwsUserRejectedError(
           "User rejected the account connection request",

@@ -2,7 +2,7 @@
 
 Reference **general-purpose Branding Layer** for the Open Wallet Standard — a MetaMask-style wallet in the browser. Serves the branding app and Signing Layer on **one origin** (required for WebAuthn `rpId` and signer nesting).
 
-A separate, app-specific Branding Layer example (e.g. 1ShotPay with scoped `transfer()` / custom RPC) will be added later.
+Built with **Vite + React + TypeScript + Tailwind CSS**.
 
 ## Stack
 
@@ -14,7 +14,7 @@ Host Layer (ows-example-host)
 
 | Path | Content |
 |------|---------|
-| `/wallet/` | Webpack bundle — `OWSWallet` + `OWSSigner` stub |
+| `/wallet/` | Vite React app — `OWSWallet` + UI via `WalletProvider` |
 | `/signer/` | Static `@1shotapi/ows-signer` ES modules (not bundled) |
 
 ## Setup
@@ -53,8 +53,12 @@ npm run dev -w @1shotapi/ows-example-host
 
 Passkeys require HTTPS — use the ngrok branding URL for cross-origin host testing.
 
+## Architecture
+
+- `WalletProvider` boots `OWSSigner` + `OWSWallet`, registers EIP-1193 / credentials handlers, and owns unlock / address / chain state.
+- Shared `Modal` + modal queue drive connect, sign, credential consent, backup/restore (signer iframe overlay via `overlaySignerIframe`).
+- Protocol wiring lives under `src/ows/`; UI under `src/components/`.
+
 ## Status
 
-Bootstrapped wallet with passkey creation, EIP-191 `personal_sign` (approval dialog UI), `RpcHelper` / `SignHelper`, credentials, backup/restore, and EVM/Solana address display.
-
-Example-local UI and wiring live under `src/ows/` (explicit registrars; no module install runtime).
+React rewrite with passkey create/unlock, EIP-191 `personal_sign` / typed data, `RpcHelper` / `SignHelper`, credentials, backup/restore, and EVM/Solana address display.

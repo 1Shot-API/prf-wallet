@@ -118,7 +118,7 @@ Prefer **`OWSWallet.prepare()` → register handlers → `start()`**. Do not use
 
 ## Reference implementation
 
-Canonical vanilla demo: `examples/general-wallet` in [1Shot-API/open-wallet](https://github.com/1Shot-API/open-wallet).
+Canonical React + Vite + Tailwind demo: `examples/general-wallet` in [1Shot-API/open-wallet](https://github.com/1Shot-API/open-wallet).
 
 ## Out of scope for this skill
 

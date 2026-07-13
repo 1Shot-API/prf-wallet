@@ -1,30 +1,24 @@
 /**
- * Start webpack-dev-server for Branding Layer + Signing Layer, optionally expose via ngrok.
+ * Start Vite for Branding Layer + Signing Layer, optionally expose via ngrok.
  * Loads NGROK_AUTHTOKEN from repo root .env (copy from .env.example).
  *
  * Usage:
  *   node scripts/dev.mjs              # dev server + ngrok tunnel
  *   node scripts/dev.mjs --no-tunnel  # local HTTP only
  */
-import { createRequire } from "node:module";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import net from "node:net";
-import webpack from "webpack";
-import WebpackDevServer from "webpack-dev-server";
+import { createServer } from "vite";
 import dotenv from "dotenv";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const require = createRequire(import.meta.url);
-const webpackConfig = require("../webpack.config.cjs");
-
 const repoRoot = path.resolve(__dirname, "../../..");
 dotenv.config({ path: path.join(repoRoot, ".env") });
 
 const port = Number(process.env.PORT ?? 5174);
 const noTunnel = process.argv.includes("--no-tunnel");
-
-let devServer;
+let viteServer;
 let ngrokListener;
 let shuttingDown = false;
 
@@ -52,11 +46,14 @@ function waitForPort(host, listenPort, timeoutMs = 30_000) {
 }
 
 async function startDevServer() {
-  const config = webpackConfig({}, { mode: "development", env: {} });
-  config.mode = "development";
-  const compiler = webpack(config);
-  devServer = new WebpackDevServer(config.devServer, compiler);
-  await devServer.start();
+  viteServer = await createServer({
+    configFile: path.join(__dirname, "../vite.config.ts"),
+    server: {
+      port,
+      host: "0.0.0.0",
+    },
+  });
+  await viteServer.listen();
   await waitForPort("127.0.0.1", port);
 }
 
@@ -111,8 +108,8 @@ async function shutdown(signal) {
     if (ngrokListener) {
       await ngrokListener.close();
     }
-    if (devServer) {
-      await devServer.stop();
+    if (viteServer) {
+      await viteServer.close();
     }
   } catch (error) {
     console.error(`Failed to shut down (${signal}):`, error);

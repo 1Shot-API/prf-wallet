@@ -18,7 +18,7 @@ const wallet = OWSWallet.prepare();
 await wallet.start();
 ```
 
-Reference: `examples/general-wallet` webpack static map for `/signer/`.
+Reference: `examples/general-wallet` Vite plugin / static map for `/signer/`.
 
 ## 2. Unlock (`ensureReady`)
 
@@ -26,7 +26,7 @@ App-owned passkey create / login before connect or sign:
 
 - Persist credential id + cached addresses in app storage.
 - Gate signing and account-connect behind `ensureReady()`.
-- Embedded first-run UI (when `window.parent !== window`) is optional demo pattern — see `examples/general-wallet/src/ows/wallet-setup/`.
+- Embedded first-run UI (when `window.parent !== window`) is optional demo pattern — see `examples/general-wallet` `OnboardingPanel` / `WalletProvider`.
 
 No published SDK for setup dialogs; keep UI local.
 
@@ -62,7 +62,7 @@ new RpcHelper(
 
 Call after `prepare()`, before `start()`. Zod param schemas live in `ows-wallet-utils`; method name tables in `ows-types`.
 
-Account connect (`eth_accounts` / `eth_requestAccounts`) is usually app-local — see `examples/general-wallet/src/ows/account-connect/`.
+Account connect (`eth_accounts` / `eth_requestAccounts`) is usually app-local — see `examples/general-wallet/src/ows/registerAccountConnect.ts`.
 
 ## 5. Signing consent
 
@@ -81,7 +81,7 @@ for (const [method, handler] of Object.entries(signHelper.handlers)) {
 }
 ```
 
-Dialog DOM stays in the app (`examples/general-wallet/src/ows/approval-dialog/dialog.ts`).
+Consent UI stays in the app (`examples/general-wallet` modal components under `src/components/modals/`).
 
 ## 6. Recovery overlay
 
@@ -94,7 +94,7 @@ Create / restore encrypted backup:
 
 Distinct from `prepareSignerIframeForWebAuthn` (1×1 invisible passkey focus used inside `OWSSigner`).
 
-Reference: `examples/general-wallet/src/ows/create-backup/` and `recover-backup/`.
+Reference: `examples/general-wallet` `CreateBackupModal` / `RestoreBackupModal` (`overlaySignerIframe` + signer slot).
 
 ## 7. Credentials (optional)
 
