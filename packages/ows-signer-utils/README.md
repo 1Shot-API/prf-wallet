@@ -79,6 +79,25 @@ try {
 }
 ```
 
+### EIP-1193 signing (`SignHelper`)
+
+Headless `personal_sign` / `eth_signTypedData*` orchestration (display → consent → ensureReady → sign). Does not register handlers — the branding app owns order:
+
+```typescript
+import { SignHelper } from "@1shotapi/ows-signer-utils";
+
+const signHelper = new SignHelper(signer, wallet, {
+  ensureReady,
+  requestPersonalSignApproval,
+  requestSignTypedDataApproval,
+});
+for (const [method, handler] of Object.entries(signHelper.handlers)) {
+  wallet.registerEip1193(method, handler);
+}
+```
+
+Consent UI stays app-owned (see `examples/general-wallet` approval dialog).
+
 ## API
 
 ### `OWSSigner.create(container, signerUrl, options?)`

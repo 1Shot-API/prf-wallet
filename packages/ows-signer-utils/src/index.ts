@@ -8,6 +8,22 @@ export {
   type OverlaySignerIframeOptions,
 } from "./iframe.js";
 export {
+  SignHelper,
+  parseTypedData,
+  type Eip1193Handler,
+  type Eip1193SignHandlers,
+  type SignHelperDisplaySession,
+  type SignHelperDisplaySize,
+  type SignHelperOptions,
+  type SignHelperSigner,
+  type SignHelperWallet,
+} from "./eip1193/sign-helper.js";
+export type {
+  PersonalSignApprovalRequest,
+  SignTypedDataApprovalRequest,
+  SignTypedDataPayload,
+} from "./eip1193/approval-types.js";
+export {
   OwsSignerError,
   OwsInvalidRequestError,
   OwsNotAllowedError,

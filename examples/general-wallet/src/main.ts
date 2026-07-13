@@ -6,7 +6,7 @@ import {
   EVMChainId,
   SolanaAccountAddress,
 } from "@1shotapi/ows-types";
-import { approvalDialogModule } from "./ows/approval-dialog/install";
+import { registerApprovalSigning } from "./ows/approval-dialog/install";
 import { createCreateBackupModule } from "./ows/create-backup/install";
 import { createRestoreBackupModule } from "./ows/recover-backup/install";
 import { credentialConsentModule } from "./ows/credential-consent/install";
@@ -190,6 +190,10 @@ async function main(): Promise<void> {
     });
   });
 
+  registerApprovalSigning(wallet, signer, {
+    ensureReady: walletSetup.ensureReady,
+  });
+
   await installBrandingModules(
     {
       wallet,
@@ -198,7 +202,6 @@ async function main(): Promise<void> {
     },
     [
       accountConnect,
-      approvalDialogModule,
       credentialConsentModule,
       createCredentialsProviderModule({
         store: credentialStore,

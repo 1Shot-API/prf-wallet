@@ -96,7 +96,7 @@ new RpcHelper(providers, wallet, signer?, {
 
 ---
 
-## Phase 4 — Signing / account wiring helpers
+## Phase 4 — Signing / account wiring helpers ✅
 
 - Headless personal_sign / typed-data: consent → `ensureReady` → sign; return `Eip1193Handler`s for the app to register.
 - Prefer helpers in `ows-signer-utils` (or wallet-utils registrars); app owns registration order.
@@ -144,6 +144,6 @@ Separate open-source branding app: React + Tailwind, consumes packages + skill. 
 | `RpcHelper` lifecycle | Register in constructor |
 | Signer arg | Optional positional; no wallet-utils → signer-utils dep |
 | Zod schemas | Stay in `ows-wallet-utils` |
-| First extract pass | `RpcHelper` + (later) iframe overlay + personal_sign/typedData helpers |
+| First extract pass | `RpcHelper` + iframe overlay + `SignHelper` (personal_sign / typedData) |
 | React module kit | No |
 | Display queue | App/skill concern, not SDK |

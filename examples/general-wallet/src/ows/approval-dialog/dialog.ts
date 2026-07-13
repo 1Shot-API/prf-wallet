@@ -1,7 +1,7 @@
 import type {
   PersonalSignApprovalRequest,
   SignTypedDataApprovalRequest,
-} from "@1shotapi/ows-branding-core";
+} from "@1shotapi/ows-signer-utils";
 
 export type ApprovalDialogOptions = {
   /** Element to mount the dialog into (default `document.body`). */
