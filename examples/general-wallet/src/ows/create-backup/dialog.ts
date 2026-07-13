@@ -1,7 +1,7 @@
 import type {
-  BrandingSignerHost,
-  CreateBackupResult,
-} from "@1shotapi/ows-branding-core";
+  OWSSigner,
+  RecoveryDataCreatedData,
+} from "@1shotapi/ows-signer-utils";
 import { overlaySignerIframe } from "@1shotapi/ows-signer-utils";
 
 export type CreateBackupDialogOptions = {
@@ -12,11 +12,11 @@ export type CreateBackupDialogOptions = {
   /** Minimum passphrase length shown in copy and passed to the signer. */
   minPasswordLength?: number;
   /** App-owned hook when a backup blob is created (e.g. persist to localStorage). */
-  onBackupCreated?: (result: CreateBackupResult) => void | Promise<void>;
+  onBackupCreated?: (result: RecoveryDataCreatedData) => void | Promise<void>;
   /** Run before signer ceremonies (e.g. passkey unlock). */
   ensureReady?: () => Promise<void>;
   /** Override result presentation (default: in-dialog copy UI). */
-  showResult?: (result: CreateBackupResult) => Promise<void>;
+  showResult?: (result: RecoveryDataCreatedData) => Promise<void>;
 };
 
 const DEFAULT_MIN_PASSWORD_LENGTH = 12;
@@ -31,7 +31,7 @@ let stylesInjected = false;
  * after the user has not cancelled.
  */
 export async function runCreateBackupFlow(
-  signer: BrandingSignerHost,
+  signer: OWSSigner,
   options: CreateBackupDialogOptions,
 ): Promise<void> {
   if (!stylesInjected) {
@@ -181,7 +181,7 @@ export async function runCreateBackupFlow(
 }
 
 function showDefaultBackupResult(
-  result: CreateBackupResult,
+  result: RecoveryDataCreatedData,
   dialog: HTMLElement,
   actions: HTMLElement,
   onDone: () => void,

@@ -1,7 +1,8 @@
-import type { BrandingContext, BrandingModule } from "@1shotapi/ows-branding-core";
+import type { OWSSigner } from "@1shotapi/ows-signer-utils";
+import type { OWSWallet } from "@1shotapi/ows-wallet-utils";
 import { runRestoreBackupFlow } from "./dialog";
 
-export type RestoreBackupModuleOptions = {
+export type RegisterRestoreBackupOptions = {
   /** Override dialog mount target. */
   container?: HTMLElement;
   /** Button that starts the restore-backup flow (element or CSS selector). */
@@ -17,31 +18,30 @@ export type RestoreBackupModuleOptions = {
   onRestored?: () => void | Promise<void>;
 };
 
-/** Document-delegated listeners keyed by selector (replaced on reinstall). */
+/** Document-delegated listeners keyed by selector (replaced on re-register). */
 const delegatedClickListeners = new Map<string, (event: Event) => void>();
 
-/** Direct element listeners (replaced on reinstall of the same node). */
+/** Direct element listeners (replaced on re-register of the same node). */
 const elementClickListeners = new WeakMap<
   HTMLElement,
   (event: Event) => void
 >();
 
-export function createRestoreBackupModule(
-  options: RestoreBackupModuleOptions,
-): BrandingModule {
-  return {
-    name: "recover-backup",
-    phase: "pre-start",
-    install(ctx: BrandingContext): void {
-      const handleClick = (): void => {
-        void runRestoreClick(ctx, options).catch((error: unknown) => {
-          console.error("[recover-backup] failed", error);
-        });
-      };
-
-      bindTriggerButton(options.triggerButton, handleClick);
-    },
+/**
+ * Bind the restore-backup trigger button (call before `wallet.start()`).
+ */
+export function registerRestoreBackup(
+  wallet: OWSWallet,
+  signer: OWSSigner,
+  options: RegisterRestoreBackupOptions,
+): void {
+  const handleClick = (): void => {
+    void runRestoreClick(wallet, signer, options).catch((error: unknown) => {
+      console.error("[recover-backup] failed", error);
+    });
   };
+
+  bindTriggerButton(options.triggerButton, handleClick);
 }
 
 function bindTriggerButton(
@@ -78,8 +78,9 @@ function bindTriggerButton(
 }
 
 async function runRestoreClick(
-  ctx: BrandingContext,
-  options: RestoreBackupModuleOptions,
+  wallet: OWSWallet,
+  signer: OWSSigner,
+  options: RegisterRestoreBackupOptions,
 ): Promise<void> {
   const encryptedPrivateKey = options.getEncryptedPrivateKey();
   if (!encryptedPrivateKey) {
@@ -92,13 +93,13 @@ async function runRestoreClick(
     "signerContainer",
   );
 
-  const display = await ctx.wallet.requestDisplay({
+  const display = await wallet.requestDisplay({
     width: 480,
     height: 420,
   });
 
   try {
-    const restored = await runRestoreBackupFlow(ctx.signer, {
+    const restored = await runRestoreBackupFlow(signer, {
       container: options.container,
       signerContainer,
       encryptedPrivateKey,

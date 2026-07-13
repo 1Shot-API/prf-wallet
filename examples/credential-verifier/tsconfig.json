@@ -6,5 +6,5 @@
     "module": "ESNext",
     "moduleResolution": "bundler"
   },
-  "include": ["src/**/*", "../credentials-shared/src/**/*"]
+  "include": ["src/**/*", "../shared/src/**/*"]
 }

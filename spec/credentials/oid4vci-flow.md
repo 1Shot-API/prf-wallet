@@ -45,6 +45,6 @@ await proxy.credentials.acceptOffer({
 
 ## Stub behavior
 
-- `mock://` URIs resolve to fixtures in `examples/credentials-shared`
+- `mock://` URIs resolve to fixtures in `examples/shared`
 - No HTTP, OAuth, or proof-of-possession in the stub phase
 - Real integration: add HTTP client implementing `Oid4vciClient`, wire in `credentials-provider` registry module

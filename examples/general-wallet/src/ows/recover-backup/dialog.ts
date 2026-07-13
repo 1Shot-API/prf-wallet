@@ -1,4 +1,4 @@
-import type { BrandingSignerHost } from "@1shotapi/ows-branding-core";
+import type { OWSSigner } from "@1shotapi/ows-signer-utils";
 import { overlaySignerIframe } from "@1shotapi/ows-signer-utils";
 
 export type RestoreBackupDialogOptions = {
@@ -19,7 +19,7 @@ let stylesInjected = false;
  * @returns `true` when restore completed, `false` when the user cancelled or dismissed an error.
  */
 export async function runRestoreBackupFlow(
-  signer: BrandingSignerHost,
+  signer: OWSSigner,
   options: RestoreBackupDialogOptions,
 ): Promise<boolean> {
   if (!stylesInjected) {

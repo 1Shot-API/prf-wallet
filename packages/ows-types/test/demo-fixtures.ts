@@ -7,7 +7,7 @@ import {
   sdJwtSaltGenerator,
 } from "../src/utils/credentials/sd-jwt-vc/crypto.js";
 
-/** TEST ONLY — matches examples/credentials-shared demo issuer key. */
+/** TEST ONLY — matches examples/shared demo issuer key. */
 export const DEMO_ISSUER_PRIVATE_JWK: JsonWebKey = {
   crv: "Ed25519",
   d: "pcLAFtmJw-OtcPm7taGhEDocf63HfBk5TMXWSoF6rvw",

@@ -1,8 +1,5 @@
-import type {
-  BrandingModule,
-  BrandingSignerHost,
-  BrandingWalletHost,
-} from "@1shotapi/ows-branding-core";
+import type { OWSSigner } from "@1shotapi/ows-signer-utils";
+import type { OWSWallet } from "@1shotapi/ows-wallet-utils";
 import {
   EVMAccountAddress,
   OwsUserRejectedError,
@@ -24,10 +21,10 @@ export type WalletSetupStorage = {
   ) => void;
 };
 
-export type WalletSetupModuleOptions = {
+export type CreateWalletSetupOptions = {
   storage: WalletSetupStorage;
-  wallet: BrandingWalletHost;
-  signer: BrandingSignerHost;
+  wallet: OWSWallet;
+  signer: OWSSigner;
   /** Element to mount embedded setup UI (default `#wallet-onboarding`). */
   embeddedMount?: HTMLElement | string;
   /** Called after unlock or wallet creation succeeds. */
@@ -36,16 +33,17 @@ export type WalletSetupModuleOptions = {
   dialogContainer?: HTMLElement;
 };
 
-export type WalletSetupModuleResult = {
-  module: BrandingModule;
+export type WalletSetup = {
   ensureReady: () => Promise<void>;
   isUnlocked: () => boolean;
   setUnlocked: (value: boolean) => void;
+  /** Call after `wallet.start()` for iframe-embedded first-run UI. */
+  mountEmbeddedSetup: () => void;
 };
 
-export function createWalletSetupModule(
-  options: WalletSetupModuleOptions,
-): WalletSetupModuleResult {
+export function createWalletSetup(
+  options: CreateWalletSetupOptions,
+): WalletSetup {
   const walletRef = options.wallet;
   const signerRef = options.signer;
   let unlocked = false;
@@ -158,52 +156,48 @@ export function createWalletSetupModule(
     }
   }
 
-  const module: BrandingModule = {
-    name: "wallet-setup",
-    phase: "post-start",
-    install(): void {
-      if (window.parent === window || options.storage.isWalletCreated()) {
-        return;
-      }
+  function mountEmbeddedSetup(): void {
+    if (window.parent === window || options.storage.isWalletCreated()) {
+      return;
+    }
 
-      const mount = resolveElement(
-        options.embeddedMount ?? "#wallet-onboarding",
-        "embeddedMount",
-      );
-      const mainPanel = document.querySelector("#wallet-main");
-      if (mainPanel instanceof HTMLElement) {
-        mainPanel.hidden = true;
-      }
-      mount.hidden = false;
-      mountEmbeddedSetupScreen(mount, {
-        onLogin: () =>
-          void (async () => {
-            try {
-              await loginWithPasskey();
-            } catch (error: unknown) {
-              console.error("[wallet-setup] embedded login failed", error);
-            }
-          })(),
-        onCreate: () =>
-          void (async () => {
-            try {
-              const accountName = await promptPasskeyAccountName();
-              await createNewWallet(accountName);
-            } catch (error: unknown) {
-              console.error("[wallet-setup] embedded create failed", error);
-            }
-          })(),
-      });
-    },
-  };
+    const mount = resolveElement(
+      options.embeddedMount ?? "#wallet-onboarding",
+      "embeddedMount",
+    );
+    const mainPanel = document.querySelector("#wallet-main");
+    if (mainPanel instanceof HTMLElement) {
+      mainPanel.hidden = true;
+    }
+    mount.hidden = false;
+    mountEmbeddedSetupScreen(mount, {
+      onLogin: () =>
+        void (async () => {
+          try {
+            await loginWithPasskey();
+          } catch (error: unknown) {
+            console.error("[wallet-setup] embedded login failed", error);
+          }
+        })(),
+      onCreate: () =>
+        void (async () => {
+          try {
+            const accountName = await promptPasskeyAccountName();
+            await createNewWallet(accountName);
+          } catch (error: unknown) {
+            console.error("[wallet-setup] embedded create failed", error);
+          }
+        })(),
+    });
+  }
 
   return {
-    module,
     ensureReady,
     isUnlocked: () => unlocked,
     setUnlocked: (value: boolean) => {
       unlocked = value;
     },
+    mountEmbeddedSetup,
   };
 }
 

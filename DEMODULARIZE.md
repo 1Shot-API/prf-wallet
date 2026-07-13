@@ -105,7 +105,7 @@ new RpcHelper(providers, wallet, signer?, {
 
 ---
 
-## Phase 5 — Examples: drop module runtime
+## Phase 5 — Examples: drop module runtime ✅
 
 1. Rename `examples/credentials-shared` → `examples/shared`.
 2. `general-wallet`: remove `@1shotapi/ows-branding-core`; replace `installBrandingModules` with explicit wiring; keep local dialog UI.

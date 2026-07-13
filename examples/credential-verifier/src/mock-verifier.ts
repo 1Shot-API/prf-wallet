@@ -1,7 +1,7 @@
 import {
   MOCK_KYC_PRESENTATION_URI,
   validateMockPresentation as validatePresentation,
-} from "../../credentials-shared/src/index.js";
+} from "../../shared/src/index.js";
 import type { KycProfilePolicy, PresentationResult } from "@1shotapi/ows-types";
 import type { CredentialIssuer } from "@1shotapi/ows-types";
 

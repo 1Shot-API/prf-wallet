@@ -1,11 +1,11 @@
 import type {
-  BrandingContext,
-  BrandingModule,
-  CreateBackupResult,
-} from "@1shotapi/ows-branding-core";
+  OWSSigner,
+  RecoveryDataCreatedData,
+} from "@1shotapi/ows-signer-utils";
+import type { OWSWallet } from "@1shotapi/ows-wallet-utils";
 import { runCreateBackupFlow } from "./dialog";
 
-export type CreateBackupModuleOptions = {
+export type RegisterCreateBackupOptions = {
   /** Override dialog mount target. */
   container?: HTMLElement;
   /** Button that starts the create-backup flow (element or CSS selector). */
@@ -14,35 +14,38 @@ export type CreateBackupModuleOptions = {
   signerContainer: HTMLElement | string;
   /** Minimum passphrase length (default 12). */
   minPasswordLength?: number;
+  /** Run before signer ceremonies (e.g. passkey unlock). */
+  ensureReady?: () => Promise<void>;
   /** App-owned hook when a backup blob is created (e.g. persist to localStorage). */
-  onBackupCreated?: (result: CreateBackupResult) => void | Promise<void>;
+  onBackupCreated?: (result: RecoveryDataCreatedData) => void | Promise<void>;
+  /** Override result presentation (default: in-dialog copy UI). */
+  showResult?: (result: RecoveryDataCreatedData) => Promise<void>;
 };
 
-/** Document-delegated listeners keyed by selector (replaced on reinstall). */
+/** Document-delegated listeners keyed by selector (replaced on re-register). */
 const delegatedClickListeners = new Map<string, (event: Event) => void>();
 
-/** Direct element listeners (replaced on reinstall of the same node). */
+/** Direct element listeners (replaced on re-register of the same node). */
 const elementClickListeners = new WeakMap<
   HTMLElement,
   (event: Event) => void
 >();
 
-export function createCreateBackupModule(
-  options: CreateBackupModuleOptions,
-): BrandingModule {
-  return {
-    name: "create-backup",
-    phase: "pre-start",
-    install(ctx: BrandingContext): void {
-      const handleClick = (): void => {
-        void runBackupClick(ctx, options).catch((error: unknown) => {
-          console.error("[create-backup] failed", error);
-        });
-      };
-
-      bindTriggerButton(options.triggerButton, handleClick);
-    },
+/**
+ * Bind the create-backup trigger button (call before `wallet.start()`).
+ */
+export function registerCreateBackup(
+  wallet: OWSWallet,
+  signer: OWSSigner,
+  options: RegisterCreateBackupOptions,
+): void {
+  const handleClick = (): void => {
+    void runBackupClick(wallet, signer, options).catch((error: unknown) => {
+      console.error("[create-backup] failed", error);
+    });
   };
+
+  bindTriggerButton(options.triggerButton, handleClick);
 }
 
 function bindTriggerButton(
@@ -79,31 +82,28 @@ function bindTriggerButton(
 }
 
 async function runBackupClick(
-  ctx: BrandingContext,
-  options: CreateBackupModuleOptions,
+  wallet: OWSWallet,
+  signer: OWSSigner,
+  options: RegisterCreateBackupOptions,
 ): Promise<void> {
   const signerContainer = resolveElement(
     options.signerContainer,
     "signerContainer",
   );
 
-  const display = await ctx.wallet.requestDisplay({
+  const display = await wallet.requestDisplay({
     width: 480,
     height: 420,
   });
 
   try {
-    const hostShowResult = ctx.ui?.showCreateBackupResult;
-
-    await runCreateBackupFlow(ctx.signer, {
+    await runCreateBackupFlow(signer, {
       container: options.container,
       signerContainer,
       minPasswordLength: options.minPasswordLength,
       onBackupCreated: options.onBackupCreated,
-      ensureReady: ctx.ensureReady,
-      showResult: hostShowResult
-        ? (result: CreateBackupResult) => hostShowResult(result)
-        : undefined,
+      ensureReady: options.ensureReady,
+      showResult: options.showResult,
     });
   } finally {
     await display.hide();

@@ -1,21 +1,22 @@
 import { OWSSigner } from "@1shotapi/ows-signer-utils";
 import { OWSWallet, RpcHelper } from "@1shotapi/ows-wallet-utils";
-import { installBrandingModules } from "@1shotapi/ows-branding-core";
 import {
   EVMAccountAddress,
   EVMChainId,
   SolanaAccountAddress,
 } from "@1shotapi/ows-types";
 import { registerApprovalSigning } from "./ows/approval-dialog/install";
-import { createCreateBackupModule } from "./ows/create-backup/install";
-import { createRestoreBackupModule } from "./ows/recover-backup/install";
-import { credentialConsentModule } from "./ows/credential-consent/install";
+import { registerCreateBackup } from "./ows/create-backup/install";
+import { registerRestoreBackup } from "./ows/recover-backup/install";
+import { createCredentialConsentUi } from "./ows/credential-consent/install";
+import { registerCredentialsProvider } from "./ows/credentials-provider/install";
+import { registerAccountConnect } from "./ows/account-connect/install";
+import { createWalletSetup } from "./ows/wallet-setup/install";
 import {
-  createCredentialsProviderModule,
-} from "./ows/credentials-provider/install";
-import { createAccountConnectModule } from "./ows/account-connect/install";
-import { createWalletSetupModule } from "./ows/wallet-setup/install";
-import { LocalStorageCredentialStore, MockOid4vciClient, MockOid4vpClient } from "../../credentials-shared/src/index.js";
+  LocalStorageCredentialStore,
+  MockOid4vciClient,
+  MockOid4vpClient,
+} from "../../shared/src/index.js";
 import { showCredentialListDialog } from "./credential-list-dialog";
 import {
   isWalletCreated,
@@ -145,7 +146,7 @@ async function main(): Promise<void> {
 
   const wallet = OWSWallet.prepare({ debug: true });
 
-  const walletSetup = createWalletSetupModule({
+  const walletSetup = createWalletSetup({
     storage: walletStorage,
     wallet,
     signer,
@@ -160,12 +161,6 @@ async function main(): Promise<void> {
   });
 
   refreshStatusUi(walletSetup);
-
-  const accountConnect = createAccountConnectModule({
-    storage: walletStorage,
-    ensureReady: walletSetup.ensureReady,
-    signer,
-  });
 
   const defaultChainId = DEMO_CHAINS[0]!.chainId;
   const rpcHelper = new RpcHelper(
@@ -190,55 +185,50 @@ async function main(): Promise<void> {
     });
   });
 
+  registerAccountConnect(wallet, signer, {
+    storage: walletStorage,
+    ensureReady: walletSetup.ensureReady,
+  });
+
   registerApprovalSigning(wallet, signer, {
     ensureReady: walletSetup.ensureReady,
   });
 
-  await installBrandingModules(
-    {
-      wallet,
-      signer,
-      ensureReady: walletSetup.ensureReady,
+  const credentialConsent = createCredentialConsentUi();
+  registerCredentialsProvider(wallet, signer, {
+    store: credentialStore,
+    oid4vci: new MockOid4vciClient(),
+    oid4vp: new MockOid4vpClient(),
+    ensureReady: walletSetup.ensureReady,
+    ...credentialConsent,
+  });
+
+  registerCreateBackup(wallet, signer, {
+    triggerButton: "#create-backup",
+    signerContainer: "#signer-container",
+    ensureReady: walletSetup.ensureReady,
+    onBackupCreated: (result) => {
+      saveBackup(result.encryptedPrivateKey);
     },
-    [
-      accountConnect,
-      credentialConsentModule,
-      createCredentialsProviderModule({
-        store: credentialStore,
-        oid4vci: new MockOid4vciClient(),
-        oid4vp: new MockOid4vpClient(),
-      }),
-      createCreateBackupModule({
-        triggerButton: "#create-backup",
-        signerContainer: "#signer-container",
-        onBackupCreated: (result) => {
-          saveBackup(result.encryptedPrivateKey);
-        },
-      }),
-      createRestoreBackupModule({
-        triggerButton: "#restore-backup",
-        signerContainer: "#signer-container",
-        getEncryptedPrivateKey: () => loadBackup(),
-        onRestored: async () => {
-          walletSetup.setUnlocked(true);
-          revealMainWalletPanel();
-          refreshStatusUi(walletSetup);
-          const evm = await signer.evm.getAccountAddress();
-          const solana = await signer.solana.getAccountAddress();
-          setAddresses(evm, solana);
-          saveCachedAddresses(evm, solana);
-        },
-      }),
-    ],
-  );
+  });
+
+  registerRestoreBackup(wallet, signer, {
+    triggerButton: "#restore-backup",
+    signerContainer: "#signer-container",
+    getEncryptedPrivateKey: () => loadBackup(),
+    onRestored: async () => {
+      walletSetup.setUnlocked(true);
+      revealMainWalletPanel();
+      refreshStatusUi(walletSetup);
+      const evm = await signer.evm.getAccountAddress();
+      const solana = await signer.solana.getAccountAddress();
+      setAddresses(evm, solana);
+      saveCachedAddresses(evm, solana);
+    },
+  });
 
   await wallet.start();
-
-  await installBrandingModules(
-    { wallet, signer, ensureReady: walletSetup.ensureReady },
-    [walletSetup.module],
-    "post-start",
-  );
+  walletSetup.mountEmbeddedSetup();
 
   void refreshCredentialCount();
 

@@ -1,4 +1,3 @@
-import type { BrandingContext, BrandingModule } from "@1shotapi/ows-branding-core";
 import type {
   CredentialOfferApprovalRequest,
   CredentialPresentationApprovalRequest,
@@ -8,34 +7,31 @@ import {
   requestCredentialPresentationApproval,
 } from "./dialog";
 
-export type CredentialConsentModuleOptions = {
+export type CredentialConsentUiOptions = {
   container?: HTMLElement;
 };
 
-export function createCredentialConsentModule(
-  options?: CredentialConsentModuleOptions,
-): BrandingModule {
+export type CredentialConsentUi = {
+  requestCredentialOfferApproval: (
+    request: CredentialOfferApprovalRequest,
+  ) => Promise<boolean>;
+  requestCredentialPresentationApproval: (
+    request: CredentialPresentationApprovalRequest,
+  ) => Promise<boolean>;
+};
+
+/** Example-local consent adapters for credential offer / presentation dialogs. */
+export function createCredentialConsentUi(
+  options?: CredentialConsentUiOptions,
+): CredentialConsentUi {
   return {
-    name: "credential-consent",
-    phase: "pre-start",
-    install(ctx: BrandingContext): void {
-      if (!ctx.ui) {
-        ctx.ui = {};
-      }
-
-      ctx.ui.requestCredentialPresentationApproval ??=
-        (request: CredentialPresentationApprovalRequest) =>
-          requestCredentialPresentationApproval(request, {
-            container: options?.container,
-          });
-
-      ctx.ui.requestCredentialOfferApproval ??=
-        (request: CredentialOfferApprovalRequest) =>
-          requestCredentialOfferApproval(request, {
-            container: options?.container,
-          });
-    },
+    requestCredentialOfferApproval: (request) =>
+      requestCredentialOfferApproval(request, {
+        container: options?.container,
+      }),
+    requestCredentialPresentationApproval: (request) =>
+      requestCredentialPresentationApproval(request, {
+        container: options?.container,
+      }),
   };
 }
-
-export const credentialConsentModule = createCredentialConsentModule();
