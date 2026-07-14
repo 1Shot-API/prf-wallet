@@ -1,13 +1,21 @@
 import {
-  MOCK_KYC_ISSUER_ID,
   MOCK_KYC_POLICY,
   type CustodyStep,
   type MockVerifierResult,
 } from "../../shared/src/index.js";
-import { validateMockPresentation, getMockVerifierRequestUri } from "./mock-verifier";
 import { OWSProxy } from "@1shotapi/ows-provider";
-import { PresentationRequestUri, type PresentationResult } from "@1shotapi/ows-types";
+import {
+  CredentialIssuer,
+  PresentationRequestUri,
+  type PresentationResult,
+} from "@1shotapi/ows-types";
+import { DEMO_ISSUER_PUBLIC_JWK } from "../../shared/src/demo/demo-keys.js";
+import { validateMockPresentation } from "../../shared/src/demo-flow.js";
 import "./styles.css";
+
+declare const __WALLET_IFRAME_URL__: string;
+declare const __VERIFIER_ORIGIN__: string;
+declare const __ISSUER_ORIGIN__: string;
 
 const requestUriEl = document.getElementById("request-uri")!;
 const verifyButton = document.getElementById("verify-button") as HTMLButtonElement;
@@ -22,7 +30,10 @@ const claimCards = document.getElementById("claim-cards")!;
 const resultOutput = document.getElementById("result-output") as HTMLPreElement;
 const walletContainer = document.getElementById("wallet-container")!;
 
-const requestUri = PresentationRequestUri(getMockVerifierRequestUri());
+const verifierOrigin = __VERIFIER_ORIGIN__.replace(/\/$/, "");
+const issuerOrigin = __ISSUER_ORIGIN__.replace(/\/$/, "");
+const requestUri = PresentationRequestUri(`${verifierOrigin}/request/demo`);
+const demoIssuer = CredentialIssuer(issuerOrigin);
 requestUriEl.textContent = `Request URI: ${requestUri}`;
 
 function setStatus(message: string, kind: "neutral" | "ok" | "error" = "neutral"): void {
@@ -115,8 +126,51 @@ function renderInspection(
   inspectionEl.hidden = false;
 }
 
+async function resolveIssuerPublicJwk(): Promise<JsonWebKey> {
+  try {
+    const res = await fetch(`${issuerOrigin}/jwks`);
+    if (res.ok) {
+      const jwks = (await res.json()) as { keys?: JsonWebKey[] };
+      if (jwks.keys?.[0]) return jwks.keys[0];
+    }
+  } catch {
+    // fall through
+  }
+  try {
+    const res = await fetch(`${verifierOrigin}/issuer-jwks`);
+    if (res.ok) {
+      const jwks = (await res.json()) as { keys?: JsonWebKey[] };
+      if (jwks.keys?.[0]) return jwks.keys[0];
+    }
+  } catch {
+    // fall through
+  }
+  return DEMO_ISSUER_PUBLIC_JWK;
+}
+
+async function loadRequestExpectations(): Promise<{
+  nonce?: string;
+  audience?: string;
+}> {
+  try {
+    const res = await fetch(`${verifierOrigin}/request/latest`);
+    if (!res.ok) return {};
+    const latest = (await res.json()) as {
+      nonce?: string;
+      client_id?: string;
+    } | null;
+    if (!latest) return {};
+    return { nonce: latest.nonce, audience: latest.client_id };
+  } catch {
+    return {};
+  }
+}
+
 async function main(): Promise<void> {
-  const proxy = await OWSProxy.create(walletContainer, __WALLET_IFRAME_URL__);
+  const proxy = await OWSProxy.create(walletContainer, __WALLET_IFRAME_URL__, {
+    // Branding iframe (ngrok) fetches loopback verifier OID4 endpoints.
+    allowLocalAccess: true,
+  });
 
   showWalletButton.addEventListener("click", () => {
     proxy.showWallet();
@@ -131,12 +185,26 @@ async function main(): Promise<void> {
       try {
         const presentation = await proxy.credentials.present({
           requestUri,
-          acceptedIssuers: [MOCK_KYC_ISSUER_ID],
+          acceptedIssuers: [demoIssuer],
         });
+
+        const expectations = await loadRequestExpectations();
+        const issuerPublicKeyJwk = await resolveIssuerPublicJwk();
+        const policy = {
+          ...MOCK_KYC_POLICY,
+          allowedIssuers: [demoIssuer],
+        };
+
         const validation = await validateMockPresentation(
           presentation,
-          MOCK_KYC_POLICY,
-          MOCK_KYC_ISSUER_ID,
+          policy,
+          demoIssuer,
+          undefined,
+          {
+            expectedNonce: expectations.nonce,
+            expectedAudience: expectations.audience,
+            issuerPublicKeyJwk,
+          },
         );
 
         renderInspection(presentation, validation);

@@ -6,13 +6,8 @@ import {
   type VerifyOid4vciProofJwtInput,
   type VerifyOid4vciProofJwtResult,
 } from "../../credentials/oid4vci-proof.js";
-import {
-  encodeJsonBase64Url,
-  decodeJsonBase64Url,
-  bytesToBase64Url,
-  sdJwtHasher,
-  verifyEd25519,
-} from "./sd-jwt-vc/crypto.js";
+import { ConversionUtils } from "../ConversionUtils.js";
+import { CredentialCryptoUtils } from "./CredentialCryptoUtils.js";
 
 type ProofHeader = {
   typ?: string;
@@ -94,7 +89,7 @@ export class ProofUtils {
       payload.nonce = input.nonce;
     }
 
-    const signingInput = `${encodeJsonBase64Url(header)}.${encodeJsonBase64Url(payload)}`;
+    const signingInput = `${ConversionUtils.encodeJsonBase64Url(header)}.${ConversionUtils.encodeJsonBase64Url(payload)}`;
     const signature = await input.holderSigner.signKbJwt(signingInput);
     return `${signingInput}.${signature}`;
   }
@@ -120,8 +115,8 @@ export class ProofUtils {
     let header: ProofHeader;
     let payload: ProofPayload;
     try {
-      header = decodeJsonBase64Url<ProofHeader>(headerB64);
-      payload = decodeJsonBase64Url<ProofPayload>(payloadB64);
+      header = ConversionUtils.decodeJsonBase64Url<ProofHeader>(headerB64);
+      payload = ConversionUtils.decodeJsonBase64Url<ProofPayload>(payloadB64);
     } catch {
       return {
         valid: false,
@@ -156,7 +151,7 @@ export class ProofUtils {
 
     const signingInput = `${headerB64}.${payloadB64}`;
     const holderPublicKeyJwk = publicJwkOnly(header.jwk);
-    const sigOk = await verifyEd25519(
+    const sigOk = await CredentialCryptoUtils.verifyEd25519(
       holderPublicKeyJwk,
       signingInput,
       Base64UrlEncodedString(signatureB64),
@@ -179,8 +174,8 @@ export class ProofUtils {
   static async jwkThumbprint(jwk: JsonWebKey): Promise<JWKThumbprint> {
     const members = requiredMembersForThumbprint(jwk);
     const canonical = JSON.stringify(members, Object.keys(members).sort());
-    const digest = await sdJwtHasher(canonical, "sha-256");
-    return JWKThumbprint(bytesToBase64Url(digest));
+    const digest = await CredentialCryptoUtils.hasher(canonical, "sha-256");
+    return JWKThumbprint(ConversionUtils.bytesToBase64Url(digest));
   }
 
   /** True when two JWKs share the same RFC 7638 thumbprint. */

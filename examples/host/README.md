@@ -39,13 +39,13 @@ mkcert -install
 # From repo root — SANs for hosts-file testing + localhost
 mkcert -cert-file examples/host/certs/dev-cert.pem \
   -key-file examples/host/certs/dev-key.pem \
-  ows-host.com localhost 127.0.0.1
+  ows-host.com ows-issuer.com ows-verifier.com localhost 127.0.0.1
 ```
 
 Optional hosts entry (`C:\Windows\System32\drivers\etc\hosts`):
 
 ```text
-127.0.0.1  ows-host.com
+127.0.0.1  ows-host.com ows-issuer.com ows-verifier.com
 ```
 
 If `examples/host/certs/dev-cert.pem` and `dev-key.pem` exist, `npm run dev` enables HTTPS automatically for **host, credential-issuer, and credential-verifier** (shared helper in `examples/host-dev.mjs`). Or set in repo root `.env`:
@@ -57,7 +57,7 @@ HOST_HTTPS=1
 # HOST_SSL_KEY=examples/host/certs/dev-key.pem
 ```
 
-Then open **`https://ows-host.com:5173`** (accept the local CA once via `mkcert -install`). Issuer/verifier use the same certs on ports 5175 / 5176.
+Then open **`https://ows-host.com:5173`** (accept the local CA once via `mkcert -install`). Credential demos use **`https://ows-issuer.com:5175`** / **`https://ows-verifier.com:5176`**.
 
 Confirm in the **signer** iframe console:
 

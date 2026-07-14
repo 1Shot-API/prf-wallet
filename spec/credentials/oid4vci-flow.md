@@ -1,6 +1,11 @@
 # OID4VCI flow — Issuer → Wallet
 
-Maps the [OpenID for Verifiable Credential Issuance](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html) pattern to OWS abstractions. The demo uses `MockOid4vciClient`; a production wallet swaps in an HTTP client behind `IOid4vciClient`.
+Maps the [OpenID for Verifiable Credential Issuance](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html) pattern to OWS abstractions.
+
+- **Production / demos:** `@1shotapi/ows-oid4` (`HttpOid4vciClient` + `CredentialsHelper`)
+- **Unit tests:** optional `MockOid4vciClient` in `examples/shared`
+- **DI seam:** `IOid4vciClient` in `@1shotapi/ows-types`
+- **Wire hooks:** `wallet.credentials` registrar in `@1shotapi/ows-wallet-utils`
 
 ## Sequence
 
@@ -19,7 +24,8 @@ sequenceDiagram
   Vci-->>Wallet: CredentialOffer
   Wallet->>Vci: fetchIssuerMetadata(issuer)
   Vci-->>Wallet: IssuerMetadata
-  Note over Wallet: authorization stubbed in mock
+  Note over Wallet: consent UI
+  Wallet->>Vci: prepareCredentialRequest (pre-authorized token + c_nonce)
   Wallet->>Holder: publicKeyJwk + sign OID4VCI proof JWT
   Wallet->>Vci: requestCredential(offer, metadata, context)
   Note over Vci: verify proof; embed cnf.jwk
@@ -32,9 +38,17 @@ sequenceDiagram
 
 | Method | OID4VCI step |
 |--------|----------------|
-| `resolveOffer(uri)` | Parse credential offer (URI or QR) |
+| `resolveOffer(uri)` | Parse credential offer (`https://…`, `openid-credential-offer://`) |
 | `fetchIssuerMetadata(issuer)` | `/.well-known/openid-credential-issuer` |
-| `requestCredential(offer, metadata, context)` | Token + credential endpoint exchange with holder PoP |
+| `prepareCredentialRequest?(offer, metadata)` | Pre-authorized token exchange → access token + `c_nonce` |
+| `requestCredential(offer, metadata, context)` | Credential endpoint with holder PoP (+ optional wallet attestation) |
+
+## Grant profile (Phase 4)
+
+- **Supported:** `urn:ietf:params:oauth:grant-type:pre-authorized_code` only
+- **Deferred:** authorization-code + PKCE / full authorization server
+
+`CredentialsHelper` prefers `c_nonce` from `prepareCredentialRequest`; `getProofNonce` remains an optional fallback for mocks.
 
 ## Holder binding (proof-of-possession)
 
@@ -43,23 +57,16 @@ sequenceDiagram
 - `holderPublicKeyJwk` — key embedded as SD-JWT VC `cnf.jwk` after verification
 - `proof` — OID4VCI JWT proof (`proof_type: "jwt"`, `typ: openid4vci-proof+jwt`)
 - optional `nonce` — issuer C-nonce echoed in the proof
+- optional `walletAttestationJwt` — when the issuer profile requires attestation
 
 Helpers: `ProofUtils.buildOid4vciProofJwt` / `ProofUtils.verifyOid4vciProofJwt` in `@1shotapi/ows-types`.
 
-The mock issuer verifies the proof signature, audience (credential issuer), and that the proof header `jwk` matches `holderPublicKeyJwk` before issuing.
-
 ## Entry point
-
-Host apps trigger issuance via:
 
 ```ts
 await proxy.credentials.acceptOffer({
-  credentialOfferUri: CredentialOfferUri("mock://kyc-offer/demo"),
+  credentialOfferUri: CredentialOfferUri("https://issuer.example/offers/demo"),
 });
 ```
 
-## Stub behavior
-
-- `mock://` URIs resolve to fixtures in `examples/shared`
-- No real HTTP or OAuth token endpoint (Phase 4); PoP JWT is still required and verified in-process
-- Real integration: add HTTP client implementing `IOid4vciClient`, pass the same proof in the credential request body
+Local demos: `examples/credential-issuer` serves `/.well-known/openid-credential-issuer`, `/token`, `/credential`, and `/offers/demo`.

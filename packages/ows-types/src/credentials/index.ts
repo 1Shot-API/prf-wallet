@@ -4,13 +4,25 @@ export type {
   CredentialOfferApprovalRequest,
   CredentialOfferInput,
   CredentialReceipt,
+  CredentialOfferGrants,
+  PreAuthorizedCodeGrant,
 } from "./offer.js";
 export type {
   PresentationDefinition,
   PresentationRequestInput,
   PresentationResult,
   CredentialPresentationApprovalRequest,
+  Oid4vpAuthorizationRequest,
+  Oid4vpClientMetadata,
+  Oid4vpResponseMode,
 } from "./presentation.js";
+export type {
+  OwsDcqlQuery,
+  OwsDcqlCredentialQuery,
+  OwsDcqlClaimQuery,
+  DcqlMapResult,
+} from "./dcql.js";
+export type { IWalletAttestationProvider } from "./wallet-attestation.js";
 export type {
   CredentialStatus,
   CredentialSchemaRef,
@@ -32,6 +44,7 @@ export type {
   CredentialConfigurationMetadata,
   IssuerMetadata,
   CredentialIssuanceContext,
+  CredentialRequestPreparation,
   Oid4vciJwtProof,
   IOid4vciClient,
 } from "./oid4vci.js";

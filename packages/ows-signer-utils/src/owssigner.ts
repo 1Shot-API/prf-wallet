@@ -12,6 +12,7 @@ import type {
   VersionData,
   EncryptAES256Result,
   DecryptAES256Result,
+  IOWSSigner,
 } from "@1shotapi/ows-types";
 import type { Hex } from "viem";
 import { publicKeyToAddress } from "viem/utils";
@@ -32,7 +33,7 @@ export type OWSSignerOptions = {
   rpcTimeoutMs?: number;
 };
 
-export class OWSSigner {
+export class OWSSigner implements IOWSSigner {
   readonly evm: EvmSigner;
   readonly solana: SolanaSigner;
 

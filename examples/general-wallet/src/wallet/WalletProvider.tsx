@@ -25,11 +25,16 @@ import type {
 } from "@1shotapi/ows-signer-utils";
 import {
   LocalStorageCredentialRepository,
-  MockOid4vciClient,
-  MockOid4vpClient,
   InMemoryIssuerTrustRegistry,
-  MOCK_OID4VCI_PROOF_NONCE,
+  DEMO_HOLDER_PRIVATE_JWK,
 } from "@ows-shared";
+import {
+  DemoWalletAttestationProvider,
+  FetchUtils,
+  HttpOid4vciClient,
+  HttpOid4vpClient,
+  ParseUtils,
+} from "@1shotapi/ows-oid4";
 import { DEMO_CHAINS } from "../ows/demoChains";
 import { registerAccountConnect } from "../ows/registerAccountConnect";
 import { registerApprovalSigning } from "../ows/registerApprovalSigning";
@@ -52,6 +57,14 @@ import {
 
 const credentialRepository = new LocalStorageCredentialRepository();
 const issuerTrust = new InMemoryIssuerTrustRegistry();
+const fetchUtils = new FetchUtils();
+const parseUtils = new ParseUtils();
+const oid4vci = new HttpOid4vciClient(fetchUtils, parseUtils);
+const oid4vp = new HttpOid4vpClient(fetchUtils);
+const attestationProvider = new DemoWalletAttestationProvider({
+  privateJwk: DEMO_HOLDER_PRIVATE_JWK,
+  issuer: "ows-demo-wallet",
+});
 
 const walletStorage = {
   isWalletCreated,
@@ -541,10 +554,10 @@ export function WalletProvider({ children }: { children: ReactNode }) {
 
       registerCredentialsProvider(wallet, signer, {
         repository: credentialRepository,
-        oid4vci: new MockOid4vciClient(),
-        oid4vp: new MockOid4vpClient(),
+        oid4vci,
+        oid4vp,
         trust: issuerTrust,
-        getProofNonce: () => MOCK_OID4VCI_PROOF_NONCE,
+        attestationProvider,
         ensureReady,
         requestCredentialOfferApproval: (
           request: CredentialOfferApprovalRequest,

@@ -2,7 +2,7 @@
   "name": "@1shotapi/ows-example-credential-verifier",
   "version": "0.0.0",
   "private": true,
-  "description": "OWS mock credential verifier host demo — triggers proxy.credentials.present",
+  "description": "OWS credential verifier host demo — HTTP OID4VP request_uri/response + present",
   "type": "module",
   "scripts": {
     "dev": "node scripts/dev.mjs",
@@ -13,7 +13,8 @@
   },
   "dependencies": {
     "@1shotapi/ows-provider": "*",
-    "@1shotapi/ows-types": "*"
+    "@1shotapi/ows-types": "*",
+    "jose": "^6.0.11"
   },
   "devDependencies": {
     "dotenv": "^16.4.7",

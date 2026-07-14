@@ -12,9 +12,10 @@ examples/general-wallet       Branding Layer — React + Tailwind general-purpos
 packages/ows-signer           Signing Layer (plain JS, zero deps, on-chain)
 packages/ows-signer-utils     Branding Layer ↔ Signing Layer (evm.signMessage, etc.)
 packages/ows-types            Shared types, errors, and cross-layer utils (including SD-JWT VC)
-packages/ows-wallet-utils     Branding Layer Postmate/RPC wrappers, CredentialsHelper, credential wire registration
+packages/ows-oid4             Optional credentials add-on (CredentialsHelper, HTTP OID4 clients)
+packages/ows-wallet-utils     Branding Layer Postmate/RPC wrappers; credentials wire hooks only
 packages/ows-provider         Host Layer EIP-1193 + credentials proxy; SD-JWT verify
-examples/shared               Demo-only mock OID4 clients, stores, and fixtures (not published)
+examples/shared               Demo-only OID4 mocks, stores, and fixtures (not published)
 packages/ows-onchain          EIP-8244 deploy pipeline for ows-signer
 spec/credentials/             OWS Credentials Extension normative docs
 ```

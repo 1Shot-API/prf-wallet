@@ -1,11 +1,6 @@
 import { SDJwtVcInstance } from "@sd-jwt/sd-jwt-vc";
 import type { CredentialClaimName } from "../src/primitives/CredentialClaimName.js";
-import {
-  createEd25519SignerFromJwk,
-  createEd25519VerifierFromJwk,
-  sdJwtHasher,
-  sdJwtSaltGenerator,
-} from "../src/utils/credentials/sd-jwt-vc/crypto.js";
+import { CredentialCryptoUtils } from "../src/utils/credentials/CredentialCryptoUtils.js";
 
 /** TEST ONLY — matches examples/shared demo issuer key. */
 export const DEMO_ISSUER_PRIVATE_JWK: JsonWebKey = {
@@ -42,12 +37,12 @@ export async function issueDemoSdJwtVc(input: {
   holderPublicKeyJwk: JsonWebKey;
 }): Promise<string> {
   const sdjwt = new SDJwtVcInstance({
-    signer: createEd25519SignerFromJwk(DEMO_ISSUER_PRIVATE_JWK),
+    signer: CredentialCryptoUtils.createEd25519Signer(DEMO_ISSUER_PRIVATE_JWK),
     signAlg: "EdDSA",
-    verifier: createEd25519VerifierFromJwk(DEMO_ISSUER_PUBLIC_JWK),
-    hasher: sdJwtHasher,
+    verifier: CredentialCryptoUtils.createEd25519Verifier(DEMO_ISSUER_PUBLIC_JWK),
+    hasher: CredentialCryptoUtils.hasher,
     hashAlg: "sha-256",
-    saltGenerator: sdJwtSaltGenerator,
+    saltGenerator: CredentialCryptoUtils.saltGenerator,
   });
 
   const iat = Math.floor(Date.now() / 1000);
@@ -73,8 +68,10 @@ export function createDemoHolderSigner() {
       return publicJwk;
     },
     async signKbJwt(unsignedJwt: string) {
-      const { signEd25519 } = await import("../src/utils/credentials/sd-jwt-vc/crypto.js");
-      return signEd25519(DEMO_HOLDER_PRIVATE_JWK, unsignedJwt);
+      return CredentialCryptoUtils.signEd25519(
+        DEMO_HOLDER_PRIVATE_JWK,
+        unsignedJwt,
+      );
     },
   };
 }

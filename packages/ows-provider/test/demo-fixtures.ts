@@ -1,11 +1,7 @@
 import { SDJwtVcInstance } from "@sd-jwt/sd-jwt-vc";
-import type { CredentialClaimName } from "@1shotapi/ows-types";
 import {
-  createEd25519SignerFromJwk,
-  createEd25519VerifierFromJwk,
-  sdJwtHasher,
-  sdJwtSaltGenerator,
-  signEd25519,
+  CredentialCryptoUtils,
+  type CredentialClaimName,
 } from "@1shotapi/ows-types";
 
 /** TEST ONLY — matches examples/shared demo issuer key. */
@@ -43,12 +39,12 @@ export async function issueDemoSdJwtVc(input: {
   holderPublicKeyJwk: JsonWebKey;
 }): Promise<string> {
   const sdjwt = new SDJwtVcInstance({
-    signer: createEd25519SignerFromJwk(DEMO_ISSUER_PRIVATE_JWK),
+    signer: CredentialCryptoUtils.createEd25519Signer(DEMO_ISSUER_PRIVATE_JWK),
     signAlg: "EdDSA",
-    verifier: createEd25519VerifierFromJwk(DEMO_ISSUER_PUBLIC_JWK),
-    hasher: sdJwtHasher,
+    verifier: CredentialCryptoUtils.createEd25519Verifier(DEMO_ISSUER_PUBLIC_JWK),
+    hasher: CredentialCryptoUtils.hasher,
     hashAlg: "sha-256",
-    saltGenerator: sdJwtSaltGenerator,
+    saltGenerator: CredentialCryptoUtils.saltGenerator,
   });
 
   const iat = Math.floor(Date.now() / 1000);
@@ -74,7 +70,10 @@ export function createDemoHolderSigner() {
       return publicJwk;
     },
     async signKbJwt(unsignedJwt: string) {
-      return signEd25519(DEMO_HOLDER_PRIVATE_JWK, unsignedJwt);
+      return CredentialCryptoUtils.signEd25519(
+        DEMO_HOLDER_PRIVATE_JWK,
+        unsignedJwt,
+      );
     },
   };
 }

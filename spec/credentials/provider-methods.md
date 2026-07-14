@@ -13,9 +13,11 @@ await proxy.credentials.list(filter?);
 await proxy.credentials.delete(input);
 ```
 
-Branding registers handlers on `wallet.credentials` (prefer `CredentialsHelper` from `@1shotapi/ows-wallet-utils`). Handlers must be registered **before** `wallet.start()`:
+Branding registers handlers on `wallet.credentials` (prefer `CredentialsHelper` from `@1shotapi/ows-oid4`). Handlers must be registered **before** `wallet.start()`:
 
 ```ts
+import { CredentialsHelper } from "@1shotapi/ows-oid4";
+
 const helper = new CredentialsHelper(wallet, signer, {
   repository,
   oid4vci,

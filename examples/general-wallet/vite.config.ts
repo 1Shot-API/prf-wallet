@@ -32,6 +32,32 @@ function sendFile(res: ServerResponse, filePath: string): void {
   fs.createReadStream(filePath).pipe(res);
 }
 
+/**
+ * Resolve `rel` under `rootDir`, rejecting path traversal (`..`, encoded separators).
+ * Returns `undefined` when the result would escape `rootDir`.
+ */
+function resolveContainedPath(
+  rootDir: string,
+  urlRelative: string,
+): string | undefined {
+  let rel: string;
+  try {
+    rel = decodeURIComponent(urlRelative);
+  } catch {
+    return undefined;
+  }
+  if (rel.includes("\0")) {
+    return undefined;
+  }
+  const root = path.resolve(rootDir);
+  const resolved = path.resolve(root, rel);
+  const rootPrefix = root.endsWith(path.sep) ? root : `${root}${path.sep}`;
+  if (resolved !== root && !resolved.startsWith(rootPrefix)) {
+    return undefined;
+  }
+  return resolved;
+}
+
 /** Serve `/signer/` outside Vite `base` so WebAuthn + nest stay same-origin. */
 function serveSignerPlugin(): Plugin {
   return {
@@ -50,9 +76,11 @@ function serveSignerPlugin(): Plugin {
         }
 
         if (url.startsWith("/signer/src/")) {
-          const rel = url.slice("/signer/src/".length);
-          const filePath = path.join(signerPkgSrc, rel);
-          if (!filePath.startsWith(signerPkgSrc) || !fs.existsSync(filePath)) {
+          const filePath = resolveContainedPath(
+            signerPkgSrc,
+            url.slice("/signer/src/".length),
+          );
+          if (!filePath || !fs.existsSync(filePath)) {
             res.statusCode = 404;
             res.end("Not found");
             return;
@@ -61,9 +89,11 @@ function serveSignerPlugin(): Plugin {
           return;
         }
 
-        const rel = url.slice("/signer/".length);
-        const filePath = path.join(signerPublicDir, rel);
-        if (!filePath.startsWith(signerPublicDir) || !fs.existsSync(filePath)) {
+        const filePath = resolveContainedPath(
+          signerPublicDir,
+          url.slice("/signer/".length),
+        );
+        if (!filePath || !fs.existsSync(filePath)) {
           next();
           return;
         }

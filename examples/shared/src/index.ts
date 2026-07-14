@@ -6,9 +6,13 @@ export {
   createMemoryStorageBackend,
   type CredentialStorageBackend,
 } from "./local-storage-store.js";
-export { InMemoryIssuerTrustRegistry } from "./in-memory-trust-registry.js";
 export { MockOid4vciClient, DEMO_HOLDER_PUBLIC_JWK } from "./mock/oid4vci.js";
 export { MockOid4vpClient } from "./mock/oid4vp.js";
+export {
+  DEMO_HOLDER_PRIVATE_JWK,
+  DEMO_ISSUER_PUBLIC_JWK,
+} from "./demo/demo-keys.js";
+export { InMemoryIssuerTrustRegistry, isLocalDemoIssuerOrigin } from "./in-memory-trust-registry.js";
 export {
   DemoCredentialFlow,
   validateMockPresentation,

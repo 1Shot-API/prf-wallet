@@ -7,7 +7,7 @@ import type {
   PresentationResult,
   CredentialSummary,
 } from "@1shotapi/ows-types";
-import { buildSdJwtVcPresentation } from "@1shotapi/ows-types";
+import { PresentationUtils } from "@1shotapi/ows-types";
 import {
   MOCK_KYC_PRESENTATION_REQUEST,
   MOCK_KYC_PRESENTATION_URI,
@@ -47,7 +47,7 @@ export class MockOid4vpClient implements IOid4vpClient {
     const holderSigner = context?.holderSigner ?? createDemoHolderSigner();
 
     if (credential.format === "sd-jwt-vc") {
-      const built = await buildSdJwtVcPresentation({
+      const built = await PresentationUtils.build({
         credential,
         definition,
         holderSigner,

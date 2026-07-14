@@ -1,8 +1,9 @@
 import { OWSProxy } from "@1shotapi/ows-provider";
 import { CredentialOfferUri } from "@1shotapi/ows-types";
-import { MOCK_KYC_OFFER_URI } from "../../shared/src/index.js";
-import { getMockIssuerOfferUri } from "./mock-issuer.js";
 import "./styles.css";
+
+declare const __WALLET_IFRAME_URL__: string;
+declare const __ISSUER_ORIGIN__: string;
 
 const offerUriEl = document.getElementById("offer-uri")!;
 const issueButton = document.getElementById("issue-button") as HTMLButtonElement;
@@ -13,7 +14,9 @@ const statusEl = document.getElementById("status") as HTMLParagraphElement;
 const resultOutput = document.getElementById("result-output") as HTMLPreElement;
 const walletContainer = document.getElementById("wallet-container")!;
 
-const offerUri = CredentialOfferUri(getMockIssuerOfferUri() ?? MOCK_KYC_OFFER_URI);
+const offerUri = CredentialOfferUri(
+  `${__ISSUER_ORIGIN__.replace(/\/$/, "")}/offers/demo`,
+);
 offerUriEl.textContent = `Offer URI: ${offerUri}`;
 
 function setStatus(message: string, isError = false): void {
@@ -22,7 +25,10 @@ function setStatus(message: string, isError = false): void {
 }
 
 async function main(): Promise<void> {
-  const proxy = await OWSProxy.create(walletContainer, __WALLET_IFRAME_URL__);
+  const proxy = await OWSProxy.create(walletContainer, __WALLET_IFRAME_URL__, {
+    // Branding iframe (ngrok) fetches loopback issuer OID4 endpoints.
+    allowLocalAccess: true,
+  });
 
   showWalletButton.addEventListener("click", () => {
     proxy.showWallet();
@@ -35,7 +41,9 @@ async function main(): Promise<void> {
       setStatus("Sending credential offer to wallet…");
 
       try {
-        const receipt = await proxy.credentials.acceptOffer({ credentialOfferUri: offerUri });
+        const receipt = await proxy.credentials.acceptOffer({
+          credentialOfferUri: offerUri,
+        });
         resultOutput.textContent = JSON.stringify(receipt, null, 2);
         resultOutput.hidden = false;
         setStatus("Credential stored in wallet.");
@@ -49,7 +57,7 @@ async function main(): Promise<void> {
     })();
   });
 
-  setStatus("Ready — embeds general-wallet with credentials support.");
+  setStatus("Ready — OID4VCI HTTP issuer + general-wallet credentials.");
 }
 
 main().catch((error: unknown) => {

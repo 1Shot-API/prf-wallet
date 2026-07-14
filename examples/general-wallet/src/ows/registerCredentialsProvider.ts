@@ -1,12 +1,10 @@
 import type { OWSSigner } from "@1shotapi/ows-signer-utils";
+import type { OWSWallet } from "@1shotapi/ows-wallet-utils";
 import {
   CredentialsHelper,
-  type OWSWallet,
   type CredentialsHelperOptions,
-} from "@1shotapi/ows-wallet-utils";
+} from "@1shotapi/ows-oid4";
 import {
-  CredentialOfferUri,
-  PresentationRequestUri,
   type CredentialOfferApprovalRequest,
   type CredentialPresentationApprovalRequest,
   type ICredentialRepository,
@@ -15,6 +13,7 @@ import {
   type IIssuerTrustRegistry,
   type IOid4vciClient,
   type IOid4vpClient,
+  type IWalletAttestationProvider,
   type IssuerMetadata,
 } from "@1shotapi/ows-types";
 
@@ -25,7 +24,8 @@ export type RegisterCredentialsProviderOptions = {
   trust: IIssuerTrustRegistry;
   status?: ICredentialStatusValidator;
   holderSigner?: IHolderSigner | (() => Promise<IHolderSigner>);
-  getProofNonce: (metadata: IssuerMetadata) => string | Promise<string>;
+  getProofNonce?: (metadata: IssuerMetadata) => string | Promise<string>;
+  attestationProvider?: IWalletAttestationProvider;
   ensureReady?: () => Promise<void>;
   requestCredentialOfferApproval?: (
     request: CredentialOfferApprovalRequest,
@@ -52,6 +52,7 @@ export function registerCredentialsProvider(
     status: options.status,
     holderSigner: options.holderSigner,
     getProofNonce: options.getProofNonce,
+    attestationProvider: options.attestationProvider,
     ensureReady: options.ensureReady,
     requestCredentialOfferApproval: options.requestCredentialOfferApproval,
     requestCredentialPresentationApproval:
@@ -61,10 +62,3 @@ export function registerCredentialsProvider(
   helper.register();
   return helper;
 }
-
-export const DEMO_CREDENTIAL_OFFER_URI = CredentialOfferUri(
-  "mock://kyc-offer/demo",
-);
-export const DEMO_PRESENTATION_REQUEST_URI = PresentationRequestUri(
-  "mock://kyc-presentation/demo",
-);

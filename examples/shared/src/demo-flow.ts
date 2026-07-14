@@ -20,9 +20,7 @@ import type {
 import {
   NoopCredentialStatusValidator,
   ProofUtils,
-  decodeSdJwtVcIssuerClaims,
-  extractHolderJwkFromSdJwtVc,
-  extractKbJwtClaims,
+  PresentationUtils,
   type CredentialClaimName,
   type JWKThumbprint,
 } from "@1shotapi/ows-types";
@@ -244,23 +242,34 @@ export async function validateMockPresentation(
   policy: KycProfilePolicy,
   issuerId: CredentialIssuer,
   holderPublicKeyJwk?: JsonWebKey,
+  options?: {
+    expectedNonce?: string;
+    expectedAudience?: string;
+    issuerPublicKeyJwk?: JsonWebKey;
+  },
 ): Promise<MockVerifierResult> {
   const reasons: string[] = [];
-  const expectedNonce = MOCK_KYC_PRESENTATION_REQUEST.nonce!;
+  const expectedNonce =
+    options?.expectedNonce ?? MOCK_KYC_PRESENTATION_REQUEST.nonce!;
   const expectedAudience =
+    options?.expectedAudience ??
     MOCK_KYC_PRESENTATION_REQUEST.audience ??
     MOCK_KYC_PRESENTATION_REQUEST.verifier.id;
+  const issuerPublicKeyJwk =
+    options?.issuerPublicKeyJwk ?? DEMO_ISSUER_PUBLIC_JWK;
 
-  const issuerClaims = decodeSdJwtVcIssuerClaims(presentation.presentation);
+  const issuerClaims = PresentationUtils.decodeIssuerClaims(
+    presentation.presentation,
+  );
   const presentationIssuer = issuerClaims.iss ?? String(issuerId);
   const vct = issuerClaims.vct;
 
   const holderJwk =
     holderPublicKeyJwk ??
-    extractHolderJwkFromSdJwtVc(presentation.presentation) ??
+    PresentationUtils.extractHolderJwk(presentation.presentation) ??
     issuerClaims.cnf?.jwk;
 
-  const kb = extractKbJwtClaims(presentation.presentation);
+  const kb = PresentationUtils.extractKbJwtClaims(presentation.presentation);
   const holderThumbprint = holderJwk
     ? await ProofUtils.jwkThumbprint(holderJwk)
     : undefined;
@@ -289,7 +298,7 @@ export async function validateMockPresentation(
   if (holderJwk) {
     const cryptoResult = await verifySdJwtVcPresentation({
       presentation: presentation.presentation,
-      issuerPublicKeyJwk: DEMO_ISSUER_PUBLIC_JWK,
+      issuerPublicKeyJwk,
       holderPublicKeyJwk: holderJwk,
       nonce: expectedNonce,
       audience: expectedAudience,

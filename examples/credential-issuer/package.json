@@ -2,7 +2,7 @@
   "name": "@1shotapi/ows-example-credential-issuer",
   "version": "0.0.0",
   "private": true,
-  "description": "OWS mock credential issuer host demo — triggers proxy.credentials.acceptOffer",
+  "description": "OWS credential issuer host demo — HTTP OID4VCI well-known/token/credential + acceptOffer",
   "type": "module",
   "scripts": {
     "dev": "node scripts/dev.mjs",

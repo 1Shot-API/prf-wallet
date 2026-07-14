@@ -47,6 +47,8 @@ Returns an `OwsUnimplementedError` (from `@1shotapi/ows-types`) if the Branding 
 | `name` | iframe `name` attribute (default `ows-wallet`) |
 | `classList` | CSS classes on iframe at creation |
 | `rpcTimeoutMs` | RPC timeout (default 120s) |
+| `walletSizeX` / `walletSizeY` | Flyout size in CSS pixels |
+| `allowLocalAccess` | When true, add `local-network-access` / `loopback-network` to iframe `allow` (default `false`) |
 
 ### `proxy.ethereum`
 
@@ -65,7 +67,7 @@ Host Layer — OWSProxy
               └── Signing Layer — OWSSigner via ows-signer-utils
 ```
 
-`OWSProxy` sets iframe Permissions Policy (`allow`) before navigation (WebAuthn + clipboard), including when using stock `postmate`.
+`OWSProxy` sets iframe Permissions Policy (`allow`) before navigation (WebAuthn + clipboard), including when using stock `postmate`. Pass `allowLocalAccess: true` when the branding layer must fetch LAN/loopback hosts (Chrome still prompts).
 
 ## License
 

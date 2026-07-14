@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { CredentialClaimName, CredentialIssuer } from "@1shotapi/ows-types";
-import { buildSdJwtVcPresentation } from "@1shotapi/ows-types";
+import { CredentialClaimName, CredentialIssuer, PresentationUtils } from "@1shotapi/ows-types";
 import { verifySdJwtVcPresentation } from "../src/credentials/verify.js";
 import {
   issueDemoSdJwtVc,
@@ -33,7 +32,7 @@ describe("SD-JWT VC verify", () => {
       holderPublicKeyJwk: holderJwk,
     });
 
-    const built = await buildSdJwtVcPresentation({
+    const built = await PresentationUtils.build({
       credential: {
         credentialId: "cred_test" as never,
         format: "sd-jwt-vc",
@@ -91,7 +90,7 @@ describe("SD-JWT VC verify", () => {
       holderPublicKeyJwk: holderJwk,
     });
 
-    const built = await buildSdJwtVcPresentation({
+    const built = await PresentationUtils.build({
       credential: {
         credentialId: "cred_test" as never,
         format: "sd-jwt-vc",

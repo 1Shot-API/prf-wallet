@@ -1,4 +1,3 @@
-import type { OWSSigner } from "@1shotapi/ows-signer-utils";
 import {
   CredentialFormatId,
   CredentialTypeName,
@@ -6,6 +5,7 @@ import {
   OwsUserRejectedError,
   NoopCredentialStatusValidator,
   ProofUtils,
+  CredentialCryptoUtils,
   type CredentialOffer,
   type CredentialOfferApprovalRequest,
   type CredentialOfferInput,
@@ -18,8 +18,10 @@ import {
   type ICredentialStatusValidator,
   type IHolderSigner,
   type IIssuerTrustRegistry,
+  type IOWSSigner,
   type IOid4vciClient,
   type IOid4vpClient,
+  type IWalletAttestationProvider,
   type IssuerMetadata,
   type OpenWalletCredentialProvider,
   type PresentationDefinition,
@@ -28,7 +30,6 @@ import {
   type RequestDisplayParams,
   type StoredCredential,
 } from "@1shotapi/ows-types";
-import { createOwsEd25519HolderSigner } from "./sd-jwt-vc/ows-holder-signer.js";
 
 export type CredentialsHelperDisplaySession = {
   hide(): Promise<void>;
@@ -55,8 +56,13 @@ export type CredentialsHelperOptions = {
   trust: IIssuerTrustRegistry;
   status?: ICredentialStatusValidator;
   holderSigner?: IHolderSigner | (() => Promise<IHolderSigner>);
-  /** Resolve OID4VCI C-nonce for proof JWTs (issuer-supplied in production). */
-  getProofNonce: (metadata: IssuerMetadata) => string | Promise<string>;
+  /**
+   * Resolve OID4VCI C-nonce for proof JWTs. Used when the OID4 client does not
+   * implement `prepareCredentialRequest` (or returns no `cNonce`).
+   */
+  getProofNonce?: (metadata: IssuerMetadata) => string | Promise<string>;
+  /** Optional wallet attestation for issuance / presentation profiles. */
+  attestationProvider?: IWalletAttestationProvider;
   ensureReady?: () => Promise<void>;
   requestCredentialOfferApproval?: (
     request: CredentialOfferApprovalRequest,
@@ -95,7 +101,7 @@ export class CredentialsHelper {
 
   constructor(
     private readonly wallet: CredentialsHelperWallet,
-    private readonly signer: OWSSigner,
+    private readonly signer: IOWSSigner,
     private readonly options: CredentialsHelperOptions,
   ) {
     this.status = options.status ?? new NoopCredentialStatusValidator();
@@ -121,9 +127,9 @@ export class CredentialsHelper {
         : this.options.holderSigner;
     }
 
-    return createOwsEd25519HolderSigner({
+    return CredentialCryptoUtils.createOwsEd25519HolderSigner({
       getEd25519PublicKeyHex: async () => {
-        const cached = this.signer.getLastPublicKeyData?.();
+        const cached = this.signer.getLastPublicKeyData();
         if (cached?.ed25519PublicKey) {
           return cached.ed25519PublicKey;
         }
@@ -133,7 +139,10 @@ export class CredentialsHelper {
         return keys.ed25519PublicKey;
       },
       signDigest: async (digest, scheme) => {
-        const result = await this.signer.signDigest(digest, scheme ?? "ed25519");
+        const result = await this.signer.signDigest(
+          HexString(digest),
+          scheme ?? "ed25519",
+        );
         return { signature: HexString(result.signature) };
       },
     });
@@ -179,7 +188,29 @@ export class CredentialsHelper {
 
       const holderSigner = await this.resolveHolderSigner();
       const holderPublicKeyJwk = await holderSigner.publicKeyJwk();
-      const nonce = await this.options.getProofNonce(metadata);
+
+      const prepared = this.options.oid4vci.prepareCredentialRequest
+        ? await this.options.oid4vci.prepareCredentialRequest(offer, metadata)
+        : undefined;
+
+      const nonce =
+        prepared?.cNonce ??
+        (this.options.getProofNonce
+          ? await this.options.getProofNonce(metadata)
+          : undefined);
+      if (!nonce) {
+        throw new Error(
+          "OID4VCI C-nonce required (prepareCredentialRequest or getProofNonce)",
+        );
+      }
+
+      const walletAttestationJwt = this.options.attestationProvider
+        ? await this.options.attestationProvider.createAttestation({
+            audience: metadata.credentialIssuer,
+            nonce,
+          })
+        : undefined;
+
       const proofJwt = await ProofUtils.buildOid4vciProofJwt({
         holderSigner,
         audience: metadata.credentialIssuer,
@@ -189,6 +220,7 @@ export class CredentialsHelper {
         holderPublicKeyJwk,
         proof: { proof_type: "jwt", jwt: proofJwt },
         nonce,
+        walletAttestationJwt,
       });
       await this.assertActive(stored);
       await this.options.repository.store(stored);
@@ -256,8 +288,12 @@ export class CredentialsHelper {
       await this.assertActive(credential);
 
       const holderSigner = await this.resolveHolderSigner();
+      const authorizationRequest =
+        this.options.oid4vp.getAuthorizationRequest?.(definition.id);
       return this.options.oid4vp.buildPresentation(credential, definition, {
         holderSigner,
+        attestationProvider: this.options.attestationProvider,
+        authorizationRequest,
       });
     } finally {
       await display.hide();
