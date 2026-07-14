@@ -5,16 +5,17 @@ import type {
   PresentationResult,
   CredentialFilter,
   CredentialSummary,
-  CredentialStore,
-  Oid4vciClient,
+  ICredentialRepository,
+  IOid4vciClient,
   CredentialIssuanceContext,
-  Oid4vpClient,
+  IOid4vpClient,
   PresentationBuildContext,
-  CredentialStatusValidator,
+  ICredentialStatusValidator,
   KycProfilePolicy,
-  HolderSigner,
-  IssuerTrustRegistry,
+  IHolderSigner,
+  IIssuerTrustRegistry,
   CredentialIssuer,
+  CredentialId,
 } from "@1shotapi/ows-types";
 import {
   NoopCredentialStatusValidator,
@@ -29,7 +30,7 @@ import { verifySdJwtVcPresentation } from "@1shotapi/ows-provider";
 import type { SdJwtVcPayload } from "@sd-jwt/sd-jwt-vc";
 import { MockOid4vciClient } from "./mock/oid4vci.js";
 import { MockOid4vpClient } from "./mock/oid4vp.js";
-import { InMemoryCredentialStore } from "./in-memory-store.js";
+import { InMemoryCredentialRepository } from "./in-memory-store.js";
 import { InMemoryIssuerTrustRegistry } from "./in-memory-trust-registry.js";
 import {
   MOCK_KYC_OFFER_URI,
@@ -41,27 +42,27 @@ import { createDemoHolderSigner } from "./demo/jwk-holder-signer.js";
 import { DEMO_ISSUER_PUBLIC_JWK } from "./demo/demo-keys.js";
 
 export type DemoCredentialFlowDeps = {
-  store?: CredentialStore;
-  oid4vci?: Oid4vciClient;
-  oid4vp?: Oid4vpClient;
-  status?: CredentialStatusValidator;
-  trust?: IssuerTrustRegistry;
+  repository?: ICredentialRepository;
+  oid4vci?: IOid4vciClient;
+  oid4vp?: IOid4vpClient;
+  status?: ICredentialStatusValidator;
+  trust?: IIssuerTrustRegistry;
   approvePresentation?: () => Promise<boolean>;
-  holderSigner?: HolderSigner;
+  holderSigner?: IHolderSigner;
 };
 
 /** Orchestrates mock issuance → storage → presentation for tests and demos. */
 export class DemoCredentialFlow {
-  readonly store: CredentialStore;
-  readonly oid4vci: Oid4vciClient;
-  readonly oid4vp: Oid4vpClient;
-  readonly status: CredentialStatusValidator;
-  readonly trust: IssuerTrustRegistry;
+  readonly repository: ICredentialRepository;
+  readonly oid4vci: IOid4vciClient;
+  readonly oid4vp: IOid4vpClient;
+  readonly status: ICredentialStatusValidator;
+  readonly trust: IIssuerTrustRegistry;
   private readonly approvePresentation: () => Promise<boolean>;
-  private readonly holderSigner: HolderSigner;
+  private readonly holderSigner: IHolderSigner;
 
   constructor(deps: DemoCredentialFlowDeps = {}) {
-    this.store = deps.store ?? new InMemoryCredentialStore();
+    this.repository = deps.repository ?? new InMemoryCredentialRepository();
     this.oid4vci = deps.oid4vci ?? new MockOid4vciClient();
     this.oid4vp = deps.oid4vp ?? new MockOid4vpClient();
     this.status = deps.status ?? new NoopCredentialStatusValidator();
@@ -91,6 +92,20 @@ export class DemoCredentialFlow {
     return { holderSigner: this.holderSigner };
   }
 
+  private async assertActive(
+    credential: Awaited<ReturnType<ICredentialRepository["get"]>>,
+  ): Promise<void> {
+    if (!credential) {
+      throw new Error("Credential not found");
+    }
+    const check = await this.status.checkStatus(credential);
+    if (check.status !== "active") {
+      throw new Error(
+        `Credential status is ${check.status}${check.details ? `: ${check.details}` : ""}`,
+      );
+    }
+  }
+
   async acceptOffer(
     input: CredentialOfferInput = {
       credentialOfferUri: MOCK_KYC_OFFER_URI,
@@ -104,6 +119,11 @@ export class DemoCredentialFlow {
       throw new Error("credentialOfferUri or offer is required");
     }
 
+    const trusted = await this.trust.isTrustedIssuer(offer.credentialIssuer);
+    if (!trusted) {
+      throw new Error(`Untrusted issuer: ${offer.credentialIssuer}`);
+    }
+
     const metadata = await this.oid4vci.fetchIssuerMetadata(
       offer.credentialIssuer,
     );
@@ -112,8 +132,8 @@ export class DemoCredentialFlow {
       metadata,
       await this.buildIssuanceContext(metadata.credentialIssuer),
     );
-    await this.status.checkStatus(stored);
-    await this.store.save(stored);
+    await this.assertActive(stored);
+    await this.repository.store(stored);
 
     return {
       credentialId: stored.credentialId,
@@ -135,8 +155,14 @@ export class DemoCredentialFlow {
       throw new Error("requestUri or request is required");
     }
 
-    const summaries = await this.store.list();
-    const matches = await this.oid4vp.matchCredentials(definition, summaries);
+    const summaries = await this.repository.list();
+    let matches = await this.oid4vp.matchCredentials(definition, summaries);
+
+    if (input.acceptedIssuers && input.acceptedIssuers.length > 0) {
+      const allowed = new Set(input.acceptedIssuers);
+      matches = matches.filter((m) => allowed.has(m.issuer));
+    }
+
     if (matches.length === 0) {
       throw new Error("No matching credentials in wallet");
     }
@@ -146,24 +172,22 @@ export class DemoCredentialFlow {
       throw new Error("User rejected presentation");
     }
 
-    const credential = await this.store.get(matches[0]!.credentialId);
-    if (!credential) {
-      throw new Error("Credential not found");
-    }
+    const credential = await this.repository.get(matches[0]!.credentialId);
+    await this.assertActive(credential);
 
     return this.oid4vp.buildPresentation(
-      credential,
+      credential!,
       definition,
       this.presentationContext(),
     );
   }
 
   async list(filter?: CredentialFilter): Promise<CredentialSummary[]> {
-    return this.store.list(filter);
+    return this.repository.list(filter);
   }
 
-  async delete(credentialId: Parameters<CredentialStore["delete"]>[0]): Promise<void> {
-    await this.store.delete(credentialId);
+  async delete(credentialId: CredentialId): Promise<void> {
+    await this.repository.delete(credentialId);
   }
 }
 

@@ -1,6 +1,6 @@
 # OID4VCI flow — Issuer → Wallet
 
-Maps the [OpenID for Verifiable Credential Issuance](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html) pattern to OWS abstractions. The demo uses `MockOid4vciClient`; a production wallet swaps in an HTTP client behind `Oid4vciClient`.
+Maps the [OpenID for Verifiable Credential Issuance](https://openid.net/specs/openid-4-verifiable-credential-issuance-1_0.html) pattern to OWS abstractions. The demo uses `MockOid4vciClient`; a production wallet swaps in an HTTP client behind `IOid4vciClient`.
 
 ## Sequence
 
@@ -9,9 +9,9 @@ sequenceDiagram
   participant Issuer
   participant Host as proxy.credentials
   participant Wallet as wallet.credentials
-  participant Holder as HolderSigner
-  participant Vci as Oid4vciClient
-  participant Store as CredentialStore
+  participant Holder as IHolderSigner
+  participant Vci as IOid4vciClient
+  participant Store as ICredentialRepository
 
   Issuer->>Host: acceptOffer(credentialOfferUri)
   Host->>Wallet: credentials.acceptOffer
@@ -28,7 +28,7 @@ sequenceDiagram
   Wallet-->>Host: CredentialReceipt
 ```
 
-## `Oid4vciClient` interface
+## `IOid4vciClient` interface
 
 | Method | OID4VCI step |
 |--------|----------------|
@@ -62,4 +62,4 @@ await proxy.credentials.acceptOffer({
 
 - `mock://` URIs resolve to fixtures in `examples/shared`
 - No real HTTP or OAuth token endpoint (Phase 4); PoP JWT is still required and verified in-process
-- Real integration: add HTTP client implementing `Oid4vciClient`, pass the same proof in the credential request body
+- Real integration: add HTTP client implementing `IOid4vciClient`, pass the same proof in the credential request body

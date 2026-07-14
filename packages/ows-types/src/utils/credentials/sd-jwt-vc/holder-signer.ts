@@ -1,7 +1,7 @@
 import type { Signer } from "@sd-jwt/core";
-import type { HolderSigner } from "../../../credentials/holder-signer.js";
+import type { IHolderSigner } from "../../../credentials/holder-signer.js";
 
-/** Adapts a `HolderSigner` to the `@sd-jwt/core` kbSigner callback. */
-export function holderSignerToKbSigner(holder: HolderSigner): Signer {
+/** Adapts a `IHolderSigner` to the `@sd-jwt/core` kbSigner callback. */
+export function holderSignerToKbSigner(holder: IHolderSigner): Signer {
   return (data) => holder.signKbJwt(data);
 }

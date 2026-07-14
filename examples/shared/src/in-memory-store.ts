@@ -1,24 +1,31 @@
 import type { CredentialId } from "@1shotapi/ows-types";
 import type {
-  CredentialStore,
+  ICredentialRepository,
   StoredCredential,
   CredentialFilter,
   CredentialSummary,
 } from "@1shotapi/ows-types";
 
-export class InMemoryCredentialStore implements CredentialStore {
+export class InMemoryCredentialRepository implements ICredentialRepository {
   private readonly credentials = new Map<string, StoredCredential>();
+  private readonly revoked = new Set<string>();
 
-  async save(credential: StoredCredential): Promise<void> {
+  async store(credential: StoredCredential): Promise<void> {
     this.credentials.set(credential.credentialId, credential);
+    this.revoked.delete(credential.credentialId);
   }
 
   async get(credentialId: CredentialId): Promise<StoredCredential | undefined> {
+    if (this.revoked.has(credentialId)) {
+      return undefined;
+    }
     return this.credentials.get(credentialId);
   }
 
   async list(filter?: CredentialFilter): Promise<CredentialSummary[]> {
-    const all = [...this.credentials.values()];
+    const all = [...this.credentials.values()].filter(
+      (c) => !this.revoked.has(c.credentialId),
+    );
     const filtered = all.filter((c) => {
       if (filter?.type && !c.type.includes(filter.type)) {
         return false;
@@ -41,5 +48,12 @@ export class InMemoryCredentialStore implements CredentialStore {
 
   async delete(credentialId: CredentialId): Promise<void> {
     this.credentials.delete(credentialId);
+    this.revoked.delete(credentialId);
+  }
+
+  async revoke(credentialId: CredentialId): Promise<void> {
+    if (this.credentials.has(credentialId)) {
+      this.revoked.add(credentialId);
+    }
   }
 }

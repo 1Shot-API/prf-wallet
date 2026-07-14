@@ -1,14 +1,14 @@
 import type { PresentationRequestUri } from "../primitives/index.js";
 import type { StoredCredential } from "./credential.js";
 import type { CredentialSummary } from "./filter.js";
-import type { HolderSigner } from "./holder-signer.js";
+import type { IHolderSigner } from "./holder-signer.js";
 import type { PresentationDefinition, PresentationResult } from "./presentation.js";
 
 export type PresentationBuildContext = {
-  holderSigner: HolderSigner;
+  holderSigner: IHolderSigner;
 };
 
-export interface Oid4vpClient {
+export interface IOid4vpClient {
   resolveRequest(uri: PresentationRequestUri): Promise<PresentationDefinition>;
   matchCredentials(
     definition: PresentationDefinition,

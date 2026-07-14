@@ -1,5 +1,18 @@
-import { EVMAccountAddress, SolanaAccountAddress } from "@1shotapi/ows-types";
-import type { ED25519PublicKey, SECP256K1PublicKey } from "@1shotapi/ows-types";
+import { EVMAccountAddress, SolanaAccountAddress, AES256CipherText } from "@1shotapi/ows-types";
+import type {
+  ED25519PublicKey,
+  SECP256K1PublicKey,
+  CreateCredentialOptions,
+  CredentialCreatedData,
+  DigestSignedData,
+  GetPublicKeyParams,
+  PublicKeyData,
+  RecoveryDataCreatedData,
+  SignScheme,
+  VersionData,
+  EncryptAES256Result,
+  DecryptAES256Result,
+} from "@1shotapi/ows-types";
 import type { Hex } from "viem";
 import { publicKeyToAddress } from "viem/utils";
 import { createSignerIframe, getSignerOrigin, prepareSignerIframeForWebAuthn } from "./iframe.js";
@@ -12,16 +25,6 @@ import {
   publicKeyDataFromEvent,
   SignerRpcClient,
 } from "./rpc/client.js";
-import type {
-  CreateCredentialOptions,
-  CredentialCreatedData,
-  DigestSignedData,
-  GetPublicKeyParams,
-  PublicKeyData,
-  RecoveryDataCreatedData,
-  SignScheme,
-  VersionData,
-} from "./rpc/types.js";
 
 export type OWSSignerOptions = {
   credentialId?: string;
@@ -297,5 +300,54 @@ export class OWSSigner {
       undefined,
       { terminalEvent: "RecoverySessionCleared" },
     );
+  }
+
+  /**
+   * Batch-encrypt plaintexts with PRF-derived AES-256-GCM (same wallet key
+   * material as signing). Not implemented in the Signing Layer yet — rejects
+   * with `notImplemented`.
+   */
+  async encryptAES256(
+    plaintexts: string[],
+    credentialId?: string,
+  ): Promise<AES256CipherText[]> {
+    const restoreSignerDisplay = prepareSignerIframeForWebAuthn(this.iframe);
+    try {
+      const result = await this.rpc.request<EncryptAES256Result>(
+        "encryptAES256",
+        {
+          plaintexts,
+          credentialId: credentialId ?? this.credentialId,
+        },
+        { terminalEvent: "AES256Encrypted" },
+      );
+      return result.ciphertexts.map((c) => AES256CipherText(c));
+    } finally {
+      restoreSignerDisplay();
+    }
+  }
+
+  /**
+   * Batch-decrypt AES-256-GCM envelopes. Not implemented yet — rejects with
+   * `notImplemented`.
+   */
+  async decryptAES256(
+    ciphertexts: AES256CipherText[],
+    credentialId?: string,
+  ): Promise<string[]> {
+    const restoreSignerDisplay = prepareSignerIframeForWebAuthn(this.iframe);
+    try {
+      const result = await this.rpc.request<DecryptAES256Result>(
+        "decryptAES256",
+        {
+          ciphertexts: ciphertexts.map(String),
+          credentialId: credentialId ?? this.credentialId,
+        },
+        { terminalEvent: "AES256Decrypted" },
+      );
+      return result.plaintexts;
+    } finally {
+      restoreSignerDisplay();
+    }
   }
 }

@@ -26,14 +26,14 @@ export type {
   TrustRegistryEntry,
 } from "./trust.js";
 export type { KycProfilePolicy } from "./kyc-profile.js";
-export type { HolderSigner } from "./holder-signer.js";
-export type { CredentialStore } from "./storage.js";
+export type { IHolderSigner } from "./holder-signer.js";
+export type { ICredentialRepository } from "./storage.js";
 export type {
   CredentialConfigurationMetadata,
   IssuerMetadata,
   CredentialIssuanceContext,
   Oid4vciJwtProof,
-  Oid4vciClient,
+  IOid4vciClient,
 } from "./oid4vci.js";
 export {
   OID4VCI_PROOF_JWT_TYP,
@@ -43,10 +43,10 @@ export {
 } from "./oid4vci-proof.js";
 export type {
   PresentationBuildContext,
-  Oid4vpClient,
+  IOid4vpClient,
 } from "./oid4vp.js";
 export {
-  type CredentialStatusValidator,
+  type ICredentialStatusValidator,
   NoopCredentialStatusValidator,
 } from "./status-validator.js";
-export type { IssuerTrustRegistry } from "./trust-registry.js";
+export type { IIssuerTrustRegistry } from "./trust-registry.js";

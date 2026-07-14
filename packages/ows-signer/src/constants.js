@@ -23,4 +23,6 @@ export const METHODS = [
   "recoverKey",
   "getPublicKey",
   "clearRecoverySession",
+  "encryptAES256",
+  "decryptAES256",
 ];

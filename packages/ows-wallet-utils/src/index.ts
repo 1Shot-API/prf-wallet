@@ -34,6 +34,13 @@ export {
 } from "./credentials/schemas.js";
 export { CredentialWalletRegistrar } from "./credentials/wallet-registrar.js";
 export {
+  CredentialsHelper,
+  type CredentialsHelperOptions,
+  type CredentialsHelperWallet,
+  type CredentialsHelperDisplaySession,
+  type CredentialsHelperDisplaySize,
+} from "./credentials/credentials-helper.js";
+export {
   createOwsEd25519HolderSigner,
   type OwsEd25519SignerDeps,
 } from "./credentials/sd-jwt-vc/ows-holder-signer.js";

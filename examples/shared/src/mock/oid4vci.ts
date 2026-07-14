@@ -10,7 +10,7 @@ import {
   ProofUtils,
   type CredentialOfferUri,
   type CredentialIssuer,
-  type Oid4vciClient,
+  type IOid4vciClient,
   type CredentialIssuanceContext,
   type CredentialOffer,
   type StoredCredential,
@@ -26,7 +26,7 @@ import { issueDemoSdJwtVc } from "../demo/issuer.js";
 import { DEMO_HOLDER_PUBLIC_JWK } from "../demo/demo-keys.js";
 
 /** MOCK OID4VCI client — resolves mock:// URIs and issues real demo SD-JWT VCs. */
-export class MockOid4vciClient implements Oid4vciClient {
+export class MockOid4vciClient implements IOid4vciClient {
   async resolveOffer(uri: CredentialOfferUri): Promise<CredentialOffer> {
     if (uri === MOCK_KYC_OFFER_URI || uri.startsWith("mock://kyc-offer")) {
       return { ...MOCK_KYC_OFFER };

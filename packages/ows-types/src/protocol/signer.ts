@@ -18,7 +18,9 @@ export type SignerMethod =
   | "createRecoveryData"
   | "recoverKey"
   | "getPublicKey"
-  | "clearRecoverySession";
+  | "clearRecoverySession"
+  | "encryptAES256"
+  | "decryptAES256";
 
 export type SignerEvent =
   | "Version"
@@ -30,6 +32,8 @@ export type SignerEvent =
   | "RecoverySessionCleared"
   | "PublicKey"
   | "ChallengeSigned"
+  | "AES256Encrypted"
+  | "AES256Decrypted"
   | "NotAllowed"
   | "InvalidRequest";
 
@@ -108,4 +112,29 @@ export type GetPublicKeyParams = {
   challenge?: `0x${string}`;
   /** When true, use discoverable credentials (omit allowCredentials). */
   discoverable?: boolean;
+};
+
+/**
+ * Batch encrypt plaintexts with PRF-derived AES-256-GCM (not yet implemented).
+ * Arrays amortize a single passkey ceremony across multiple plaintexts.
+ */
+export type EncryptAES256Params = {
+  plaintexts: string[];
+  credentialId?: string;
+};
+
+export type EncryptAES256Result = {
+  ciphertexts: string[];
+};
+
+/**
+ * Batch decrypt AES-256-GCM envelopes (not yet implemented).
+ */
+export type DecryptAES256Params = {
+  ciphertexts: string[];
+  credentialId?: string;
+};
+
+export type DecryptAES256Result = {
+  plaintexts: string[];
 };

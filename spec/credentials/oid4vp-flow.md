@@ -9,9 +9,9 @@ sequenceDiagram
   participant Verifier
   participant Host as proxy.credentials
   participant Wallet as wallet.credentials
-  participant Vp as Oid4vpClient
+  participant Vp as IOid4vpClient
   participant UI as credential_consent
-  participant Store as CredentialStore
+  participant Store as ICredentialRepository
 
   Verifier->>Host: present(requestUri)
   Host->>Wallet: credentials.present
@@ -27,7 +27,7 @@ sequenceDiagram
   Verifier->>Verifier: validate (mock or real)
 ```
 
-## `Oid4vpClient` interface
+## `IOid4vpClient` interface
 
 | Method | OID4VP step |
 |--------|-------------|
@@ -44,11 +44,12 @@ Before `buildPresentation`, the wallet must show the verifier identity and reque
 ```ts
 const result = await proxy.credentials.present({
   requestUri: PresentationRequestUri("mock://kyc-presentation/demo"),
+  acceptedIssuers: [CredentialIssuer("https://kyc.demo.issuer.example")],
 });
 ```
 
 ## Stub behavior
 
-- Mock presentations are labeled blobs, not valid SD-JWT VC
-- Verifier demo validates against `KycProfilePolicy` + `IssuerTrustRegistry` mocks
-- Real integration: SD-JWT VC library behind `buildPresentation`, DCQL/presentation exchange per OID4VP
+- Demo presentations are real SD-JWT VC with `kb+jwt`
+- Verifier demo validates against `KycProfilePolicy` + host `acceptedIssuers` / wallet `IIssuerTrustRegistry` mocks
+- Real integration: DCQL/presentation exchange per OID4VP (Phase 4)

@@ -24,9 +24,11 @@ import type {
   SignTypedDataApprovalRequest,
 } from "@1shotapi/ows-signer-utils";
 import {
-  LocalStorageCredentialStore,
+  LocalStorageCredentialRepository,
   MockOid4vciClient,
   MockOid4vpClient,
+  InMemoryIssuerTrustRegistry,
+  MOCK_OID4VCI_PROOF_NONCE,
 } from "@ows-shared";
 import { DEMO_CHAINS } from "../ows/demoChains";
 import { registerAccountConnect } from "../ows/registerAccountConnect";
@@ -48,7 +50,8 @@ import {
   type WalletSetupChoice,
 } from "./modalTypes";
 
-const credentialStore = new LocalStorageCredentialStore();
+const credentialRepository = new LocalStorageCredentialRepository();
+const issuerTrust = new InMemoryIssuerTrustRegistry();
 
 const walletStorage = {
   isWalletCreated,
@@ -79,7 +82,7 @@ function createDeferredSigner(
       }
       if (!instance) {
         throw new Error(
-          "Signing Layer not ready — await ensureReady() before using the signer",
+          "Signing Layer not ready- await ensureReady() before using the signer",
         );
       }
       const value = Reflect.get(instance, property, instance);
@@ -216,7 +219,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const refreshCredentialCount = useCallback(async () => {
-    const listed = await credentialStore.list();
+    const listed = await credentialRepository.list();
     setCredentialCount(listed.length);
   }, []);
 
@@ -373,7 +376,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const openCredentialList = useCallback(async () => {
-    const listed = await credentialStore.list();
+    const listed = await credentialRepository.list();
     setCredentialCount(listed.length);
     await pushModal<void>(({ id, resolve }) => ({
       id,
@@ -508,9 +511,11 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       });
 
       registerCredentialsProvider(wallet, signer, {
-        store: credentialStore,
+        repository: credentialRepository,
         oid4vci: new MockOid4vciClient(),
         oid4vp: new MockOid4vpClient(),
+        trust: issuerTrust,
+        getProofNonce: () => MOCK_OID4VCI_PROOF_NONCE,
         ensureReady: ensureReadyAfterSigner,
         requestCredentialOfferApproval: (
           request: CredentialOfferApprovalRequest,
@@ -566,7 +571,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       });
 
       // Paint UI without awaiting host handshake — standalone /wallet/ has no parent.
-      const listed = await credentialStore.list();
+      const listed = await credentialRepository.list();
       if (cancelled) return;
       setCredentialCount(listed.length);
       setReady(true);

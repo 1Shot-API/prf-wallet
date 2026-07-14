@@ -1,5 +1,5 @@
 import type {
-  Oid4vpClient,
+  IOid4vpClient,
   PresentationBuildContext,
   PresentationRequestUri,
   StoredCredential,
@@ -15,7 +15,7 @@ import {
 import { createDemoHolderSigner } from "../demo/jwk-holder-signer.js";
 
 /** MOCK OID4VP client — resolves mock:// URIs and builds real SD-JWT VC presentations. */
-export class MockOid4vpClient implements Oid4vpClient {
+export class MockOid4vpClient implements IOid4vpClient {
   async resolveRequest(uri: PresentationRequestUri): Promise<PresentationDefinition> {
     if (
       uri === MOCK_KYC_PRESENTATION_URI ||

@@ -9,7 +9,7 @@ import {
   SignerRpcClient,
   isSignerEventMessage,
 } from "../src/rpc/client.ts";
-import { API_VERSION } from "../src/rpc/types.ts";
+import { API_VERSION } from "@1shotapi/ows-types";
 
 const SIGNER_ORIGIN = "https://signer.example";
 

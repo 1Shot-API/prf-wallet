@@ -23,6 +23,8 @@ export type PresentationDefinition = {
 export type PresentationRequestInput = {
   requestUri?: PresentationRequestUri;
   request?: PresentationDefinition;
+  /** Host/verifier allow-list; wallet intersects with matched credentials. */
+  acceptedIssuers?: CredentialIssuer[];
 };
 
 export type PresentationResult = {

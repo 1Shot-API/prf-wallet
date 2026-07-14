@@ -36,7 +36,7 @@ const client = createWalletClient({
 const status = await proxy.rpc<{ connected: boolean }>("getStatus");
 ```
 
-Returns `OwsUnimplementedError` if the Branding Layer did not register that method.
+Returns an `OwsUnimplementedError` (from `@1shotapi/ows-types`) if the Branding Layer did not register that method.
 
 ## API
 

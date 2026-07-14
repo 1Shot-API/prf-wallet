@@ -99,8 +99,8 @@ Reference: `examples/general-wallet` `CreateBackupModal` / `RestoreBackupModal` 
 
 ## 7. Credentials (optional)
 
-1. Implement or reuse a `CredentialStore` + OID4 clients (demo mocks: `examples/shared`).
-2. `wallet.credentials.register({ acceptOffer, present, list, delete })`.
+1. Implement or reuse an `ICredentialRepository` + OID4 clients (demo mocks: `examples/shared`).
+2. Prefer `CredentialsHelper` from `ows-wallet-utils`, or `wallet.credentials.register({ acceptOffer, present, list, delete })`.
 3. Consent UI before accept/present; wrap with `requestDisplay`.
 4. Holder KB JWT: `createOwsEd25519HolderSigner` from `ows-wallet-utils` with signer digests.
 

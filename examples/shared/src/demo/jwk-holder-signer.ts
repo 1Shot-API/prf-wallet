@@ -1,9 +1,9 @@
-import type { HolderSigner } from "@1shotapi/ows-types";
+import type { IHolderSigner } from "@1shotapi/ows-types";
 import { signEd25519 } from "@1shotapi/ows-types";
 import { DEMO_HOLDER_PRIVATE_JWK } from "./demo-keys.js";
 
-/** `HolderSigner` from an Ed25519 JWK private key (Web Crypto). */
-export function createEd25519HolderSignerFromJwk(privateJwk: JsonWebKey): HolderSigner {
+/** `IHolderSigner` from an Ed25519 JWK private key (Web Crypto). */
+export function createEd25519HolderSignerFromJwk(privateJwk: JsonWebKey): IHolderSigner {
   const publicJwk = { ...privateJwk };
   delete publicJwk.d;
   return {
@@ -17,6 +17,6 @@ export function createEd25519HolderSignerFromJwk(privateJwk: JsonWebKey): Holder
 }
 
 /** Demo holder signer for mocks/tests when no wallet key is available. */
-export function createDemoHolderSigner(): HolderSigner {
+export function createDemoHolderSigner(): IHolderSigner {
   return createEd25519HolderSignerFromJwk(DEMO_HOLDER_PRIVATE_JWK);
 }

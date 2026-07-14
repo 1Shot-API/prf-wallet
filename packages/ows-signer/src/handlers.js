@@ -145,6 +145,13 @@ export async function handleRequest(
           {},
         );
         return;
+
+      // PRF-derived AES-256-GCM seal/unseal (same key material as signDigest).
+      // Envelope should follow recovery AES-GCM packaging spirit, not passphrase PBKDF2.
+      case "encryptAES256":
+      case "decryptAES256":
+        emitInvalid(correlationId, targetOrigin, "notImplemented");
+        return;
     }
   } catch (error) {
     handleError(error, correlationId, targetOrigin);

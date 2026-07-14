@@ -77,6 +77,10 @@ export type {
   ChallengeSignedData,
   CreateCredentialOptions,
   GetPublicKeyParams,
+  EncryptAES256Params,
+  EncryptAES256Result,
+  DecryptAES256Params,
+  DecryptAES256Result,
 } from "./protocol/signer.js";
 
 export {

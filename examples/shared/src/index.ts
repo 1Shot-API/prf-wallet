@@ -1,7 +1,7 @@
 export * from "./fixtures.js";
 export * from "./in-memory-store.js";
 export {
-  LocalStorageCredentialStore,
+  LocalStorageCredentialRepository,
   OWS_MOCK_CREDENTIALS_STORAGE_KEY,
   createMemoryStorageBackend,
   type CredentialStorageBackend,

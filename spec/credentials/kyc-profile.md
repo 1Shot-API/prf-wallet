@@ -38,7 +38,7 @@ Avoid placing full legal name, government ID numbers, or biometrics in default r
 }
 ```
 
-Wallets may surface issuer name during consent. Verifiers maintain a `IssuerTrustRegistry` and `KycProfilePolicy`:
+Wallets may surface issuer name during consent. Verifiers maintain a host-side allow-list (`acceptedIssuers` on `present`) and `KycProfilePolicy`; wallets maintain an `IIssuerTrustRegistry`:
 
 - Allowed issuer IDs
 - Maximum credential age (`maxAgeDays`)

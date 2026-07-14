@@ -1,3 +1,4 @@
+export * from "./AES256CipherText.js";
 export * from "./Base64UrlEncodedString.js";
 export * from "./BitcoinAccountAddress.js";
 export * from "./CredentialClaimName.js";

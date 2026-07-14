@@ -2,7 +2,7 @@ import {
   Base64UrlEncodedString,
   HexString,
   type ED25519PublicKey,
-  type HolderSigner,
+  type IHolderSigner,
 } from "@1shotapi/ows-types";
 
 function utf8ToHex(value: string): HexString {
@@ -40,7 +40,7 @@ export type OwsEd25519SignerDeps = {
 };
 
 /** Bridges OWS Signing Layer Ed25519 to SD-JWT VC holder key binding. */
-export function createOwsEd25519HolderSigner(deps: OwsEd25519SignerDeps): HolderSigner {
+export function createOwsEd25519HolderSigner(deps: OwsEd25519SignerDeps): IHolderSigner {
   let cachedJwk: JsonWebKey | undefined;
 
   return {

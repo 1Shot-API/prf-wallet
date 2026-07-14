@@ -17,7 +17,7 @@ export const DEMO_ISSUER_PUBLIC_JWK: JsonWebKey = {
   kty: "OKP",
 };
 
-/** Fallback demo holder when branding does not supply a wallet `HolderSigner`. */
+/** Fallback demo holder when branding does not supply a wallet `IHolderSigner`. */
 export const DEMO_HOLDER_PRIVATE_JWK: JsonWebKey = {
   crv: "Ed25519",
   d: "G8_8M9RjEA5L5NIeAoB24C9yOb8KPuRoh9y7SidoXJA",

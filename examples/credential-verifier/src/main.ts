@@ -129,7 +129,10 @@ async function main(): Promise<void> {
       setStatus("Requesting credential presentation from wallet…");
 
       try {
-        const presentation = await proxy.credentials.present({ requestUri });
+        const presentation = await proxy.credentials.present({
+          requestUri,
+          acceptedIssuers: [MOCK_KYC_ISSUER_ID],
+        });
         const validation = await validateMockPresentation(
           presentation,
           MOCK_KYC_POLICY,

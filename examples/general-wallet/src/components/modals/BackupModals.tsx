@@ -1,8 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import {
-  overlaySignerIframe,
-  type RecoveryDataCreatedData,
-} from "@1shotapi/ows-signer-utils";
+import { overlaySignerIframe } from "@1shotapi/ows-signer-utils";
+import type { RecoveryDataCreatedData } from "@1shotapi/ows-types";
 import { Modal } from "../Modal";
 import { useWallet } from "../../wallet/WalletProvider";
 
@@ -218,7 +216,7 @@ export function RestoreBackupModal({
   onResolve: (restored: boolean) => void;
   onReject: (error: unknown) => void;
 }) {
-  const { getSigner, signerContainerRef } = useWallet();
+  const { getSigner, signerContainerRef, ensureReady } = useWallet();
   const signerSlotRef = useRef<HTMLDivElement>(null);
   const [phase, setPhase] = useState<"prompt" | "done" | "error">("prompt");
   const [error, setError] = useState<string | null>(null);
@@ -247,6 +245,7 @@ export function RestoreBackupModal({
           homeContainer: home,
         });
         await waitForPaint();
+        await ensureReady();
         await signer.recoverKey(
           encryptedPrivateKey,
           "Backup passphrase",
@@ -275,7 +274,13 @@ export function RestoreBackupModal({
       restoreOverlayRef.current?.();
       restoreOverlayRef.current = null;
     };
-  }, [encryptedPrivateKey, getSigner, onReject, signerContainerRef]);
+  }, [
+    encryptedPrivateKey,
+    ensureReady,
+    getSigner,
+    onReject,
+    signerContainerRef,
+  ]);
 
   return (
     <Modal

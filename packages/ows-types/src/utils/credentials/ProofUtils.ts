@@ -75,7 +75,7 @@ function requiredMembersForThumbprint(
 export class ProofUtils {
   /**
    * Builds an OID4VCI `openid4vci-proof+jwt` proving possession of the holder key.
-   * Signed with {@link HolderSigner.signKbJwt} (EdDSA signing input).
+   * Signed with {@link IHolderSigner.signKbJwt} (EdDSA signing input).
    */
   static async buildOid4vciProofJwt(
     input: BuildOid4vciProofJwtInput,

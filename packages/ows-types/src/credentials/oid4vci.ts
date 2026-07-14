@@ -40,7 +40,7 @@ export type CredentialIssuanceContext = {
   nonce?: string;
 };
 
-export interface Oid4vciClient {
+export interface IOid4vciClient {
   resolveOffer(uri: CredentialOfferUri): Promise<CredentialOffer>;
   fetchIssuerMetadata(issuer: CredentialIssuer): Promise<IssuerMetadata>;
   requestCredential(

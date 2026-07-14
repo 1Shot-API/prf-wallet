@@ -6,8 +6,15 @@ import {
   MockOid4vciClient,
   MOCK_KYC_POLICY,
   MOCK_KYC_ISSUER_ID,
+  InMemoryIssuerTrustRegistry,
 } from "../src/index.js";
-import { CredentialOfferUri, CredentialTypeName, PresentationRequestUri } from "@1shotapi/ows-types";
+import {
+  CredentialIssuer,
+  CredentialOfferUri,
+  CredentialTypeName,
+  ISO8601DateTime,
+  PresentationRequestUri,
+} from "@1shotapi/ows-types";
 
 describe("mock credential e2e flow", () => {
   it("issuer offer → store → present → verify", async () => {
@@ -66,11 +73,39 @@ describe("mock credential e2e flow", () => {
     );
   });
 
-  it("fails presentation without stored credential", async () => {
-    const flow = new DemoCredentialFlow();
+  it("rejects untrusted issuer before issuance", async () => {
+    const flow = new DemoCredentialFlow({
+      trust: new InMemoryIssuerTrustRegistry([]),
+    });
+    await assert.rejects(() => flow.acceptOffer(), /Untrusted issuer/);
+  });
 
+  it("fails closed when credential status is revoked", async () => {
+    const flow = new DemoCredentialFlow({
+      status: {
+        async checkStatus(credential) {
+          return {
+            credentialId: credential.credentialId,
+            status: "revoked",
+            checkedAt: ISO8601DateTime(new Date().toISOString()),
+          };
+        },
+      },
+    });
+    await assert.rejects(() => flow.acceptOffer(), /revoked/);
+  });
+
+  it("filters matches by acceptedIssuers on present", async () => {
+    const flow = new DemoCredentialFlow();
+    await flow.acceptOffer();
     await assert.rejects(
-      () => flow.present(),
+      () =>
+        flow.present({
+          requestUri: PresentationRequestUri("mock://kyc-presentation/demo"),
+          acceptedIssuers: [
+            CredentialIssuer("https://other.issuer.example"),
+          ],
+        }),
       /No matching credentials/,
     );
   });
