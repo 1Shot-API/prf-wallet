@@ -1,4 +1,4 @@
-﻿import {
+import {
   createContext,
   useCallback,
   useContext,
@@ -71,9 +71,18 @@ function createDeferredSigner(
   awaitSigner: () => Promise<OWSSigner>,
 ): OWSSigner {
   let instance: OWSSigner | undefined;
-  void awaitSigner().then((signer) => {
-    instance = signer;
-  });
+  let loadError: unknown;
+  void awaitSigner()
+    .then((signer) => {
+      instance = signer;
+    })
+    .catch((error: unknown) => {
+      loadError = error;
+      console.error(
+        "[ows-example-general-wallet] deferred Signing Layer load failed",
+        error,
+      );
+    });
   return new Proxy({} as OWSSigner, {
     get(_target, property) {
       // Avoid looking like a thenable if someone awaits the proxy.
@@ -81,8 +90,15 @@ function createDeferredSigner(
         return undefined;
       }
       if (!instance) {
+        if (loadError !== undefined) {
+          throw loadError instanceof Error
+            ? loadError
+            : new Error(
+                `Signing Layer failed to load: ${String(loadError)}`,
+              );
+        }
         throw new Error(
-          "Signing Layer not ready- await ensureReady() before using the signer",
+          "Signing Layer not ready — await ensureReady() before using the signer",
         );
       }
       const value = Reflect.get(instance, property, instance);
