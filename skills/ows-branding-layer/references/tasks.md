@@ -1,12 +1,17 @@
 # Branding Layer tasks
 
-Task-oriented guidance — not a 1:1 map of old registry modules. Specialize freely; many production branding apps lead with **custom host RPC** and skip MetaMask-shaped EIP-1193.
+Task-oriented guidance aligned with `examples/general-wallet`. Specialize freely; production branding apps may lead with **custom host RPC** and skip MetaMask-shaped EIP-1193. The reference wallet is **EIP-1193-first**.
+
+Paths below are under `examples/general-wallet/` unless noted.
 
 ## 1. Scaffold
 
-1. Install `@1shotapi/ows-types`, `ows-wallet-utils`, `ows-signer-utils` (+ `zod` as needed).
-2. Serve `@1shotapi/ows-signer` as static `/signer/` on the **same origin** as branding (`rpId === location.hostname`).
-3. Create a hidden `#signer-container`, then register handlers and **start the Postmate child before awaiting the nested Signing Layer** (Postmate parents stop after ~5 handshake attempts):
+1. Install packages (see [packages.md](packages.md)).
+2. Serve `@1shotapi/ows-signer` as static **`/signer/` on the same origin** as branding (`rpId === location.hostname`).
+   - Dev: Vite middleware maps `/signer/` → `signer-static/index.html` and `/signer/src/` → package `src/` (**outside** Vite `base`, e.g. `/wallet/`). See `vite.config.ts`.
+   - Prod: `scripts/copy-signer.mjs` into `dist/signer/`.
+3. Signer URL: `new URL("/signer/", window.location.origin).href` (origin root, not under app `base`).
+4. Create a hidden signer host (`src/components/SignerHost.tsx`), then **start Postmate before awaiting nested signer load**:
 
 ```typescript
 const wallet = OWSWallet.prepare();
@@ -14,20 +19,27 @@ const signerPromise = OWSSigner.create(container, signerUrl, {
   hidden: true,
   credentialId: loadCredentialId(),
 });
-// …register handlers (ensureReady should await signerPromise)…
+const signer = createDeferredSigner(() => signerPromise); // WalletProvider.tsx
+// …register handlers (ensureReady awaits signerPromise + unlock)…
 void wallet.start(); // registers Model immediately
-const signer = await signerPromise;
+void signerPromise; // background — do not block UI/paint on this
 ```
 
-See `examples/general-wallet` `WalletProvider` for the deferred-signer pattern.
+Also see `scripts/dev.mjs` (ngrok HTTPS for passkeys). Do not run leftover `--no-tunnel` processes on the same port while hosts expect a tunnel URL.
 
-## 2. Unlock (`ensureReady`)
+## 2. Unlock (`awaitSignerReady` vs `ensureReady`)
 
-App-owned passkey create / login before connect or sign:
+App-owned passkey create / login. Split readiness:
 
-- Persist credential id + cached addresses in app storage.
+| Helper | Waits for |
+|--------|-----------|
+| `awaitSignerReady()` | Signing Layer iframe + `OWSSigner` instance |
+| `ensureReady()` | Signer ready **plus** unlocked / wallet created |
+
+- Persist credential id + cached addresses in app storage (`src/storage.ts`).
 - Gate signing and account-connect behind `ensureReady()`.
-- Embedded first-run UI (when `window.parent !== window`) is optional demo pattern — see `examples/general-wallet` `OnboardingPanel` / `WalletProvider`.
+- Embedded first-run UI when `window.parent !== window.top` is optional — `OnboardingPanel.tsx` / `WalletProvider.tsx` `runSetupFlow`.
+- Host-driven setup: wrap with `requestDisplay` + setup modals (`SetupModals.tsx`).
 
 No published SDK for setup dialogs; keep UI local.
 
@@ -44,64 +56,100 @@ try {
 }
 ```
 
-Host `OWSProxy` shows a lower-right opaque flyout (no modal backdrop). **Display queuing** (serializing concurrent dialogs) is an app/skill concern, not an SDK.
+Also available: `wallet.requestHide()`. Host wire event `ows:releaseDisplay` is reached via `DisplaySession.release()` / hide paths — branding apps should prefer `display.hide()`.
 
-## 4. Host RPC (primary) + optional EIP-1193
+Host `OWSProxy` shows a lower-right opaque flyout (no modal backdrop).
 
-**Primary path for specialized wallets:** register custom methods the host calls via `proxy.rpc` / your protocol — not MetaMask parity.
+**App concerns (not SDK):**
 
-**Optional EIP-1193 reads / chain switch:**
+- **Modal queue** — serialize concurrent dialogs (`WalletProvider` `pushModal` / `ModalHost.tsx`).
+- Nested `requestDisplay` may reuse an active session (depth). Helpers (`SignHelper`, `CredentialsHelper`) already call `requestDisplay` — **do not double-wrap** those handler paths with another outer display.
+
+## 4. Host RPC (primary for specialized wallets) + EIP-1193
+
+**Specialized wallets:** register custom methods the host calls via `proxy.rpc` / your protocol (`wallet.registerRpc`).
+
+**Reference wallet path (EIP-1193):**
+
+1. `src/ows/registerAccountConnect.ts` — `eth_accounts` / `eth_requestAccounts` (cached addresses; connect consent + `ensureReady`).
+2. `RpcHelper` for JSON-RPC reads / `wallet_switchEthereumChain` (`src/ows/demoChains.ts`, construct in `WalletProvider.tsx`).
+3. `SignHelper` for `personal_sign` / typed data (task 5).
 
 ```typescript
 new RpcHelper(
-  new Map([[chainId, rpcUrl], …]),
+  new Map([[chainId, rpcUrl] /* … */]),
   wallet,
   signer, // optional; unused for reads today
   { defaultChainId },
 );
 ```
 
-Call after `prepare()`, before `start()`. Zod param schemas live in `ows-wallet-utils`; method name tables in `ows-types`.
-
-Account connect (`eth_accounts` / `eth_requestAccounts`) is usually app-local — see `examples/general-wallet/src/ows/registerAccountConnect.ts`.
+Call after `prepare()`, before `start()`. Zod EIP-1193 / credential wire schemas live in `ows-wallet-utils` (transitive).
 
 ## 5. Signing consent
 
-Headless wiring in `SignHelper` (`ows-signer-utils`):
+Headless wiring in `SignHelper` (`@1shotapi/ows-signer-utils`):
 
 ```
 requestDisplay → consent UI → ensureReady → signer.evm.signMessage | signTypedData → hide
 ```
 
-App supplies `requestPersonalSignApproval` / `requestSignTypedDataApproval` (return `boolean`). Register returned handlers yourself:
+Registers: `personal_sign`, `eth_signTypedData`, `eth_signTypedData_v3`, `eth_signTypedData_v4`. Reject with `OwsUserRejectedError`. No transaction signing in `SignHelper`.
 
 ```typescript
-const signHelper = new SignHelper(signer, wallet, { ensureReady, … });
+const signHelper = new SignHelper(signer, wallet, {
+  ensureReady,
+  requestPersonalSignApproval, // PersonalSignApprovalRequest → boolean
+  requestSignTypedDataApproval, // SignTypedDataApprovalRequest → boolean
+});
 for (const [method, handler] of Object.entries(signHelper.handlers)) {
   wallet.registerEip1193(method, handler);
 }
 ```
 
-Consent UI stays in the app (`examples/general-wallet` modal components under `src/components/modals/`).
+Reference: `src/ows/registerApprovalSigning.ts`, `src/components/modals/SignModals.tsx`.
 
 ## 6. Recovery overlay
 
-Create / restore encrypted backup:
+Create / restore encrypted backup — **never reparent** the signer iframe.
 
-1. `wallet.requestDisplay` for the dialog shell.
-2. `overlaySignerIframe(iframe, slot, { homeContainer })` so the signer passphrase UI appears over a slot **without reparenting** (reparenting can reload the iframe and drop RPCs).
-3. Call `signer.createRecoveryData` / `signer.recoverKey`.
-4. Restore overlay styles; `display.hide()`.
+Reference: `src/components/modals/BackupModals.tsx`, called from `WalletProvider` `openCreateBackup` / `openRestoreBackup`.
 
-Distinct from `prepareSignerIframeForWebAuthn` (1×1 invisible passkey focus used inside `OWSSigner`).
+1. Outer `wallet.requestDisplay` for the dialog shell (WalletProvider wrappers).
+2. `overlaySignerIframe(iframe, slot, { homeContainer })` so the passphrase UI appears over a slot.
+3. **Double `requestAnimationFrame`** after overlay before calling signer RPCs (layout must settle).
+4. Create: `ensureReady()` then `signer.createRecoveryData(passwordText, buttonText, minPasswordLength)`.
+5. Restore: **`awaitSignerReady()` only** (not `ensureReady`) then `signer.recoverKey(encrypted, passwordText, buttonText)`.
+6. Always restore overlay styles in `finally` / abort cleanup; then `display.hide()`.
 
-Reference: `examples/general-wallet` `CreateBackupModal` / `RestoreBackupModal` (`overlaySignerIframe` + signer slot).
+Distinct from `prepareSignerIframeForWebAuthn` (1×1 invisible passkey focus used **inside** `OWSSigner`).
 
 ## 7. Credentials (optional)
 
-1. Implement or reuse an `ICredentialRepository` + OID4 clients (demo mocks: `examples/shared`).
-2. Prefer `CredentialsHelper` from `ows-oid4`, or `wallet.credentials.register({ acceptOffer, present, list, delete })`.
-3. Consent UI before accept/present; wrap with `requestDisplay`.
-4. Holder KB JWT: `CredentialCryptoUtils.createOwsEd25519HolderSigner` from `@1shotapi/ows-types` with signer digests.
+Prefer `CredentialsHelper` from `@1shotapi/ows-oid4` (not exported from `ows-wallet-utils`):
 
-Host demos: `examples/credential-issuer`, `examples/credential-verifier`.
+```typescript
+new CredentialsHelper(wallet, signer, {
+  repository,
+  oid4vci,
+  oid4vp,
+  trust,
+  ensureReady,
+  requestCredentialOfferApproval,
+  requestCredentialPresentationApproval,
+  // holderSigner optional — defaults via CredentialCryptoUtils.createOwsEd25519HolderSigner
+}).register();
+```
+
+Constructor arg order: **`(wallet, signer, options)`** — opposite of `SignHelper(signer, wallet, …)`.
+
+Reference stack:
+
+- Wiring: `src/ows/registerCredentialsProvider.ts`
+- Consent UI: `src/components/modals/CredentialModals.tsx`
+- Demo repositories / trust / HTTP clients fixtures: `examples/shared` (alias `@ows-shared` in the monorepo — not published)
+- Wire methods: `credentials.acceptOffer` / `present` / `list` / `delete`
+
+Do **not** call `PresentationUtils` / low-level SD-JWT helpers unless you bypass `CredentialsHelper`. Holder KB JWT lives in `CredentialCryptoUtils.createOwsEd25519HolderSigner` (`@1shotapi/ows-types`).
+
+Host demos: `examples/credential-issuer`, `examples/credential-verifier` (use `ows-provider`; `allowLocalAccess` is host-only).
