@@ -303,9 +303,9 @@ export class OWSSigner {
   }
 
   /**
-   * Batch-encrypt plaintexts with PRF-derived AES-256-GCM (same wallet key
-   * material as signing). Not implemented in the Signing Layer yet — rejects
-   * with `notImplemented`.
+   * Batch-encrypt plaintexts with AES-256-GCM keyed from the wallet secp256k1
+   * scalar (same material as `signDigest`, HKDF info `ows-v1/aes256-gcm`).
+   * One passkey ceremony (or recovery session) covers the whole batch.
    */
   async encryptAES256(
     plaintexts: string[],
@@ -319,7 +319,10 @@ export class OWSSigner {
           plaintexts,
           credentialId: credentialId ?? this.credentialId,
         },
-        { terminalEvent: "AES256Encrypted" },
+        {
+          terminalEvent: "AES256Encrypted",
+          onIntermediate: (_event, data) => this.onKeyDerived(data),
+        },
       );
       return result.ciphertexts.map((c) => AES256CipherText(c));
     } finally {
@@ -328,8 +331,8 @@ export class OWSSigner {
   }
 
   /**
-   * Batch-decrypt AES-256-GCM envelopes. Not implemented yet — rejects with
-   * `notImplemented`.
+   * Batch-decrypt `ows-aes1:` AES-256-GCM envelopes. One passkey ceremony
+   * (or recovery session) covers the whole batch.
    */
   async decryptAES256(
     ciphertexts: AES256CipherText[],
@@ -343,7 +346,10 @@ export class OWSSigner {
           ciphertexts: ciphertexts.map(String),
           credentialId: credentialId ?? this.credentialId,
         },
-        { terminalEvent: "AES256Decrypted" },
+        {
+          terminalEvent: "AES256Decrypted",
+          onIntermediate: (_event, data) => this.onKeyDerived(data),
+        },
       );
       return result.plaintexts;
     } finally {

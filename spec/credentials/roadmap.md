@@ -11,7 +11,7 @@ This document tracks implementation phases for the OWS Credentials Extension. No
 | **`@1shotapi/ows-wallet-utils`** | Zod param schemas, `wallet.credentials` registrar, `CredentialsHelper`, `createOwsEd25519HolderSigner`. |
 | **`@1shotapi/ows-provider`** | `proxy.credentials` host client, SD-JWT VC presentation verification. |
 | **Host Layer** | Calls `proxy.credentials.*` (may pass `acceptedIssuers` on present); never touches credential payloads or signing keys directly. |
-| **Signing Layer** | Signs digests/curves; future PRF AES seal/unseal (`encryptAES256` / `decryptAES256` stubs today). JWT assembly stays in `ows-types` / `ows-signer-utils`. |
+| **Signing Layer** | Signs digests/curves; PRF-derived AES seal/unseal (`encryptAES256` / `decryptAES256`). JWT assembly stays in `ows-types` / `ows-signer-utils`. |
 
 Branding registers handlers on `wallet.credentials` (typically via `CredentialsHelper`). The library builds presentations; branding fetches the stored credential and supplies a `IHolderSigner` adapter wired to the OWS signer.
 
@@ -57,11 +57,14 @@ Branding registers handlers on `wallet.credentials` (typically via `CredentialsH
 - [x] `ICredentialStatusValidator` rename; demo noop; fail-closed in helper
 - [x] Forward-declared `AES256CipherText` + `OWSSigner.encryptAES256` / `decryptAES256` (stubs → `notImplemented`)
 
+### Phase 3.1 — Signer KMS seal
+
+- [x] PRF-derived `encryptAES256` / `decryptAES256` (HKDF from secp256k1 scalar, `ows-aes1:` envelope, batch, recovery-session path)
+
 ### Deferred (later phases / follow-ons)
 
 | Item | Target |
 |------|--------|
-| PRF-derived `encryptAES256` / `decryptAES256` implementation (same key material as `signDigest`) | **Phase 3.1** — signer KMS seal |
 | Branding encrypt-at-rest using those APIs (1Shot: batch decrypt on first use, session memory) | Consumer app — not general-wallet |
 | `@owf/token-status-list` (or equiv.) behind `ICredentialStatusValidator` | **Phase 3.2** — real status / revocation |
 | PRF / key-material catastrophe or migrate-or-rewrap | Later investigation (catastrophic; out of V3 scope) |

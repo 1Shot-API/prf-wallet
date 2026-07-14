@@ -120,6 +120,8 @@ Consent UI stays app-owned (see `examples/general-wallet` approval dialog).
 | `recoverKey(...)` | Decrypt recovery blob into session |
 | `revealPrivateKey(credentialId?)` | Signer UI to reveal key |
 | `clearRecoverySession()` | End recovery session |
+| `encryptAES256(plaintexts, credentialId?)` | Batch AES-256-GCM seal (`ows-aes1:`) |
+| `decryptAES256(ciphertexts, credentialId?)` | Batch AES-256-GCM unseal |
 
 ### `signer.evm`
 

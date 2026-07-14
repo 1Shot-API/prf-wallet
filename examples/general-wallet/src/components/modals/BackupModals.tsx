@@ -47,27 +47,34 @@ export function CreateBackupModal({
 
   useEffect(() => {
     abortedRef.current = false;
-    const signer = getSigner();
     const home = signerContainerRef.current;
     const slot = signerSlotRef.current;
-    if (!signer || !home || !slot) {
+    if (!home || !slot) {
       onReject(new Error("Signer not ready for backup"));
-      return;
-    }
-
-    const iframe = home.querySelector("iframe");
-    if (!(iframe instanceof HTMLIFrameElement)) {
-      onReject(new Error("Signer iframe not found in signerContainer"));
       return;
     }
 
     void (async () => {
       try {
+        // Unlock is usually a no-op here (create only when unlocked); this still
+        // waits for Signing Layer load before getSigner().
+        await ensureReady();
+        if (abortedRef.current) return;
+
+        const signer = getSigner();
+        if (!signer) {
+          throw new Error("Signer not ready for backup");
+        }
+
+        const iframe = home.querySelector("iframe");
+        if (!(iframe instanceof HTMLIFrameElement)) {
+          throw new Error("Signer iframe not found in signerContainer");
+        }
+
         restoreOverlayRef.current = overlaySignerIframe(iframe, slot, {
           homeContainer: home,
         });
         await waitForPaint();
-        await ensureReady();
 
         const created = await signer.createRecoveryData(
           `Passphrase (min ${DEFAULT_MIN_PASSWORD_LENGTH} characters)`,
@@ -216,7 +223,7 @@ export function RestoreBackupModal({
   onResolve: (restored: boolean) => void;
   onReject: (error: unknown) => void;
 }) {
-  const { getSigner, signerContainerRef, ensureReady } = useWallet();
+  const { getSigner, signerContainerRef, awaitSignerReady } = useWallet();
   const signerSlotRef = useRef<HTMLDivElement>(null);
   const [phase, setPhase] = useState<"prompt" | "done" | "error">("prompt");
   const [error, setError] = useState<string | null>(null);
@@ -225,27 +232,34 @@ export function RestoreBackupModal({
 
   useEffect(() => {
     abortedRef.current = false;
-    const signer = getSigner();
     const home = signerContainerRef.current;
     const slot = signerSlotRef.current;
-    if (!signer || !home || !slot) {
+    if (!home || !slot) {
       onReject(new Error("Signer not ready for restore"));
-      return;
-    }
-
-    const iframe = home.querySelector("iframe");
-    if (!(iframe instanceof HTMLIFrameElement)) {
-      onReject(new Error("Signer iframe not found in signerContainer"));
       return;
     }
 
     void (async () => {
       try {
+        // Restore is offered while locked — wait for Signing Layer only.
+        // Do not call ensureReady() (that would unlock / run setup first).
+        await awaitSignerReady();
+        if (abortedRef.current) return;
+
+        const signer = getSigner();
+        if (!signer) {
+          throw new Error("Signer not ready for restore");
+        }
+
+        const iframe = home.querySelector("iframe");
+        if (!(iframe instanceof HTMLIFrameElement)) {
+          throw new Error("Signer iframe not found in signerContainer");
+        }
+
         restoreOverlayRef.current = overlaySignerIframe(iframe, slot, {
           homeContainer: home,
         });
         await waitForPaint();
-        await ensureReady();
         await signer.recoverKey(
           encryptedPrivateKey,
           "Backup passphrase",
@@ -275,8 +289,8 @@ export function RestoreBackupModal({
       restoreOverlayRef.current = null;
     };
   }, [
+    awaitSignerReady,
     encryptedPrivateKey,
-    ensureReady,
     getSigner,
     onReject,
     signerContainerRef,

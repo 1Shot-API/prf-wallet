@@ -1,4 +1,4 @@
-import {
+﻿import {
   createContext,
   useCallback,
   useContext,
@@ -107,6 +107,9 @@ export type WalletContextValue = {
   activeModal: ActiveModal | null;
   signerContainerRef: RefObject<HTMLDivElement | null>;
   getSigner: () => OWSSigner | null;
+  /** Resolves when the Signing Layer iframe has finished loading. */
+  awaitSignerReady: () => Promise<OWSSigner>;
+  /** Awaits Signing Layer load, then unlocks / runs setup if needed. */
   ensureReady: () => Promise<void>;
   setUnlocked: (value: boolean) => void;
   refreshAddresses: () => Promise<void>;
@@ -349,9 +352,23 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   const ensureReadyRef = useRef(ensureReadyImpl);
   ensureReadyRef.current = ensureReadyImpl;
 
-  const ensureReady = useCallback(async () => {
-    await ensureReadyRef.current();
+  /** Resolves once `OWSSigner.create` finishes; set during boot. */
+  const awaitSignerRef = useRef<(() => Promise<OWSSigner>) | null>(null);
+
+  const awaitSignerReady = useCallback(async (): Promise<OWSSigner> => {
+    const awaitSigner = awaitSignerRef.current;
+    if (!awaitSigner) {
+      throw new Error(
+        "Signing Layer not started — wallet boot has not begun yet",
+      );
+    }
+    return awaitSigner();
   }, []);
+
+  const ensureReady = useCallback(async () => {
+    await awaitSignerReady();
+    await ensureReadyRef.current();
+  }, [awaitSignerReady]);
 
   const uiBridgeRef = useRef({
     pushModal,
@@ -455,10 +472,11 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         credentialId: loadCredentialId(),
       });
       const awaitSigner = async (): Promise<OWSSigner> => {
-        const signer = await signerPromise;
-        signerRef.current = signer;
-        return signer;
+        const loaded = await signerPromise;
+        signerRef.current = loaded;
+        return loaded;
       };
+      awaitSignerRef.current = awaitSigner;
       // Handlers close over this proxy; they must call ensureReady (awaits signer)
       // before touching signing APIs.
       const signer = createDeferredSigner(awaitSigner);
@@ -474,14 +492,9 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         }) => ActiveModal,
       ) => uiBridgeRef.current.pushModal(build);
 
-      const ensureReadyAfterSigner = async (): Promise<void> => {
-        await awaitSigner();
-        await ensureReadyRef.current();
-      };
-
       registerAccountConnect(wallet, signer, {
         storage: walletStorage,
-        ensureReady: ensureReadyAfterSigner,
+        ensureReady,
         requestConnectApproval: () =>
           ask<boolean>(({ id, resolve }) => ({
             id,
@@ -491,7 +504,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       });
 
       registerApprovalSigning(wallet, signer, {
-        ensureReady: ensureReadyAfterSigner,
+        ensureReady,
         requestPersonalSignApproval: (request: PersonalSignApprovalRequest) =>
           ask<boolean>(({ id, resolve }) => ({
             id,
@@ -516,7 +529,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         oid4vp: new MockOid4vpClient(),
         trust: issuerTrust,
         getProofNonce: () => MOCK_OID4VCI_PROOF_NONCE,
-        ensureReady: ensureReadyAfterSigner,
+        ensureReady,
         requestCredentialOfferApproval: (
           request: CredentialOfferApprovalRequest,
         ) =>
@@ -605,6 +618,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       activeModal,
       signerContainerRef,
       getSigner,
+      awaitSignerReady,
       ensureReady,
       setUnlocked,
       refreshAddresses,
@@ -630,6 +644,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       credentialCount,
       activeModal,
       getSigner,
+      awaitSignerReady,
       ensureReady,
       setUnlocked,
       refreshAddresses,

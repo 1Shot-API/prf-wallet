@@ -115,7 +115,8 @@ export type GetPublicKeyParams = {
 };
 
 /**
- * Batch encrypt plaintexts with PRF-derived AES-256-GCM (not yet implemented).
+ * Batch encrypt plaintexts with PRF-derived AES-256-GCM
+ * (HKDF from the wallet secp256k1 scalar — same material as `signDigest`).
  * Arrays amortize a single passkey ceremony across multiple plaintexts.
  */
 export type EncryptAES256Params = {
@@ -128,7 +129,7 @@ export type EncryptAES256Result = {
 };
 
 /**
- * Batch decrypt AES-256-GCM envelopes (not yet implemented).
+ * Batch decrypt AES-256-GCM envelopes (`ows-aes1:…`).
  */
 export type DecryptAES256Params = {
   ciphertexts: string[];
