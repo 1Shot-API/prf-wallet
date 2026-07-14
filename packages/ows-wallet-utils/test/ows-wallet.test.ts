@@ -6,9 +6,9 @@ import {
   OwsUnimplementedError,
   deserializeRpcResponse,
   serializeRpc,
-} from "../src/index.ts";
+  RPCCallId,
+} from "@1shotapi/ows-types";
 import { handleRpcModelCall } from "../src/rpc/child-wrapper.ts";
-import { RPCCallId } from "@1shotapi/ows-types";
 
 describe("handleRpcModelCall", () => {
   const emitted: Array<{ name: string; data: string }> = [];

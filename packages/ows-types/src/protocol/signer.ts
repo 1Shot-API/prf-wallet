@@ -89,6 +89,7 @@ export type PublicKeyData = {
   passkeyPublicKey: PasskeyPublicKey | null;
   secp256k1PublicKey: SECP256K1PublicKey;
   ed25519PublicKey: ED25519PublicKey;
+  credentialId?: string;
 };
 
 export type ChallengeSignedData = {
@@ -105,4 +106,6 @@ export type CreateCredentialOptions = {
 export type GetPublicKeyParams = {
   credentialId?: string;
   challenge?: `0x${string}`;
+  /** When true, use discoverable credentials (omit allowCredentials). */
+  discoverable?: boolean;
 };

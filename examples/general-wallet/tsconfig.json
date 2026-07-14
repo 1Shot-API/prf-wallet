@@ -2,9 +2,18 @@
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "noEmit": true,
-    "rootDir": "..",
+    "jsx": "react-jsx",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "module": "ESNext",
-    "moduleResolution": "bundler"
+    "moduleResolution": "bundler",
+    "types": ["vite/client"],
+    "baseUrl": ".",
+    "rootDir": "..",
+    "strict": true,
+    "skipLibCheck": true,
+    "paths": {
+      "@ows-shared": ["../shared/src/index.ts"]
+    }
   },
-  "include": ["src/**/*", "../credentials-shared/src/**/*"]
+  "include": ["src/**/*", "../shared/src/**/*", "vite.config.ts"]
 }

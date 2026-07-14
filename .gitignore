@@ -36,3 +36,8 @@ npm-debug.log*
 
 # Coverage
 coverage/
+
+# Local HTTPS certs (mkcert) for host demos
+examples/host/certs/*.pem
+examples/credential-issuer/certs/*.pem
+examples/credential-verifier/certs/*.pem

@@ -57,6 +57,47 @@ Inbound events: validate `event.origin === signerOrigin` and `event.source === i
 - Do **not** add a restrictive `sandbox` that blocks WebAuthn.
 - Default iframe size is hidden (`0×0`); pass `{ hidden: false }` to show it.
 
+### Showing the signer over UI (passphrase / recovery)
+
+Do **not** reparent the signer iframe into a dialog — that can reload the iframe document and drop in-flight RPCs. Use:
+
+| Helper | Purpose |
+|--------|---------|
+| `overlaySignerIframe(iframe, slot, options?)` | Visible overlay: position the iframe's home container over a slot (e.g. backup dialog). Returns a restore function. |
+| `prepareSignerIframeForWebAuthn(iframe)` | Invisible 1×1 focus layer for passkey ceremonies (used internally by `OWSSigner`). |
+
+```typescript
+import { overlaySignerIframe } from "@1shotapi/ows-signer-utils";
+
+const restore = overlaySignerIframe(iframe, signerSlot, {
+  homeContainer: document.getElementById("signer-container")!,
+});
+try {
+  await signer.createRecoveryData(/* … */);
+} finally {
+  restore();
+}
+```
+
+### EIP-1193 signing (`SignHelper`)
+
+Headless `personal_sign` / `eth_signTypedData*` orchestration (display → consent → ensureReady → sign). Does not register handlers — the branding app owns order:
+
+```typescript
+import { SignHelper } from "@1shotapi/ows-signer-utils";
+
+const signHelper = new SignHelper(signer, wallet, {
+  ensureReady,
+  requestPersonalSignApproval,
+  requestSignTypedDataApproval,
+});
+for (const [method, handler] of Object.entries(signHelper.handlers)) {
+  wallet.registerEip1193(method, handler);
+}
+```
+
+Consent UI stays app-owned (see `examples/general-wallet` approval dialog).
+
 ## API
 
 ### `OWSSigner.create(container, signerUrl, options?)`

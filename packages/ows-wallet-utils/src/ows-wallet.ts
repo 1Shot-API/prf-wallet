@@ -1,13 +1,14 @@
 import Postmate from "postmate";
 import type { z } from "zod";
 import {
+  EIP1193_METHODS,
+  isEip1193Method,
   OWS_DISPLAY_READY_MODEL_METHOD,
   OWS_HIDE_READY_MODEL_METHOD,
+  OwsUnimplementedError,
   type RequestDisplayParams,
 } from "@1shotapi/ows-types";
 import { getEip1193ParamSchema } from "./eip1193/schemas.js";
-import { EIP1193_METHODS, isEip1193Method } from "./eip1193/methods.js";
-import { OwsUnimplementedError } from "@1shotapi/ows-types";
 import {
   handleRpcModelCall,
   type RpcModelRegistration,

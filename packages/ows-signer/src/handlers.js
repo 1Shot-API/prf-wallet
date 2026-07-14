@@ -489,6 +489,7 @@ async function handleGetPublicKey(params, correlationId, targetOrigin) {
     );
 
     emitEvent(window.parent, targetOrigin, "PublicKey", correlationId, {
+      credentialId: getCredentialId(credential),
       passkeyPublicKey: getPasskeyPublicKeyBase64Url(credential),
       secp256k1PublicKey: to0xHex(keys.secp256k1PublicKey),
       ed25519PublicKey: to0xHex(keys.ed25519PublicKey),

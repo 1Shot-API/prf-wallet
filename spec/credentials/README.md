@@ -18,7 +18,7 @@ OWS Credentials Extension
   ├── Credential storage / listing / deletion
   ├── OID4VCI client abstraction (issuance)
   ├── OID4VP client abstraction (presentation)
-  ├── Consent UI hooks (branding registry modules)
+  ├── Consent UI (app-owned Branding Layer)
   ├── Status / revocation validation hooks
   └── Issuer trust metadata hooks
 
@@ -60,12 +60,11 @@ Host apps must **not** call `proxy.rpc()` for credential operations.
 | `packages/ows-types` | Credential types, OID4 client interfaces, SD-JWT VC utils |
 | `packages/ows-wallet-utils` | Branding wire + holder signer bridge |
 | `packages/ows-provider` | Host credentials proxy + SD-JWT verify |
-| `packages/ows-registry/items/credentials-provider` | Branding module — wires wallet.credentials |
-| `packages/ows-registry/items/credential-consent` | Presentation consent UI |
-| `examples/credentials-shared` | Demo mocks (not published) |
+| `examples/general-wallet` | Branding demo — credentials wire + consent UI |
+| `examples/shared` | Demo mocks (not published) |
 | `examples/credential-issuer` | Host demo — mock issuance |
 | `examples/credential-verifier` | Host demo — mock verification |
 
 ## Future integration (post-stub)
 
-See [roadmap.md](./roadmap.md) for phased delivery. Real OID4VCI/OID4VP HTTP and encrypted credential storage are swappable behind the interfaces in `@1shotapi/ows-types`. Demo mocks live under `examples/credentials-shared/`.
+See [roadmap.md](./roadmap.md) for phased delivery. Real OID4VCI/OID4VP HTTP and encrypted credential storage are swappable behind the interfaces in `@1shotapi/ows-types`. Demo mocks live under `examples/shared/`.

@@ -37,6 +37,7 @@ export class OWSSigner {
   private credentialId?: string;
   private cachedAddress?: EVMAccountAddress;
   private cachedSolanaAddress?: SolanaAccountAddress;
+  private lastPublicKeyData?: PublicKeyData;
 
   private constructor(
     private readonly iframe: HTMLIFrameElement,
@@ -84,6 +85,11 @@ export class OWSSigner {
 
   setCachedSolanaAddress(address: SolanaAccountAddress): void {
     this.cachedSolanaAddress = address;
+  }
+
+  /** Last `getPublicKey` result in this session — avoids repeat WebAuthn for holder binding. */
+  getLastPublicKeyData(): PublicKeyData | undefined {
+    return this.lastPublicKeyData;
   }
 
   destroy(): void {
@@ -185,35 +191,49 @@ export class OWSSigner {
     params?: GetPublicKeyParams,
   ): Promise<PublicKeyData & { challengeSignature?: string }> {
     const hasChallenge = params?.challenge !== undefined;
+    const credentialId = params?.discoverable
+      ? undefined
+      : (params?.credentialId ?? this.credentialId);
 
-    const result = await this.rpc.request<Record<string, unknown>>(
-      "getPublicKey",
-      {
-        credentialId: params?.credentialId ?? this.credentialId,
-        challenge: params?.challenge,
-      },
-      {
-        terminalEvent: "PublicKey",
-        alsoWaitFor: hasChallenge ? ["ChallengeSigned"] : undefined,
-        onIntermediate: (_event, data) => this.onKeyDerived(data),
-      },
-    );
+    const restoreSignerDisplay = prepareSignerIframeForWebAuthn(this.iframe);
+    try {
+      const result = await this.rpc.request<Record<string, unknown>>(
+        "getPublicKey",
+        {
+          credentialId,
+          challenge: params?.challenge,
+        },
+        {
+          terminalEvent: "PublicKey",
+          alsoWaitFor: hasChallenge ? ["ChallengeSigned"] : undefined,
+          onIntermediate: (_event, data) => this.onKeyDerived(data),
+        },
+      );
 
-    const publicKeyData = publicKeyDataFromEvent(result);
-    if (!publicKeyData) {
-      throw new Error("getPublicKey: invalid PublicKey payload");
+      const publicKeyData = publicKeyDataFromEvent(result);
+      if (!publicKeyData) {
+        throw new Error("getPublicKey: invalid PublicKey payload");
+      }
+
+      if (publicKeyData.credentialId) {
+        this.credentialId = publicKeyData.credentialId;
+      }
+
+      this.lastPublicKeyData = publicKeyData;
+
+      this.cacheAddressesFromPublicKeys(
+        publicKeyData.secp256k1PublicKey,
+        publicKeyData.ed25519PublicKey,
+      );
+
+      const signature =
+        typeof result.signature === "string" ? result.signature : undefined;
+      return signature
+        ? { ...publicKeyData, challengeSignature: signature }
+        : publicKeyData;
+    } finally {
+      restoreSignerDisplay();
     }
-
-    this.cacheAddressesFromPublicKeys(
-      publicKeyData.secp256k1PublicKey,
-      publicKeyData.ed25519PublicKey,
-    );
-
-    const signature =
-      typeof result.signature === "string" ? result.signature : undefined;
-    return signature
-      ? { ...publicKeyData, challengeSignature: signature }
-      : publicKeyData;
   }
 
   async createRecoveryData(
@@ -279,11 +299,3 @@ export class OWSSigner {
     );
   }
 }
-
-/** @deprecated Use `OWSSigner.create()` instead. */
-export type OwsSignerHostConfig = {
-  signerUrl: string;
-};
-
-/** @deprecated Use `OWSSigner` instead. */
-export type OwsSignerEvmApi = EvmSigner;

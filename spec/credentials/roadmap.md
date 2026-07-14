@@ -81,7 +81,8 @@ Branding registers handlers on `wallet.credentials`. The library builds presenta
 | `packages/ows-types/src/utils/credentials/sd-jwt-vc/` | SD-JWT VC presentation and crypto helpers |
 | `packages/ows-wallet-utils/src/credentials/` | Wire schemas, registrar, holder signer bridge |
 | `packages/ows-provider/src/credentials/` | Host client, SD-JWT verify |
-| `packages/ows-registry/items/credentials-provider` | Wires store + OID4 clients + holder signer |
-| `examples/credentials-shared/` | Demo mocks (OID4 clients, stores, fixtures) |
+| `examples/general-wallet/src/ows/credentials-provider/` | Demo wire: store + OID4 + holder signer |
+| `examples/shared/` | Demo mocks (OID4 clients, stores, fixtures) |
+
 | `examples/credential-issuer` | Host demo — mock issuance |
 | `examples/credential-verifier` | Host demo — mock verification |

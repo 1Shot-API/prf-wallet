@@ -85,6 +85,7 @@ async function resolveAccount(proxy: OWSProxy): Promise<EVMAccountAddress> {
 
 async function main(): Promise<void> {
   setStatus("Connecting to wallet…");
+  console.info("[ows-example-host] embedding Branding Layer", __WALLET_IFRAME_URL__);
 
   const proxy = await OWSProxy.create(walletContainer, __WALLET_IFRAME_URL__);
 

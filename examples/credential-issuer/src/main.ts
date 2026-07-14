@@ -1,6 +1,6 @@
 import { OWSProxy } from "@1shotapi/ows-provider";
 import { CredentialOfferUri } from "@1shotapi/ows-types";
-import { MOCK_KYC_OFFER_URI } from "../../credentials-shared/src/index.js";
+import { MOCK_KYC_OFFER_URI } from "../../shared/src/index.js";
 import { getMockIssuerOfferUri } from "./mock-issuer.js";
 import "./styles.css";
 
@@ -49,7 +49,7 @@ async function main(): Promise<void> {
     })();
   });
 
-  setStatus("Ready — embeds general-wallet with credentials modules.");
+  setStatus("Ready — embeds general-wallet with credentials support.");
 }
 
 main().catch((error: unknown) => {

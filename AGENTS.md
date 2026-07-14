@@ -8,15 +8,13 @@ OWS uses three iframe layers: **Host Layer**, **Branding Layer**, and **Signing 
 
 ```
 examples/host                 Host Layer — @1shotapi/ows-provider (EIP-1193)
-examples/general-wallet       Branding Layer — general-purpose wallet demo
+examples/general-wallet       Branding Layer — React + Tailwind general-purpose wallet demo
 packages/ows-signer           Signing Layer (plain JS, zero deps, on-chain)
 packages/ows-signer-utils     Branding Layer ↔ Signing Layer (evm.signMessage, etc.)
 packages/ows-types            Shared types, errors, and cross-layer utils (including SD-JWT VC)
 packages/ows-wallet-utils     Branding Layer Postmate/RPC wrappers and credential wire registration
 packages/ows-provider         Host Layer EIP-1193 + credentials proxy; SD-JWT verify
-packages/ows-branding-core    Branding module contracts + install helpers
-packages/ows-registry         Copy-paste Branding Layer modules (not published)
-examples/credentials-shared   Demo-only mock OID4 clients, stores, and fixtures (not published)
+examples/shared               Demo-only mock OID4 clients, stores, and fixtures (not published)
 packages/ows-onchain          EIP-8244 deploy pipeline for ows-signer
 spec/credentials/             OWS Credentials Extension normative docs
 ```
@@ -34,6 +32,8 @@ spec/credentials/             OWS Credentials Extension normative docs
 
 Prefer **methods on objects** over standalone exported functions when the logic belongs to a single class or module (e.g. serialize an RPC envelope inside `RpcHostClient`, not as a public `createRpcRequest` helper). Export free functions only when they are genuinely shared utilities with multiple independent call sites.
 
+**No deprecations during active development.** OWS is pre-1.0 and not yet published for external consumers. When a pattern is renamed or superseded, update all call sites to the new API — do not leave `@deprecated` aliases, re-exports, or compatibility shims. Remove old names once migrations are complete.
+
 ## Branded types
 
 Use **branded primitives** from `@1shotapi/ows-types` (`ts-brand`) anywhere a value is semantically more than a raw `string`, `number`, or `bigint`.
@@ -44,7 +44,7 @@ Use **branded primitives** from `@1shotapi/ows-types` (`ts-brand`) anywhere a va
 - Export from `packages/ows-types/src/primitives/index.ts`.
 - Examples: `EVMAccountAddress` (not `0x${string}` or viem `Address`), `EVMSignatureHex`, `SolanaAccountAddress`, `BitcoinAccountAddress`, `RPCCallId`.
 - Brand at the point of validation or derivation (e.g. Zod `.transform(EVMAccountAddress)`, or after `publicKeyToAddress`).
-- For polymorphic APIs (e.g. EIP-1193 `request`), use a **mapped method table** (`EIP1193Requests` in `ows-provider`) with a conditional generic on `request()` so callers get inferred branded results without `as` casts.
+- For polymorphic APIs (e.g. EIP-1193 `request`), use a **mapped method table** (`EIP1193Requests` in `ows-types`) with a conditional generic on `request()` so callers get inferred branded results without `as` casts.
 
 Do not introduce parallel branded types in consumer packages — add or extend primitives in `ows-types` instead.
 
@@ -68,3 +68,13 @@ npm run dev -w @1shotapi/ows-example-credential-verifier
 ## Status
 
 Bootstrapped; OWS signer logic and SDKs not yet implemented.
+
+## Agent Skills
+
+Branding Layer scaffolding skill (install in a consumer repo):
+
+```bash
+npx skills add 1Shot-API/open-wallet@ows-branding-layer
+```
+
+See [skills/ows-branding-layer](skills/ows-branding-layer/).

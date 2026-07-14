@@ -9,7 +9,11 @@ import {
   OWS_REQUEST_HIDE_EVENT,
   serializeRpc,
 } from "@1shotapi/ows-types";
-import { DisplayHostHandler } from "../src/display/host-handler.ts";
+import {
+  applyHiddenWalletContainerStyles,
+  applyHiddenWalletFrameStyles,
+  DisplayHostHandler,
+} from "../src/display/host-handler.ts";
 
 class MockHTMLIFrameElement {}
 
@@ -175,6 +179,49 @@ describe("DisplayHostHandler", () => {
 
     assert.equal(mock.calls.length, 1);
     assert.equal(mock.calls[0]?.method, OWS_HIDE_READY_MODEL_METHOD);
+  });
+
+  it("applyHiddenWalletContainerStyles collapses container before iframe exists", () => {
+    const container = {
+      className: "wallet-container",
+      style: {
+        length: 0,
+        item: () => "",
+        getPropertyValue: () => "",
+        setProperty: function (this: Record<string, string>, name: string, value: string) {
+          this[name] = value;
+        },
+        removeProperty: function (this: Record<string, string>, name: string) {
+          delete this[name];
+        },
+      } as unknown as CSSStyleDeclaration,
+      setAttribute() {},
+      removeAttribute() {},
+      getAttribute() {
+        return null;
+      },
+    };
+
+    applyHiddenWalletContainerStyles(container as never);
+
+    const style = container.style as unknown as Record<string, string>;
+    assert.equal(style.width, "0");
+    assert.equal(style.height, "0");
+    assert.equal(style.opacity, "0");
+    assert.equal(style["clip-path"], "inset(50%)");
+    assert.equal(style["pointer-events"], "none");
+  });
+
+  it("applyHiddenWalletFrameStyles hides iframe at append time", () => {
+    const mock = createMockParent();
+    Object.setPrototypeOf(mock.frame, MockHTMLIFrameElement.prototype);
+
+    applyHiddenWalletFrameStyles(mock.frame as never);
+
+    const frameStyle = mock.frame.style as unknown as Record<string, string>;
+    assert.equal(frameStyle.opacity, "0");
+    assert.equal(frameStyle["pointer-events"], "none");
+    assert.equal(frameStyle.width, "100%");
   });
 
   it("initializeHidden collapses a full-screen host container", () => {

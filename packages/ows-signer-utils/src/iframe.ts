@@ -2,6 +2,20 @@ export type CreateSignerIframeOptions = {
   hidden?: boolean;
 };
 
+export type OverlaySignerIframeOptions = {
+  /**
+   * Element that currently holds the iframe in the DOM (usually the branding
+   * `#signer-container`). Defaults to `iframe.parentElement`.
+   */
+  homeContainer?: HTMLElement;
+  /** Stacking order for the overlaid home container and iframe (default `"10001"`). */
+  zIndex?: string;
+  /** Home-container background while overlaid (default `"Canvas"`). */
+  background?: string;
+  /** Home-container border radius while overlaid (default `"6px"`). */
+  borderRadius?: string;
+};
+
 /** Permissions Policy features for the Signing Layer iframe (set before navigation). */
 const SIGNER_IFRAME_ALLOW = [
   "publickey-credentials-get *",
@@ -51,8 +65,20 @@ function restoreInlineStyles(
   }
 }
 
+function focusIframe(iframe: HTMLIFrameElement): void {
+  try {
+    iframe.contentWindow?.focus();
+    iframe.focus();
+  } catch {
+    // ignore focus failures
+  }
+}
+
 /**
  * Make the nested custody signer iframe visible/focusable for WebAuthn.
+ * Uses a 1×1 invisible fixed layer — distinct from {@link overlaySignerIframe},
+ * which shows the signer UI (e.g. passphrase) over a dialog slot.
+ *
  * Call synchronously immediately before a signer RPC that triggers passkey UI.
  */
 export function prepareSignerIframeForWebAuthn(
@@ -91,18 +117,79 @@ export function prepareSignerIframeForWebAuthn(
   setImportantStyle(iframe, "border", "0");
   setImportantStyle(iframe, "z-index", "9999");
 
-  try {
-    iframe.contentWindow?.focus();
-    iframe.focus();
-  } catch {
-    // ignore focus failures
-  }
+  focusIframe(iframe);
 
   return () => {
     restoreInlineStyles(iframe, stored.frameStyle);
     if (container && stored.containerStyle) {
       restoreInlineStyles(container, stored.containerStyle);
     }
+  };
+}
+
+/**
+ * Visually place the signer iframe over `slot` without moving it in the DOM.
+ * Reparenting can reload the iframe document and drop pending signer RPCs.
+ *
+ * Positions the iframe's home container (fixed) to match `slot.getBoundingClientRect()`,
+ * then stretches the iframe to fill that container. Call the returned function to
+ * restore prior inline styles.
+ */
+export function overlaySignerIframe(
+  iframe: HTMLIFrameElement,
+  slot: HTMLElement,
+  options: OverlaySignerIframeOptions = {},
+): () => void {
+  const homeContainer = options.homeContainer ?? iframe.parentElement;
+  if (!homeContainer) {
+    throw new Error(
+      "overlaySignerIframe: iframe has no parentElement; pass options.homeContainer",
+    );
+  }
+
+  const zIndex = options.zIndex ?? "10001";
+  const background = options.background ?? "Canvas";
+  const borderRadius = options.borderRadius ?? "6px";
+
+  const savedFrameStyles = captureInlineStyles(iframe);
+  const savedContainerStyles = captureInlineStyles(homeContainer);
+  const rect = slot.getBoundingClientRect();
+
+  setImportantStyle(homeContainer, "display", "block");
+  setImportantStyle(homeContainer, "position", "fixed");
+  setImportantStyle(homeContainer, "top", `${rect.top}px`);
+  setImportantStyle(homeContainer, "left", `${rect.left}px`);
+  setImportantStyle(homeContainer, "width", `${Math.max(rect.width, 1)}px`);
+  setImportantStyle(homeContainer, "height", `${Math.max(rect.height, 1)}px`);
+  setImportantStyle(homeContainer, "clip-path", "none");
+  setImportantStyle(homeContainer, "overflow", "visible");
+  setImportantStyle(homeContainer, "opacity", "1");
+  setImportantStyle(homeContainer, "pointer-events", "auto");
+  setImportantStyle(homeContainer, "z-index", zIndex);
+  setImportantStyle(homeContainer, "margin", "0");
+  setImportantStyle(homeContainer, "padding", "0");
+  setImportantStyle(homeContainer, "background", background);
+  setImportantStyle(homeContainer, "border-radius", borderRadius);
+
+  setImportantStyle(iframe, "display", "block");
+  setImportantStyle(iframe, "position", "absolute");
+  setImportantStyle(iframe, "top", "0");
+  setImportantStyle(iframe, "left", "0");
+  setImportantStyle(iframe, "width", "100%");
+  setImportantStyle(iframe, "height", "100%");
+  setImportantStyle(iframe, "min-height", "0");
+  setImportantStyle(iframe, "border", "0");
+  setImportantStyle(iframe, "clip-path", "none");
+  setImportantStyle(iframe, "overflow", "visible");
+  setImportantStyle(iframe, "opacity", "1");
+  setImportantStyle(iframe, "pointer-events", "auto");
+  setImportantStyle(iframe, "z-index", zIndex);
+
+  focusIframe(iframe);
+
+  return () => {
+    restoreInlineStyles(iframe, savedFrameStyles);
+    restoreInlineStyles(homeContainer, savedContainerStyles);
   };
 }
 

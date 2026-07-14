@@ -6,9 +6,6 @@ export {
 } from "./display/host-handler.js";
 export {
   EIP1193Provider,
-  type EIP1193RequestArgs,
-  type EIP1193Requests,
-  type KnownEIP1193Method,
 } from "./eip1193/provider.js";
 
 export { CredentialHostClient } from "./credentials/host-client.js";

@@ -1,4 +1,4 @@
-import { MOCK_KYC_OFFER_URI } from "../../credentials-shared/src/index.js";
+import { MOCK_KYC_OFFER_URI } from "../../shared/src/index.js";
 
 /** Returns the mock OID4VCI credential offer URI for demos. */
 export function getMockIssuerOfferUri(): string {

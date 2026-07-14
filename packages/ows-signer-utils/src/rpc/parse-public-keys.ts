@@ -52,10 +52,14 @@ export function publicKeyDataFromEvent(
   if (!secp256k1PublicKey || !ed25519PublicKey) {
     return null;
   }
+  const credentialId =
+    typeof data.credentialId === "string" ? data.credentialId : undefined;
+
   return {
     passkeyPublicKey: parsePasskeyPublicKey(data.passkeyPublicKey),
     secp256k1PublicKey,
     ed25519PublicKey,
+    credentialId,
   };
 }
 

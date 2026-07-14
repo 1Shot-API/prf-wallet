@@ -60,13 +60,12 @@ packages/
   ows-signer/           Plain JS Signing Layer — no build step
   ows-signer-utils/     Branding Layer ↔ Signing Layer (evm.signMessage, etc.)
   ows-wallet-utils/     Host Layer ↔ Branding Layer (Postmate RPC wrappers)
-  ows-branding-core/    Branding module contracts + install helpers
-  ows-registry/         Copy-paste Branding Layer UI modules (registry)
   ows-provider/         EIP-1193 provider for Host Layer apps
   ows-onchain/          EIP-8244 compress → deploy → serve
 examples/
   general-wallet/       General-purpose Branding Layer demo (MetaMask-style)
   host/                 Host Layer reference application
+  shared/               Demo mocks for credentials (not published)
 ```
 
 ## Signing Layer design
@@ -86,6 +85,16 @@ npm run release            # build + publish to npm
 ## Status
 
 **Scaffold only** — package structure and OWS branding are in place. Signer logic, SDKs, and on-chain pipeline are forthcoming.
+
+## Agent Skills
+
+Build a Branding Layer in another repository with the published skill:
+
+```bash
+npx skills add 1Shot-API/open-wallet@ows-branding-layer
+```
+
+Source: [skills/ows-branding-layer](skills/ows-branding-layer/).
 
 ## License
 

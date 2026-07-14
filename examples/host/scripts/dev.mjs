@@ -1,25 +1,21 @@
 /**
- * Start webpack-dev-server for the OWS example host.
- * Loads NGROK_DOMAIN from repo root .env for Branding Layer iframe URL (webpack.config.cjs).
+ * Start Vite for the OWS example host.
+ * Loads NGROK_DOMAIN from repo root .env for Branding Layer iframe URL.
  */
-import { createRequire } from "node:module";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import net from "node:net";
-import webpack from "webpack";
-import WebpackDevServer from "webpack-dev-server";
+import { createServer } from "vite";
 import dotenv from "dotenv";
+import { resolveHttpsOptions, walletIframeUrl } from "../../host-dev.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const require = createRequire(import.meta.url);
-const webpackConfig = require("../webpack.config.cjs");
-
 const repoRoot = path.resolve(__dirname, "../../..");
 dotenv.config({ path: path.join(repoRoot, ".env") });
 
 const port = Number(process.env.PORT ?? 5173);
 
-let devServer;
+let viteServer;
 let shuttingDown = false;
 
 function waitForPort(host, listenPort, timeoutMs = 30_000) {
@@ -45,22 +41,13 @@ function waitForPort(host, listenPort, timeoutMs = 30_000) {
   });
 }
 
-async function startDevServer() {
-  const config = webpackConfig({}, { mode: "development", env: {} });
-  config.mode = "development";
-  const compiler = webpack(config);
-  devServer = new WebpackDevServer(config.devServer, compiler);
-  await devServer.start();
-  await waitForPort("127.0.0.1", port);
-}
-
 async function shutdown(signal) {
   if (shuttingDown) return;
   shuttingDown = true;
 
   try {
-    if (devServer) {
-      await devServer.stop();
+    if (viteServer) {
+      await viteServer.close();
     }
   } catch (error) {
     console.error(`Failed to shut down (${signal}):`, error);
@@ -79,10 +66,29 @@ process.on("SIGTERM", () => {
 });
 
 try {
-  await startDevServer();
-  const walletUrl = require("../webpack.config.cjs").walletIframeUrl();
-  console.log(`OWS example host: http://localhost:${port}`);
+  viteServer = await createServer({
+    configFile: path.join(__dirname, "../vite.config.mjs"),
+    server: { port, host: "0.0.0.0" },
+  });
+  await viteServer.listen();
+  await waitForPort("127.0.0.1", port);
+
+  const https = resolveHttpsOptions({
+    certsDir: path.join(__dirname, "../certs"),
+    exampleLabel: "examples/host",
+  });
+  const scheme = https ? "https" : "http";
+  const walletUrl = walletIframeUrl();
+  console.log(`OWS example host: ${scheme}://localhost:${port}`);
+  console.log(
+    `  Also try: ${scheme}://ows-host.com:${port} (hosts file → 127.0.0.1)`,
+  );
   console.log(`  Branding Layer iframe: ${walletUrl}`);
+  if (scheme === "http") {
+    console.log(
+      "  Tip: HTTPS host is required for passkeys in nested HTTPS iframes — see examples/host/README.md",
+    );
+  }
 } catch (error) {
   console.error("Failed to start host dev server:", error);
   process.exit(1);
