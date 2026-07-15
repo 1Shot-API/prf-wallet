@@ -1,5 +1,11 @@
 # @1shotapi/ows-provider
 
+## 0.2.0
+
+### Minor Changes
+
+- 58ef5d1: Add create-time `presentationMode` (`flyout` | `inline`) for branding iframe chrome. Presentation is immutable — recreate the proxy to switch (no reparent/`setPresentation`; that breaks Postmate). Default visible size is 360×600.
+
 ## 0.1.0
 
 ### Minor Changes
