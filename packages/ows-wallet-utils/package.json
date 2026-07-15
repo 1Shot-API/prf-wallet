@@ -1,6 +1,6 @@
 {
   "name": "@1shotapi/ows-wallet-utils",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "OWS utilities for Branding Layer implementers — Host Layer ↔ Branding Layer messaging via postmate",
   "type": "module",
   "main": "./dist/index.js",
