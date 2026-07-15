@@ -109,8 +109,6 @@ const signer = createDeferredSigner(() => signerPromise); // copy pattern from W
 
 // Register before start (order in general-wallet):
 // account connect → SignHelper handlers → CredentialsHelper.register() → RpcHelper
-new RpcHelper(providers, wallet, signer, { defaultChainId });
-
 const signHelper = new SignHelper(signer, wallet, {
   ensureReady: async () => {
     await signerPromise; // iframe load
@@ -126,6 +124,8 @@ for (const [method, handler] of Object.entries(signHelper.handlers)) {
 // Optional:
 // new CredentialsHelper(wallet, signer, { … }).register();
 // Note arg order: CredentialsHelper(wallet, signer) vs SignHelper(signer, wallet)
+
+new RpcHelper(providers, wallet, signer, { defaultChainId });
 
 void wallet.start(); // registers Model immediately — do not await nested signer first
 void signerPromise; // background load; UI can paint
