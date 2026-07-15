@@ -8,6 +8,7 @@ import {
   DEFAULT_WALLET_SIZE_X,
   DEFAULT_WALLET_SIZE_Y,
   DisplayHostHandler,
+  EWalletPresentationMode,
 } from "./display/host-handler.js";
 import { CredentialHostClient } from "./credentials/host-client.js";
 
@@ -18,15 +19,21 @@ export type OWSProxyOptions = {
   classList?: string[];
   rpcTimeoutMs?: number;
   /**
-   * Visible wallet flyout width in CSS pixels.
-   * Default: {@link DEFAULT_WALLET_SIZE_X} (300).
+   * Visible wallet panel width in CSS pixels.
+   * Default: {@link DEFAULT_WALLET_SIZE_X} (360).
    */
   walletSizeX?: number;
   /**
-   * Visible wallet flyout height in CSS pixels.
-   * Default: {@link DEFAULT_WALLET_SIZE_Y} (400).
+   * Visible wallet panel height in CSS pixels.
+   * Default: {@link DEFAULT_WALLET_SIZE_Y} (600).
    */
   walletSizeY?: number;
+  /**
+   * Presentation mode for this proxy (immutable). Default: flyout.
+   * Do not reparent the iframe after create — destroy and recreate with a
+   * different `container` / mode instead (Postmate breaks on reparent).
+   */
+  presentationMode?: EWalletPresentationMode;
   /**
    * When true, grant Chrome Local Network Access / loopback Permissions Policy
    * so the branding iframe may fetch hosts that resolve to the user's LAN or
@@ -99,9 +106,15 @@ export class OWSProxy {
       throw new Error("OWSProxy requires a browser environment");
     }
 
-    // Hide the container before Postmate appends the iframe so wallet content
-    // does not flash while the cross-frame handshake completes.
-    applyHiddenWalletContainerStyles(container);
+    const presentationMode =
+      options?.presentationMode ?? EWalletPresentationMode.Flyout;
+    const inline = presentationMode === EWalletPresentationMode.Inline;
+
+    // Flyout: collapse before handshake so content does not flash.
+    // Inline: leave the host mount alone — iframe stays in this container forever.
+    if (!inline) {
+      applyHiddenWalletContainerStyles(container);
+    }
 
     // Postmate sets a minimal `allow` then appendChild, then assigns `src`.
     // Permissions Policy is fixed at navigation — patch allow on append, before src.
@@ -117,13 +130,19 @@ export class OWSProxy {
             classListArray: options?.classList ?? [],
           }),
         ),
+      { hideFrameOnAppend: !inline },
     );
 
     const displayHandler = new DisplayHostHandler(parent, {
       walletSizeX: options?.walletSizeX ?? DEFAULT_WALLET_SIZE_X,
       walletSizeY: options?.walletSizeY ?? DEFAULT_WALLET_SIZE_Y,
+      presentationMode,
     });
-    displayHandler.initializeHidden();
+    if (inline) {
+      displayHandler.initializeInlineVisible();
+    } else {
+      displayHandler.initializeHidden();
+    }
     const rpcClient = new RpcHostClient(
       parent,
       options?.rpcTimeoutMs ?? DEFAULT_RPC_TIMEOUT_MS,
@@ -141,15 +160,18 @@ export class OWSProxy {
   }
 
   /**
-   * Show the branding iframe as a lower-right flyout (host-initiated).
+   * Show the branding iframe (host-initiated).
+   * Flyout: lower-right panel. Inline: ensure the create() container is filled.
    * Uses {@link OWSProxyOptions.walletSizeX} / {@link OWSProxyOptions.walletSizeY}.
-   * Useful for demos and manual testing without an EIP-1193 request.
    */
   showWallet(): void {
     this.displayHandler.show();
   }
 
-  /** Hide a host-initiated flyout from {@link showWallet}. */
+  /**
+   * Hide a host-initiated flyout from {@link showWallet}.
+   * No-op in inline presentation (embedded panel stays visible).
+   */
   hideWallet(): void {
     this.displayHandler.hide();
   }
@@ -169,13 +191,17 @@ async function withWalletIframeAllow(
   container: HTMLElement,
   allowLocalAccess: boolean,
   create: () => Promise<Postmate.ParentAPI>,
+  options?: { hideFrameOnAppend?: boolean },
 ): Promise<Postmate.ParentAPI> {
   const allow = walletIframeAllow(allowLocalAccess);
+  const hideFrameOnAppend = options?.hideFrameOnAppend !== false;
   const originalAppend = container.appendChild.bind(container);
   container.appendChild = (<T extends Node>(node: T): T => {
     if (node instanceof HTMLIFrameElement) {
       node.allow = allow;
-      applyHiddenWalletFrameStyles(node);
+      if (hideFrameOnAppend) {
+        applyHiddenWalletFrameStyles(node);
+      }
     }
     return originalAppend(node) as T;
   }) as typeof container.appendChild;

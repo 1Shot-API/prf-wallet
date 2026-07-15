@@ -47,8 +47,35 @@ Returns an `OwsUnimplementedError` (from `@1shotapi/ows-types`) if the Branding 
 | `name` | iframe `name` attribute (default `ows-wallet`) |
 | `classList` | CSS classes on iframe at creation |
 | `rpcTimeoutMs` | RPC timeout (default 120s) |
-| `walletSizeX` / `walletSizeY` | Flyout size in CSS pixels |
+| `walletSizeX` / `walletSizeY` | Visible panel size in CSS pixels (default 360×600) |
+| `presentationMode` | `flyout` (default) or `inline` — fixed for this proxy instance |
 | `allowLocalAccess` | When true, add `local-network-access` / `loopback-network` to iframe `allow` (default `false`) |
+
+### Presentation (flyout vs inline)
+
+`ows-provider` styles the **host container** passed to `create()`. The iframe fills that container (`width/height: 100%`). **Never reparent the iframe after create** — Postmate messaging breaks. To switch presentation, `destroy()` and create a new proxy against the desired container.
+
+```typescript
+import { EWalletPresentationMode, OWSProxy } from "@1shotapi/ows-provider";
+
+// Flyout: collapsed until showWallet(); fixed lower-right when shown
+const flyout = await OWSProxy.create(flyoutSlot, walletUrl, {
+  presentationMode: EWalletPresentationMode.Flyout,
+  walletSizeX: 360,
+  walletSizeY: 600,
+});
+flyout.showWallet();
+
+// Inline: always visible, fills create() container (size the mount yourself)
+const inline = await OWSProxy.create(previewSlot, walletUrl, {
+  presentationMode: EWalletPresentationMode.Inline,
+});
+```
+
+| Mode | Container | show / hide |
+|------|-----------|-------------|
+| `flyout` | Usually off-page / body child | Show = lower-right; hide = collapse |
+| `inline` | Page slot (sidebar, preview) | Show = fill; hide = no-op |
 
 ### `proxy.ethereum`
 
