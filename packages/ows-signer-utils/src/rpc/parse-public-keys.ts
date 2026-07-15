@@ -7,7 +7,7 @@ import type {
   CredentialCreatedData,
   KeyDerivedData,
   PublicKeyData,
-} from "./types.js";
+} from "@1shotapi/ows-types";
 
 function parsePasskeyPublicKey(value: unknown): PasskeyPublicKey | null {
   if (value === null || value === undefined) {

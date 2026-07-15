@@ -6,6 +6,10 @@ import {
   SIGNER_VERSION,
 } from "./constants.js";
 import {
+  decryptAes256Batch,
+  encryptAes256Batch,
+} from "./crypto/aes256.js";
+import {
   deriveEd25519SeedFromPrf,
   deriveKeysFromCredential,
   hkdfExpand,
@@ -144,6 +148,14 @@ export async function handleRequest(
           correlationId,
           {},
         );
+        return;
+
+      case "encryptAES256":
+        await handleEncryptAES256(params, correlationId, targetOrigin);
+        return;
+
+      case "decryptAES256":
+        await handleDecryptAES256(params, correlationId, targetOrigin);
         return;
     }
   } catch (error) {
@@ -463,6 +475,130 @@ async function handleRecoverKey(params, correlationId, targetOrigin) {
     correlationId,
     { recoverySessionActive: true },
   );
+}
+
+/**
+ * @param {unknown} value
+ * @returns {value is string[]}
+ */
+function isStringArray(value) {
+  return (
+    Array.isArray(value) && value.every((item) => typeof item === "string")
+  );
+}
+
+/**
+ * Batch AES-256-GCM seal using the secp256k1 scalar (same as `signDigest`).
+ *
+ * @param {Record<string, unknown>} params
+ * @param {string | undefined} correlationId
+ * @param {string} targetOrigin
+ */
+async function handleEncryptAES256(params, correlationId, targetOrigin) {
+  const plaintexts = params.plaintexts;
+  const credentialId =
+    typeof params.credentialId === "string" ? params.credentialId : undefined;
+
+  if (!isStringArray(plaintexts)) {
+    emitInvalid(correlationId, targetOrigin, "invalidParams");
+    return;
+  }
+
+  if (plaintexts.length === 0) {
+    emitEvent(window.parent, targetOrigin, "AES256Encrypted", correlationId, {
+      ciphertexts: [],
+    });
+    return;
+  }
+
+  if (hasRecoverySession()) {
+    const cached = getRecoveryPrivateKey();
+    if (!cached) throw new Error("recoverySessionEmpty");
+    const ciphertexts = await encryptAes256Batch(plaintexts, cached);
+    emitEvent(window.parent, targetOrigin, "AES256Encrypted", correlationId, {
+      ciphertexts,
+    });
+    return;
+  }
+
+  await withCeremony(async () => {
+    const credential = await getPasskeyAssertion(undefined, credentialId);
+    const keys = await deriveKeysFromCredential(credential);
+    emitKeyDerived(
+      targetOrigin,
+      correlationId,
+      keys.secp256k1PublicKey,
+      keys.ed25519PublicKey,
+    );
+    try {
+      const ciphertexts = await encryptAes256Batch(
+        plaintexts,
+        keys.secp256k1PrivateKey,
+      );
+      emitEvent(window.parent, targetOrigin, "AES256Encrypted", correlationId, {
+        ciphertexts,
+      });
+    } finally {
+      zeroize(keys.secp256k1PrivateKey);
+    }
+  });
+}
+
+/**
+ * Batch AES-256-GCM unseal using the secp256k1 scalar (same as `signDigest`).
+ *
+ * @param {Record<string, unknown>} params
+ * @param {string | undefined} correlationId
+ * @param {string} targetOrigin
+ */
+async function handleDecryptAES256(params, correlationId, targetOrigin) {
+  const ciphertexts = params.ciphertexts;
+  const credentialId =
+    typeof params.credentialId === "string" ? params.credentialId : undefined;
+
+  if (!isStringArray(ciphertexts)) {
+    emitInvalid(correlationId, targetOrigin, "invalidParams");
+    return;
+  }
+
+  if (ciphertexts.length === 0) {
+    emitEvent(window.parent, targetOrigin, "AES256Decrypted", correlationId, {
+      plaintexts: [],
+    });
+    return;
+  }
+
+  if (hasRecoverySession()) {
+    const cached = getRecoveryPrivateKey();
+    if (!cached) throw new Error("recoverySessionEmpty");
+    const plaintexts = await decryptAes256Batch(ciphertexts, cached);
+    emitEvent(window.parent, targetOrigin, "AES256Decrypted", correlationId, {
+      plaintexts,
+    });
+    return;
+  }
+
+  await withCeremony(async () => {
+    const credential = await getPasskeyAssertion(undefined, credentialId);
+    const keys = await deriveKeysFromCredential(credential);
+    emitKeyDerived(
+      targetOrigin,
+      correlationId,
+      keys.secp256k1PublicKey,
+      keys.ed25519PublicKey,
+    );
+    try {
+      const plaintexts = await decryptAes256Batch(
+        ciphertexts,
+        keys.secp256k1PrivateKey,
+      );
+      emitEvent(window.parent, targetOrigin, "AES256Decrypted", correlationId, {
+        plaintexts,
+      });
+    } finally {
+      zeroize(keys.secp256k1PrivateKey);
+    }
+  });
 }
 
 /**

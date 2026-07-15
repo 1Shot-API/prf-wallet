@@ -48,6 +48,10 @@ export const presentParamsSchema = z
         audience: z.string().optional(),
       })
       .optional(),
+    acceptedIssuers: z
+      .array(z.string())
+      .transform((ids) => ids.map(CredentialIssuer))
+      .optional(),
   })
   .refine((v) => v.requestUri !== undefined || v.request !== undefined, {
     message: "requestUri or request is required",

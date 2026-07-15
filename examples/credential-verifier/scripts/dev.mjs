@@ -68,7 +68,10 @@ try {
   const scheme = https ? "https" : "http";
   console.log(`OWS credential verifier demo: ${scheme}://localhost:${port}`);
   console.log(
-    `  Also try: ${scheme}://ows-host.com:${port} (hosts file → 127.0.0.1)`,
+    `  Public verifier origin: ${scheme}://ows-verifier.com:${port}`,
+  );
+  console.log(
+    `  Also try: ${scheme}://ows-verifier.com:${port} (hosts file → 127.0.0.1)`,
   );
   console.log(`  Branding Layer iframe: ${walletIframeUrl()}`);
   if (scheme === "http") {

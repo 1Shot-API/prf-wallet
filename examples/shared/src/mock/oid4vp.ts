@@ -1,5 +1,5 @@
 import type {
-  Oid4vpClient,
+  IOid4vpClient,
   PresentationBuildContext,
   PresentationRequestUri,
   StoredCredential,
@@ -7,7 +7,7 @@ import type {
   PresentationResult,
   CredentialSummary,
 } from "@1shotapi/ows-types";
-import { buildSdJwtVcPresentation } from "@1shotapi/ows-types";
+import { PresentationUtils } from "@1shotapi/ows-types";
 import {
   MOCK_KYC_PRESENTATION_REQUEST,
   MOCK_KYC_PRESENTATION_URI,
@@ -15,7 +15,7 @@ import {
 import { createDemoHolderSigner } from "../demo/jwk-holder-signer.js";
 
 /** MOCK OID4VP client — resolves mock:// URIs and builds real SD-JWT VC presentations. */
-export class MockOid4vpClient implements Oid4vpClient {
+export class MockOid4vpClient implements IOid4vpClient {
   async resolveRequest(uri: PresentationRequestUri): Promise<PresentationDefinition> {
     if (
       uri === MOCK_KYC_PRESENTATION_URI ||
@@ -47,7 +47,7 @@ export class MockOid4vpClient implements Oid4vpClient {
     const holderSigner = context?.holderSigner ?? createDemoHolderSigner();
 
     if (credential.format === "sd-jwt-vc") {
-      const built = await buildSdJwtVcPresentation({
+      const built = await PresentationUtils.build({
         credential,
         definition,
         holderSigner,

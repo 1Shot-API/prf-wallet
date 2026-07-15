@@ -24,10 +24,17 @@ import type {
   SignTypedDataApprovalRequest,
 } from "@1shotapi/ows-signer-utils";
 import {
-  LocalStorageCredentialStore,
-  MockOid4vciClient,
-  MockOid4vpClient,
+  LocalStorageCredentialRepository,
+  InMemoryIssuerTrustRegistry,
+  DEMO_HOLDER_PRIVATE_JWK,
 } from "@ows-shared";
+import {
+  DemoWalletAttestationProvider,
+  FetchUtils,
+  HttpOid4vciClient,
+  HttpOid4vpClient,
+  ParseUtils,
+} from "@1shotapi/ows-oid4";
 import { DEMO_CHAINS } from "../ows/demoChains";
 import { registerAccountConnect } from "../ows/registerAccountConnect";
 import { registerApprovalSigning } from "../ows/registerApprovalSigning";
@@ -48,7 +55,16 @@ import {
   type WalletSetupChoice,
 } from "./modalTypes";
 
-const credentialStore = new LocalStorageCredentialStore();
+const credentialRepository = new LocalStorageCredentialRepository();
+const issuerTrust = new InMemoryIssuerTrustRegistry();
+const fetchUtils = new FetchUtils();
+const parseUtils = new ParseUtils();
+const oid4vci = new HttpOid4vciClient(fetchUtils, parseUtils);
+const oid4vp = new HttpOid4vpClient(fetchUtils);
+const attestationProvider = new DemoWalletAttestationProvider({
+  privateJwk: DEMO_HOLDER_PRIVATE_JWK,
+  issuer: "ows-demo-wallet",
+});
 
 const walletStorage = {
   isWalletCreated,
@@ -68,9 +84,18 @@ function createDeferredSigner(
   awaitSigner: () => Promise<OWSSigner>,
 ): OWSSigner {
   let instance: OWSSigner | undefined;
-  void awaitSigner().then((signer) => {
-    instance = signer;
-  });
+  let loadError: unknown;
+  void awaitSigner()
+    .then((signer) => {
+      instance = signer;
+    })
+    .catch((error: unknown) => {
+      loadError = error;
+      console.error(
+        "[ows-example-general-wallet] deferred Signing Layer load failed",
+        error,
+      );
+    });
   return new Proxy({} as OWSSigner, {
     get(_target, property) {
       // Avoid looking like a thenable if someone awaits the proxy.
@@ -78,6 +103,13 @@ function createDeferredSigner(
         return undefined;
       }
       if (!instance) {
+        if (loadError !== undefined) {
+          throw loadError instanceof Error
+            ? loadError
+            : new Error(
+                `Signing Layer failed to load: ${String(loadError)}`,
+              );
+        }
         throw new Error(
           "Signing Layer not ready — await ensureReady() before using the signer",
         );
@@ -104,6 +136,9 @@ export type WalletContextValue = {
   activeModal: ActiveModal | null;
   signerContainerRef: RefObject<HTMLDivElement | null>;
   getSigner: () => OWSSigner | null;
+  /** Resolves when the Signing Layer iframe has finished loading. */
+  awaitSignerReady: () => Promise<OWSSigner>;
+  /** Awaits Signing Layer load, then unlocks / runs setup if needed. */
   ensureReady: () => Promise<void>;
   setUnlocked: (value: boolean) => void;
   refreshAddresses: () => Promise<void>;
@@ -216,7 +251,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const refreshCredentialCount = useCallback(async () => {
-    const listed = await credentialStore.list();
+    const listed = await credentialRepository.list();
     setCredentialCount(listed.length);
   }, []);
 
@@ -346,9 +381,23 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   const ensureReadyRef = useRef(ensureReadyImpl);
   ensureReadyRef.current = ensureReadyImpl;
 
-  const ensureReady = useCallback(async () => {
-    await ensureReadyRef.current();
+  /** Resolves once `OWSSigner.create` finishes; set during boot. */
+  const awaitSignerRef = useRef<(() => Promise<OWSSigner>) | null>(null);
+
+  const awaitSignerReady = useCallback(async (): Promise<OWSSigner> => {
+    const awaitSigner = awaitSignerRef.current;
+    if (!awaitSigner) {
+      throw new Error(
+        "Signing Layer not started — wallet boot has not begun yet",
+      );
+    }
+    return awaitSigner();
   }, []);
+
+  const ensureReady = useCallback(async () => {
+    await awaitSignerReady();
+    await ensureReadyRef.current();
+  }, [awaitSignerReady]);
 
   const uiBridgeRef = useRef({
     pushModal,
@@ -373,7 +422,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const openCredentialList = useCallback(async () => {
-    const listed = await credentialStore.list();
+    const listed = await credentialRepository.list();
     setCredentialCount(listed.length);
     await pushModal<void>(({ id, resolve }) => ({
       id,
@@ -452,10 +501,11 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         credentialId: loadCredentialId(),
       });
       const awaitSigner = async (): Promise<OWSSigner> => {
-        const signer = await signerPromise;
-        signerRef.current = signer;
-        return signer;
+        const loaded = await signerPromise;
+        signerRef.current = loaded;
+        return loaded;
       };
+      awaitSignerRef.current = awaitSigner;
       // Handlers close over this proxy; they must call ensureReady (awaits signer)
       // before touching signing APIs.
       const signer = createDeferredSigner(awaitSigner);
@@ -471,14 +521,9 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         }) => ActiveModal,
       ) => uiBridgeRef.current.pushModal(build);
 
-      const ensureReadyAfterSigner = async (): Promise<void> => {
-        await awaitSigner();
-        await ensureReadyRef.current();
-      };
-
       registerAccountConnect(wallet, signer, {
         storage: walletStorage,
-        ensureReady: ensureReadyAfterSigner,
+        ensureReady,
         requestConnectApproval: () =>
           ask<boolean>(({ id, resolve }) => ({
             id,
@@ -488,7 +533,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       });
 
       registerApprovalSigning(wallet, signer, {
-        ensureReady: ensureReadyAfterSigner,
+        ensureReady,
         requestPersonalSignApproval: (request: PersonalSignApprovalRequest) =>
           ask<boolean>(({ id, resolve }) => ({
             id,
@@ -508,10 +553,12 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       });
 
       registerCredentialsProvider(wallet, signer, {
-        store: credentialStore,
-        oid4vci: new MockOid4vciClient(),
-        oid4vp: new MockOid4vpClient(),
-        ensureReady: ensureReadyAfterSigner,
+        repository: credentialRepository,
+        oid4vci,
+        oid4vp,
+        trust: issuerTrust,
+        attestationProvider,
+        ensureReady,
         requestCredentialOfferApproval: (
           request: CredentialOfferApprovalRequest,
         ) =>
@@ -566,7 +613,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       });
 
       // Paint UI without awaiting host handshake — standalone /wallet/ has no parent.
-      const listed = await credentialStore.list();
+      const listed = await credentialRepository.list();
       if (cancelled) return;
       setCredentialCount(listed.length);
       setReady(true);
@@ -600,6 +647,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       activeModal,
       signerContainerRef,
       getSigner,
+      awaitSignerReady,
       ensureReady,
       setUnlocked,
       refreshAddresses,
@@ -625,6 +673,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       credentialCount,
       activeModal,
       getSigner,
+      awaitSignerReady,
       ensureReady,
       setUnlocked,
       refreshAddresses,

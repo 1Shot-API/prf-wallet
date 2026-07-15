@@ -1,3 +1,4 @@
+export * from "./AES256CipherText.js";
 export * from "./Base64UrlEncodedString.js";
 export * from "./BitcoinAccountAddress.js";
 export * from "./CredentialClaimName.js";
@@ -17,6 +18,7 @@ export * from "./EVMAccountAddress.js";
 export * from "./EVMChainId.js";
 export * from "./EVMSignatureHex.js";
 export * from "./HexString.js";
+export * from "./JWKThumbprint.js";
 export * from "./PasskeyPublicKey.js";
 export * from "./RPCCallId.js";
 export * from "./SdJwtVcPresentationString.js";

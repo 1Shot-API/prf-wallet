@@ -50,6 +50,9 @@ export const MOCK_KYC_PRESENTATION_REQUEST: PresentationDefinition = {
   audience: "https://verifier.demo.example",
 };
 
+/** C-nonce echoed in OID4VCI proof JWTs for the mock issuer. */
+export const MOCK_OID4VCI_PROOF_NONCE = "mock-issuance-nonce";
+
 export const MOCK_ISSUER_TRUST: IssuerTrustMetadata = {
   issuerId: MOCK_KYC_ISSUER_ID,
   name: "Demo KYC Issuer",

@@ -44,6 +44,8 @@ Only accepts messages when `event.source === window.parent`. Replies use the par
 | `recoverKey` | `aes256EncryptedPrivateKey`, `passwordText`, `buttonText`, `credentialId?` | DOM display; `RecoverySessionStarted` or re-bind → `RecoverySessionCleared` |
 | `getPublicKey` | `credentialId?`, `challenge?` | `KeyDerived`, `PublicKey`, `ChallengeSigned?` |
 | `clearRecoverySession` | — | `RecoverySessionCleared` |
+| `encryptAES256` | `plaintexts[]`, `credentialId?` | `KeyDerived` (PRF path), `AES256Encrypted` |
+| `decryptAES256` | `ciphertexts[]`, `credentialId?` | `KeyDerived` (PRF path), `AES256Decrypted` |
 
 Failure events: `NotAllowed`, `InvalidRequest`.
 
@@ -63,14 +65,19 @@ Failure events: `NotAllowed`, `InvalidRequest`.
 
 - `ows-v1/secp256k1`
 - `ows-v1/ed25519` (derived via HKDF from PRF output)
+- `ows-v1/aes256-gcm` (HKDF from the secp256k1 scalar — same material as `signDigest`)
 
 ## Recovery envelope
 
 `ows1:0x…` — version byte, 16-byte salt, 12-byte IV, AES-GCM-256 ciphertext (PBKDF2-SHA256, 250k iterations).
 
+## AES-256 seal envelope (credentials / general payload)
+
+`ows-aes1:0x…` — version byte, 12-byte IV, AES-GCM-256 ciphertext+tag. Key is HKDF-SHA256 of the wallet secp256k1 scalar with info `ows-v1/aes256-gcm` (no PBKDF2). Works under a recovery session without a new WebAuthn ceremony. Batch methods amortize one ceremony across many plaintexts/ciphertexts.
+
 ## Recovery session
 
-`recoverKey` caches the secp256k1 scalar in memory for subsequent `signDigest` calls without PRF. Cleared via `clearRecoverySession` or successful `credentialId` re-bind after recovery.
+`recoverKey` caches the secp256k1 scalar in memory for subsequent `signDigest` / `encryptAES256` / `decryptAES256` calls without PRF. Cleared via `clearRecoverySession` or successful `credentialId` re-bind after recovery.
 
 ## Layout
 

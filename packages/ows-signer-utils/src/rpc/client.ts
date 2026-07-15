@@ -3,13 +3,13 @@ import {
   OwsNotAllowedError,
   OwsTimeoutError,
 } from "../errors.js";
-import type {
-  SignerEvent,
-  SignerEventMessage,
-  SignerMethod,
-  SignerRequest,
-} from "./types.js";
-import { API_VERSION } from "./types.js";
+import {
+  API_VERSION,
+  type SignerEvent,
+  type SignerEventMessage,
+  type SignerMethod,
+  type SignerRequest,
+} from "@1shotapi/ows-types";
 
 export { keyDerivedDataFromEvent } from "./parse-public-keys.js";
 export {

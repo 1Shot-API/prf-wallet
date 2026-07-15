@@ -33,7 +33,3 @@ export {
   deleteParamsSchema,
 } from "./credentials/schemas.js";
 export { CredentialWalletRegistrar } from "./credentials/wallet-registrar.js";
-export {
-  createOwsEd25519HolderSigner,
-  type OwsEd25519SignerDeps,
-} from "./credentials/sd-jwt-vc/ows-holder-signer.js";

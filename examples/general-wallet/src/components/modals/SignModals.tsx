@@ -2,6 +2,7 @@ import type {
   PersonalSignApprovalRequest,
   SignTypedDataApprovalRequest,
 } from "@1shotapi/ows-signer-utils";
+import { ConversionUtils, HexString } from "@1shotapi/ows-types";
 import { Modal } from "../Modal";
 
 export function PersonalSignModal({
@@ -99,7 +100,7 @@ function formatJson(value: unknown): string {
 function formatMessageForDisplay(message: string): string {
   if (message.startsWith("0x") && message.length > 2) {
     try {
-      const bytes = hexToBytes(message.slice(2));
+      const bytes = ConversionUtils.hexToBytes(HexString(message as `0x${string}`));
       const decoded = new TextDecoder("utf-8", { fatal: false }).decode(bytes);
       if (isMostlyPrintable(decoded)) {
         return decoded;
@@ -109,15 +110,6 @@ function formatMessageForDisplay(message: string): string {
     }
   }
   return message;
-}
-
-function hexToBytes(hex: string): Uint8Array {
-  const normalized = hex.length % 2 === 0 ? hex : `0${hex}`;
-  const bytes = new Uint8Array(normalized.length / 2);
-  for (let i = 0; i < bytes.length; i++) {
-    bytes[i] = Number.parseInt(normalized.slice(i * 2, i * 2 + 2), 16);
-  }
-  return bytes;
 }
 
 function isMostlyPrintable(text: string): boolean {

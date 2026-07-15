@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { CredentialClaimName, CredentialIssuer } from "../src/index.js";
-import { buildSdJwtVcPresentation } from "../src/utils/credentials/sd-jwt-vc/presentation.js";
+import { PresentationUtils } from "../src/utils/credentials/PresentationUtils.js";
 import {
   issueDemoSdJwtVc,
   createDemoHolderSigner,
@@ -9,7 +9,27 @@ import {
 
 const MOCK_KYC_ISSUER_ID = CredentialIssuer("https://kyc.demo.issuer.example");
 
-describe("SD-JWT VC presentation", () => {
+describe("PresentationUtils", () => {
+  it("unpacks selectively disclosed claims into the subject map", async () => {
+    const holderSigner = createDemoHolderSigner();
+    const holderJwk = await holderSigner.publicKeyJwk();
+    const subject = { ageOver18: true, country: "US" };
+    const payload = await issueDemoSdJwtVc({
+      issuer: MOCK_KYC_ISSUER_ID,
+      vct: "KycCredential",
+      claims: subject,
+      disclosableClaims: [
+        CredentialClaimName("ageOver18"),
+        CredentialClaimName("country"),
+      ],
+      holderPublicKeyJwk: holderJwk,
+    });
+
+    const unpacked = await PresentationUtils.unpackSubject(payload);
+    assert.equal(unpacked.ageOver18, true);
+    assert.equal(unpacked.country, "US");
+  });
+
   it("builds selective disclosure presentation with kb+jwt", async () => {
     const holderSigner = createDemoHolderSigner();
     const holderJwk = await holderSigner.publicKeyJwk();
@@ -30,7 +50,7 @@ describe("SD-JWT VC presentation", () => {
       holderPublicKeyJwk: holderJwk,
     });
 
-    const built = await buildSdJwtVcPresentation({
+    const built = await PresentationUtils.build({
       credential: {
         credentialId: "cred_test" as never,
         format: "sd-jwt-vc",
@@ -38,10 +58,11 @@ describe("SD-JWT VC presentation", () => {
         issuer: MOCK_KYC_ISSUER_ID,
         issuedAt: new Date().toISOString() as never,
         payload,
+        // Empty subject mimics JWT-peek storage that omitted SD disclosures.
         semantic: {
           type: ["VerifiableCredential", "KycCredential"] as never,
           issuer: MOCK_KYC_ISSUER_ID,
-          credentialSubject: subject,
+          credentialSubject: {},
         },
       },
       definition: {

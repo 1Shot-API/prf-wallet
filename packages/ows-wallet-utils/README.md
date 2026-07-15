@@ -71,7 +71,9 @@ localStorage.setItem("ows-wallet-utils:debug", "1");
 - `OWSWallet` — child-side Postmate model
 - `RpcHelper` — EIP-1193 read methods + chain switching against JSON-RPC URLs
 - `EIP1193_PARAM_SCHEMAS`, `getEip1193ParamSchema` — Zod validators for standard methods
-- `CredentialWalletRegistrar`, `createOwsEd25519HolderSigner` — credentials wire helpers
+- `CredentialWalletRegistrar`, `CREDENTIAL_PARAM_SCHEMAS` — credentials wire hooks (handlers still registered on `OWSWallet.credentials`)
+
+For OID4 issuance/presentation orchestration, install the optional `@1shotapi/ows-oid4` add-on (`CredentialsHelper`, HTTP clients).
 
 Shared protocol types and errors live in `@1shotapi/ows-types`.
 
@@ -81,6 +83,7 @@ Shared protocol types and errors live in `@1shotapi/ows-types`.
 |---------|------|
 | `@1shotapi/ows-provider` | Host Layer `OWSProxy` + EIP-1193 |
 | `@1shotapi/ows-signer-utils` | Branding Layer ↔ Signing Layer |
+| `@1shotapi/ows-oid4` | Optional credentials add-on |
 
 ## License
 

@@ -2,7 +2,7 @@ import { describe, it, afterEach } from "node:test";
 import assert from "node:assert/strict";
 import { hashMessage } from "viem";
 import { OWSSigner } from "../src/owssigner.ts";
-import { API_VERSION } from "../src/rpc/types.ts";
+import { API_VERSION } from "@1shotapi/ows-types";
 
 const SIGNER_ORIGIN = "https://signer.example";
 const SIGNER_URL = `${SIGNER_ORIGIN}/signer.html`;

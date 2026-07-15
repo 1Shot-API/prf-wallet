@@ -40,6 +40,8 @@ describe("rpc", () => {
 describe("constants", () => {
   it("includes expected methods and schemes", () => {
     assert.ok(METHODS.includes("signDigest"));
+    assert.ok(METHODS.includes("encryptAES256"));
+    assert.ok(METHODS.includes("decryptAES256"));
     assert.ok(SIGN_SCHEMES.includes("secp256k1-ecdsa-recoverable"));
   });
 });
@@ -58,6 +60,47 @@ describe("recovery", () => {
     const key = crypto.getRandomValues(new Uint8Array(32));
     const envelope = await encryptPrivateKey(key, "correct");
     await assert.rejects(() => decryptPrivateKey(envelope, "wrong"));
+  });
+});
+
+describe("aes256", () => {
+  it("round-trips batch envelopes from secp256k1 material", async () => {
+    const {
+      AES256_ENVELOPE_PREFIX,
+      decryptAes256Batch,
+      encryptAes256Batch,
+    } = await import("../src/crypto/aes256.js");
+    const secpKey = crypto.getRandomValues(new Uint8Array(32));
+    secpKey[31] = 1;
+    const plaintexts = ["hello", '{"credential":true}', ""];
+    const ciphertexts = await encryptAes256Batch(plaintexts, secpKey);
+    assert.equal(ciphertexts.length, 3);
+    for (const c of ciphertexts) {
+      assert.ok(c.startsWith(AES256_ENVELOPE_PREFIX));
+    }
+    const decrypted = await decryptAes256Batch(ciphertexts, secpKey);
+    assert.deepEqual(decrypted, plaintexts);
+  });
+
+  it("fails decrypt with wrong key material", async () => {
+    const { decryptAes256Batch, encryptAes256Batch } = await import(
+      "../src/crypto/aes256.js"
+    );
+    const keyA = crypto.getRandomValues(new Uint8Array(32));
+    const keyB = crypto.getRandomValues(new Uint8Array(32));
+    keyA[31] = 1;
+    keyB[31] = 2;
+    const [envelope] = await encryptAes256Batch(["secret"], keyA);
+    await assert.rejects(() => decryptAes256Batch([envelope], keyB));
+  });
+
+  it("rejects invalid envelopes", async () => {
+    const { decryptAes256Batch } = await import("../src/crypto/aes256.js");
+    const key = crypto.getRandomValues(new Uint8Array(32));
+    key[31] = 1;
+    await assert.rejects(() =>
+      decryptAes256Batch(["ows1:0x010203"], key),
+    );
   });
 });
 

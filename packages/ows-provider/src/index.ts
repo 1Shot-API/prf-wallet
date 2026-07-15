@@ -14,28 +14,3 @@ export {
   type VerifySdJwtVcPresentationInput,
   type VerifySdJwtVcPresentationResult,
 } from "./credentials/verify.js";
-
-export {
-  CREDENTIAL_WIRE_METHODS,
-  type OpenWalletCredentialProvider,
-  type CredentialOfferInput,
-  type CredentialReceipt,
-  type PresentationRequestInput,
-  type PresentationResult,
-  type CredentialFilter,
-  type CredentialSummary,
-  type CredentialPresentationApprovalRequest,
-  type StoredCredential,
-  type CredentialStore,
-  type HolderSigner,
-  type Oid4vciClient,
-  type Oid4vpClient,
-} from "@1shotapi/ows-types";
-
-export {
-  OwsRpcError,
-  OwsUnimplementedError,
-  OwsInvalidParamsError,
-  OwsUserRejectedError,
-  OwsRpcTimeoutError,
-} from "@1shotapi/ows-types";

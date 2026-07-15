@@ -11,6 +11,38 @@ import { fileURLToPath } from "node:url";
 
 const examplesDir = path.dirname(fileURLToPath(import.meta.url));
 
+/** Host Layer demo hostname (hosts file → 127.0.0.1). */
+export const OWS_HOST_HOSTNAME = "ows-host.com";
+/** Credential issuer public hostname (credential `iss` / offer URIs). */
+export const OWS_ISSUER_HOSTNAME = "ows-issuer.com";
+/** Credential verifier public hostname (`request_uri` / `client_id`). */
+export const OWS_VERIFIER_HOSTNAME = "ows-verifier.com";
+
+/** Default local ports for demos. */
+export const OWS_ISSUER_PORT = 5175;
+export const OWS_VERIFIER_PORT = 5176;
+
+/**
+ * Public demo origin for issuer/verifier (not the bind address).
+ * Prefer env override, else `{scheme}://{hostname}:{port}`.
+ *
+ * @param {{ hostname: string, port: number, scheme: string, envValue?: string }} options
+ */
+export function demoPublicOrigin({ hostname, port, scheme, envValue }) {
+  const fromEnv = envValue?.trim();
+  if (fromEnv) return fromEnv.replace(/\/$/, "");
+  return `${scheme}://${hostname}:${port}`;
+}
+
+/** mkcert SANs used by local HTTPS demos. */
+export const MKCERT_DEMO_SANS = [
+  OWS_HOST_HOSTNAME,
+  OWS_ISSUER_HOSTNAME,
+  OWS_VERIFIER_HOSTNAME,
+  "localhost",
+  "127.0.0.1",
+];
+
 /**
  * @param {{ certsDir: string, exampleLabel: string }} options
  * @returns {{ key: Buffer, cert: Buffer } | undefined}
@@ -57,7 +89,7 @@ export function resolveHttpsOptions({ certsDir, exampleLabel }) {
         `    ${keyPath}\n` +
         `  Generate with:\n` +
         `    mkcert -install\n` +
-        `    mkcert -cert-file examples/host/certs/dev-cert.pem -key-file examples/host/certs/dev-key.pem ows-host.com localhost 127.0.0.1\n` +
+        `    mkcert -cert-file examples/host/certs/dev-cert.pem -key-file examples/host/certs/dev-key.pem ${MKCERT_DEMO_SANS.join(" ")}\n` +
         `  (issuer/verifier reuse examples/host/certs when present)`,
     );
   }

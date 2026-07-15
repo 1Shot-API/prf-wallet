@@ -77,7 +77,13 @@ export type {
   ChallengeSignedData,
   CreateCredentialOptions,
   GetPublicKeyParams,
+  EncryptAES256Params,
+  EncryptAES256Result,
+  DecryptAES256Params,
+  DecryptAES256Result,
 } from "./protocol/signer.js";
+
+export type { IOWSSigner } from "./protocol/ows-signer.js";
 
 export {
   CREDENTIAL_WIRE_METHODS,
@@ -103,14 +109,16 @@ export {
 } from "./eip1193/index.js";
 
 export {
-  buildSdJwtVcPresentation,
-  extractHolderJwkFromSdJwtVc,
-  sdJwtHasher,
-  sdJwtSaltGenerator,
-  createEd25519SignerFromJwk,
-  createEd25519VerifierFromJwk,
-  signEd25519,
-  holderSignerToKbSigner,
+  PresentationUtils,
+  ProofUtils,
+  ConversionUtils,
+  CredentialCryptoUtils,
+  type IOwsEd25519HolderSignerDeps,
   type BuildSdJwtVcPresentationInput,
   type BuildSdJwtVcPresentationResult,
+  type SdJwtVcIssuerClaims,
+  type KbJwtClaims,
 } from "./utils/index.js";
+
+
+

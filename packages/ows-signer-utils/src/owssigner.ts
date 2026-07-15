@@ -1,5 +1,19 @@
-import { EVMAccountAddress, SolanaAccountAddress } from "@1shotapi/ows-types";
-import type { ED25519PublicKey, SECP256K1PublicKey } from "@1shotapi/ows-types";
+import { EVMAccountAddress, SolanaAccountAddress, AES256CipherText } from "@1shotapi/ows-types";
+import type {
+  ED25519PublicKey,
+  SECP256K1PublicKey,
+  CreateCredentialOptions,
+  CredentialCreatedData,
+  DigestSignedData,
+  GetPublicKeyParams,
+  PublicKeyData,
+  RecoveryDataCreatedData,
+  SignScheme,
+  VersionData,
+  EncryptAES256Result,
+  DecryptAES256Result,
+  IOWSSigner,
+} from "@1shotapi/ows-types";
 import type { Hex } from "viem";
 import { publicKeyToAddress } from "viem/utils";
 import { createSignerIframe, getSignerOrigin, prepareSignerIframeForWebAuthn } from "./iframe.js";
@@ -12,16 +26,6 @@ import {
   publicKeyDataFromEvent,
   SignerRpcClient,
 } from "./rpc/client.js";
-import type {
-  CreateCredentialOptions,
-  CredentialCreatedData,
-  DigestSignedData,
-  GetPublicKeyParams,
-  PublicKeyData,
-  RecoveryDataCreatedData,
-  SignScheme,
-  VersionData,
-} from "./rpc/types.js";
 
 export type OWSSignerOptions = {
   credentialId?: string;
@@ -29,7 +33,7 @@ export type OWSSignerOptions = {
   rpcTimeoutMs?: number;
 };
 
-export class OWSSigner {
+export class OWSSigner implements IOWSSigner {
   readonly evm: EvmSigner;
   readonly solana: SolanaSigner;
 
@@ -297,5 +301,60 @@ export class OWSSigner {
       undefined,
       { terminalEvent: "RecoverySessionCleared" },
     );
+  }
+
+  /**
+   * Batch-encrypt plaintexts with AES-256-GCM keyed from the wallet secp256k1
+   * scalar (same material as `signDigest`, HKDF info `ows-v1/aes256-gcm`).
+   * One passkey ceremony (or recovery session) covers the whole batch.
+   */
+  async encryptAES256(
+    plaintexts: string[],
+    credentialId?: string,
+  ): Promise<AES256CipherText[]> {
+    const restoreSignerDisplay = prepareSignerIframeForWebAuthn(this.iframe);
+    try {
+      const result = await this.rpc.request<EncryptAES256Result>(
+        "encryptAES256",
+        {
+          plaintexts,
+          credentialId: credentialId ?? this.credentialId,
+        },
+        {
+          terminalEvent: "AES256Encrypted",
+          onIntermediate: (_event, data) => this.onKeyDerived(data),
+        },
+      );
+      return result.ciphertexts.map((c) => AES256CipherText(c));
+    } finally {
+      restoreSignerDisplay();
+    }
+  }
+
+  /**
+   * Batch-decrypt `ows-aes1:` AES-256-GCM envelopes. One passkey ceremony
+   * (or recovery session) covers the whole batch.
+   */
+  async decryptAES256(
+    ciphertexts: AES256CipherText[],
+    credentialId?: string,
+  ): Promise<string[]> {
+    const restoreSignerDisplay = prepareSignerIframeForWebAuthn(this.iframe);
+    try {
+      const result = await this.rpc.request<DecryptAES256Result>(
+        "decryptAES256",
+        {
+          ciphertexts: ciphertexts.map(String),
+          credentialId: credentialId ?? this.credentialId,
+        },
+        {
+          terminalEvent: "AES256Decrypted",
+          onIntermediate: (_event, data) => this.onKeyDerived(data),
+        },
+      );
+      return result.plaintexts;
+    } finally {
+      restoreSignerDisplay();
+    }
   }
 }

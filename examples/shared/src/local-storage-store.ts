@@ -1,6 +1,6 @@
 import type { CredentialId } from "@1shotapi/ows-types";
 import type {
-  CredentialStore,
+  ICredentialRepository,
   StoredCredential,
   CredentialFilter,
   CredentialSummary,
@@ -14,6 +14,11 @@ export type CredentialStorageBackend = {
   getItem(key: string): string | null;
   setItem(key: string, value: string): void;
   removeItem(key: string): void;
+};
+
+type StoredBlob = {
+  credentials: Record<string, StoredCredential>;
+  revoked: string[];
 };
 
 function summarize(
@@ -40,8 +45,8 @@ function summarize(
   }));
 }
 
-/** MOCK — persists credentials in localStorage for multi-tab demo flows. */
-export class LocalStorageCredentialStore implements CredentialStore {
+/** MOCK — persists credentials in localStorage for multi-tab demo flows (plaintext). */
+export class LocalStorageCredentialRepository implements ICredentialRepository {
   private readonly storageKey: string;
   private readonly storage: CredentialStorageBackend;
 
@@ -60,50 +65,84 @@ export class LocalStorageCredentialStore implements CredentialStore {
         : createMemoryStorageBackend());
   }
 
-  async save(credential: StoredCredential): Promise<void> {
-    const all = this.readAll();
-    all.set(credential.credentialId, credential);
-    this.writeAll(all);
+  async store(credential: StoredCredential): Promise<void> {
+    const blob = this.readBlob();
+    blob.credentials[credential.credentialId] = credential;
+    blob.revoked = blob.revoked.filter((id) => id !== credential.credentialId);
+    this.writeBlob(blob);
   }
 
   async get(credentialId: CredentialId): Promise<StoredCredential | undefined> {
-    return this.readAll().get(credentialId);
+    const blob = this.readBlob();
+    if (blob.revoked.includes(credentialId)) {
+      return undefined;
+    }
+    return blob.credentials[credentialId];
   }
 
   async list(filter?: CredentialFilter): Promise<CredentialSummary[]> {
-    return summarize(this.readAll().values(), filter);
+    const blob = this.readBlob();
+    const active = Object.values(blob.credentials).filter(
+      (c) => !blob.revoked.includes(c.credentialId),
+    );
+    return summarize(active, filter);
   }
 
   async delete(credentialId: CredentialId): Promise<void> {
-    const all = this.readAll();
-    all.delete(credentialId);
-    this.writeAll(all);
+    const blob = this.readBlob();
+    delete blob.credentials[credentialId];
+    blob.revoked = blob.revoked.filter((id) => id !== credentialId);
+    this.writeBlob(blob);
   }
 
-  private readAll(): Map<string, StoredCredential> {
+  async revoke(credentialId: CredentialId): Promise<void> {
+    const blob = this.readBlob();
+    if (blob.credentials[credentialId] && !blob.revoked.includes(credentialId)) {
+      blob.revoked.push(credentialId);
+      this.writeBlob(blob);
+    }
+  }
+
+  private readBlob(): StoredBlob {
     const raw = this.storage.getItem(this.storageKey);
     if (!raw) {
-      return new Map();
+      return { credentials: {}, revoked: [] };
     }
 
     try {
-      const parsed = JSON.parse(raw) as Record<string, StoredCredential>;
-      return new Map(Object.entries(parsed));
+      const parsed = JSON.parse(raw) as
+        | StoredBlob
+        | Record<string, StoredCredential>;
+      if (
+        parsed &&
+        typeof parsed === "object" &&
+        "credentials" in parsed &&
+        typeof (parsed as StoredBlob).credentials === "object"
+      ) {
+        const blob = parsed as StoredBlob;
+        return {
+          credentials: blob.credentials ?? {},
+          revoked: Array.isArray(blob.revoked) ? blob.revoked : [],
+        };
+      }
+      // Legacy shape: flat id → credential map
+      return {
+        credentials: parsed as Record<string, StoredCredential>,
+        revoked: [],
+      };
     } catch {
-      return new Map();
+      return { credentials: {}, revoked: [] };
     }
   }
 
-  private writeAll(credentials: Map<string, StoredCredential>): void {
-    if (credentials.size === 0) {
+  private writeBlob(blob: StoredBlob): void {
+    const credCount = Object.keys(blob.credentials).length;
+    if (credCount === 0 && blob.revoked.length === 0) {
       this.storage.removeItem(this.storageKey);
       return;
     }
 
-    this.storage.setItem(
-      this.storageKey,
-      JSON.stringify(Object.fromEntries(credentials)),
-    );
+    this.storage.setItem(this.storageKey, JSON.stringify(blob));
   }
 }
 

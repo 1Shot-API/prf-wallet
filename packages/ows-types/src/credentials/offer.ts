@@ -9,10 +9,25 @@ import type {
 } from "../primitives/index.js";
 import type { CredentialFormat } from "./format.js";
 
+/** Pre-authorized code grant (OID4VCI). */
+export type PreAuthorizedCodeGrant = {
+  "pre-authorized_code": string;
+  tx_code?: {
+    input_mode?: string;
+    length?: number;
+    description?: string;
+  };
+  user_pin_required?: boolean;
+};
+
+export type CredentialOfferGrants = {
+  "urn:ietf:params:oauth:grant-type:pre-authorized_code"?: PreAuthorizedCodeGrant;
+};
+
 export type CredentialOffer = {
   credentialIssuer: CredentialIssuer;
   credentialConfigurationIds: CredentialConfigurationId[];
-  grants?: Record<string, unknown>;
+  grants?: CredentialOfferGrants;
 };
 
 export type CredentialOfferInput = {

@@ -27,16 +27,36 @@ export type OWSProxyOptions = {
    * Default: {@link DEFAULT_WALLET_SIZE_Y} (400).
    */
   walletSizeY?: number;
+  /**
+   * When true, grant Chrome Local Network Access / loopback Permissions Policy
+   * so the branding iframe may fetch hosts that resolve to the user's LAN or
+   * `127.0.0.1` (still requires a user permission prompt in Chrome 142+).
+   * Default: `false`. Credential issuer/verifier demos set this so the ngrok
+   * branding iframe can fetch local OID4 HTTPS endpoints (Chrome still prompts).
+   */
+  allowLocalAccess?: boolean;
 };
 
-/** Permissions Policy for the branding iframe (must be set before navigation). */
-const WALLET_IFRAME_ALLOW = [
+/** Base Permissions Policy for the branding iframe (must be set before navigation). */
+const WALLET_IFRAME_ALLOW_BASE = [
   "publickey-credentials-get *",
   "publickey-credentials-create *",
   // Branding-layer UI (e.g. create-backup copy) and delegation to the signer iframe.
   "clipboard-write *",
-].join("; ");
+];
 
+const WALLET_IFRAME_ALLOW_LOCAL = [
+  "local-network-access *",
+  "loopback-network *",
+];
+
+function walletIframeAllow(allowLocalAccess: boolean): string {
+  return (
+    allowLocalAccess
+      ? [...WALLET_IFRAME_ALLOW_BASE, ...WALLET_IFRAME_ALLOW_LOCAL]
+      : WALLET_IFRAME_ALLOW_BASE
+  ).join("; ");
+}
 /** Must match postmate's internal `messageType` (not exported). */
 const POSTMATE_MESSAGE_TYPE = "application/x-postmate-v1+json";
 
@@ -85,15 +105,18 @@ export class OWSProxy {
 
     // Postmate sets a minimal `allow` then appendChild, then assigns `src`.
     // Permissions Policy is fixed at navigation — patch allow on append, before src.
-    const parent = await withWalletIframeAllow(container, () =>
-      withExtendedPostmateHandshake(container, walletUrl, () =>
-        new Postmate({
-          container,
-          url: walletUrl,
-          name: options?.name ?? "ows-wallet",
-          classListArray: options?.classList ?? [],
-        }),
-      ),
+    const parent = await withWalletIframeAllow(
+      container,
+      Boolean(options?.allowLocalAccess),
+      () =>
+        withExtendedPostmateHandshake(container, walletUrl, () =>
+          new Postmate({
+            container,
+            url: walletUrl,
+            name: options?.name ?? "ows-wallet",
+            classListArray: options?.classList ?? [],
+          }),
+        ),
     );
 
     const displayHandler = new DisplayHostHandler(parent, {
@@ -144,12 +167,14 @@ export class OWSProxy {
  */
 async function withWalletIframeAllow(
   container: HTMLElement,
+  allowLocalAccess: boolean,
   create: () => Promise<Postmate.ParentAPI>,
 ): Promise<Postmate.ParentAPI> {
+  const allow = walletIframeAllow(allowLocalAccess);
   const originalAppend = container.appendChild.bind(container);
   container.appendChild = (<T extends Node>(node: T): T => {
     if (node instanceof HTMLIFrameElement) {
-      node.allow = WALLET_IFRAME_ALLOW;
+      node.allow = allow;
       applyHiddenWalletFrameStyles(node);
     }
     return originalAppend(node) as T;

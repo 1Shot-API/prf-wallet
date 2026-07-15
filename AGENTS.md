@@ -12,9 +12,10 @@ examples/general-wallet       Branding Layer — React + Tailwind general-purpos
 packages/ows-signer           Signing Layer (plain JS, zero deps, on-chain)
 packages/ows-signer-utils     Branding Layer ↔ Signing Layer (evm.signMessage, etc.)
 packages/ows-types            Shared types, errors, and cross-layer utils (including SD-JWT VC)
-packages/ows-wallet-utils     Branding Layer Postmate/RPC wrappers and credential wire registration
+packages/ows-oid4             Optional credentials add-on (CredentialsHelper, HTTP OID4 clients)
+packages/ows-wallet-utils     Branding Layer Postmate/RPC wrappers; credentials wire hooks only
 packages/ows-provider         Host Layer EIP-1193 + credentials proxy; SD-JWT verify
-examples/shared               Demo-only mock OID4 clients, stores, and fixtures (not published)
+examples/shared               Demo-only OID4 mocks, stores, and fixtures (not published)
 packages/ows-onchain          EIP-8244 deploy pipeline for ows-signer
 spec/credentials/             OWS Credentials Extension normative docs
 ```
@@ -33,6 +34,8 @@ spec/credentials/             OWS Credentials Extension normative docs
 Prefer **methods on objects** over standalone exported functions when the logic belongs to a single class or module (e.g. serialize an RPC envelope inside `RpcHostClient`, not as a public `createRpcRequest` helper). Export free functions only when they are genuinely shared utilities with multiple independent call sites.
 
 **No deprecations during active development.** OWS is pre-1.0 and not yet published for external consumers. When a pattern is renamed or superseded, update all call sites to the new API — do not leave `@deprecated` aliases, re-exports, or compatibility shims. Remove old names once migrations are complete.
+
+Prefer Typescript interfaces over generic types. Prefix all interfaces with I, ie IHolderSigner. HolderSigner would be an implementation. Prefer enums over discriminated strings. Prefix enums with E, ie EEip1193Method.
 
 ## Branded types
 

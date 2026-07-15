@@ -1,12 +1,12 @@
 import type {
   PersonalSignApprovalRequest,
   SignTypedDataApprovalRequest,
-  RecoveryDataCreatedData,
 } from "@1shotapi/ows-signer-utils";
 import type {
   CredentialOfferApprovalRequest,
   CredentialPresentationApprovalRequest,
   CredentialSummary,
+  RecoveryDataCreatedData,
 } from "@1shotapi/ows-types";
 
 export type WalletSetupChoice = "login" | "create" | "cancel";

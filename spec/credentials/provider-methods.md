@@ -13,9 +13,24 @@ await proxy.credentials.list(filter?);
 await proxy.credentials.delete(input);
 ```
 
-## Branding API (`wallet.credentials`)
+Branding registers handlers on `wallet.credentials` (prefer `CredentialsHelper` from `@1shotapi/ows-oid4`). Handlers must be registered **before** `wallet.start()`:
 
-Handlers must be registered **before** `wallet.start()`:
+```ts
+import { CredentialsHelper } from "@1shotapi/ows-oid4";
+
+const helper = new CredentialsHelper(wallet, signer, {
+  repository,
+  oid4vci,
+  oid4vp,
+  trust,
+  getProofNonce: async () => nonceFromIssuer,
+  requestCredentialOfferApproval,
+  requestCredentialPresentationApproval,
+});
+helper.register();
+```
+
+Or register an `OpenWalletCredentialProvider` directly:
 
 ```ts
 wallet.credentials.register({
@@ -73,9 +88,12 @@ OID4VP-style presentation to a verifier.
 ```json
 {
   "requestUri": "mock://kyc-presentation/demo",
-  "request": { }
+  "request": { },
+  "acceptedIssuers": ["https://kyc.demo.issuer.example"]
 }
 ```
+
+Either `requestUri` or inline `request` may be provided. Optional `acceptedIssuers` is a host/verifier allow-list; the branding layer intersects it with wallet matches before consent.
 
 **Result:**
 
