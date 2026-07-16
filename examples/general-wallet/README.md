@@ -39,7 +39,7 @@ npm run dev:local -w @1shotapi/ows-example-general-wallet
 | Branding Layer (`/wallet/`) | http://localhost:5174/wallet/ |
 | Signing Layer (`/signer/`) | http://localhost:5174/signer/ |
 
-When ngrok starts, the script prints HTTPS URLs for the branding iframe. The host reads `NGROK_DOMAIN` from repo root `.env`.
+When ngrok starts, the script prints HTTPS URLs for the branding iframe. Host demos read `WALLET_IFRAME_URL` (full override) or `NGROK_DOMAIN` from repo root `.env`.
 
 ## Full E2E (with host)
 
@@ -47,7 +47,7 @@ When ngrok starts, the script prints HTTPS URLs for the branding iframe. The hos
 # Terminal 1 — Branding Layer + Signing Layer
 npm run dev:general-wallet
 
-# Terminal 2 — Host Layer (reads NGROK_DOMAIN from repo root .env)
+# Terminal 2 — Host Layer (reads WALLET_IFRAME_URL / NGROK_DOMAIN from repo root .env)
 npm run dev -w @1shotapi/ows-example-host
 ```
 

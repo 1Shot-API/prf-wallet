@@ -28,7 +28,7 @@ npm run dev -w @1shotapi/ows-example-credential-verifier
 
 Open **https://ows-host.com:5176** (or https://ows-verifier.com:5176) and click **Request presentation**.
 
-Optional env: `ISSUER_ORIGIN` / `VERIFIER_ORIGIN` (defaults `ows-issuer.com:5175` / `ows-verifier.com:5176`).
+Optional env: `ISSUER_ORIGIN` / `VERIFIER_ORIGIN` (defaults `ows-issuer.com:5175` / `ows-verifier.com:5176`). Branding iframe URL follows the same rules as [`examples/host`](../host/README.md) (`WALLET_IFRAME_URL` → `NGROK_DOMAIN` → localhost).
 
 ## HTTPS (passkeys)
 

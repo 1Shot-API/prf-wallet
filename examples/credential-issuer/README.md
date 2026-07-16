@@ -31,7 +31,7 @@ npm run dev -w @1shotapi/ows-example-credential-issuer
 
 Open **https://ows-host.com:5175** (or https://ows-issuer.com:5175) and click **Send offer to wallet**.
 
-Optional: override with `ISSUER_ORIGIN` (default `http(s)://ows-issuer.com:5175`).
+Optional: override with `ISSUER_ORIGIN` (default `http(s)://ows-issuer.com:5175`). Branding iframe URL follows the same rules as [`examples/host`](../host/README.md) (`WALLET_IFRAME_URL` → `NGROK_DOMAIN` → localhost).
 
 ## HTTPS (passkeys)
 

@@ -176,6 +176,10 @@ export class CredentialsHelper {
       throw new Error(`Untrusted issuer: ${offer.credentialIssuer}`);
     }
 
+    // Unlock / first-run setup before opening the offer flyout so nested
+    // setup display cannot tear down the consent session.
+    await this.options.ensureReady?.();
+
     const size = this.options.offerDisplaySize ?? DEFAULT_OFFER_SIZE;
     const display = await this.wallet.requestDisplay(size);
     try {
@@ -183,8 +187,6 @@ export class CredentialsHelper {
       if (!approved) {
         throw new OwsUserRejectedError("User rejected credential offer");
       }
-
-      await this.options.ensureReady?.();
 
       const holderSigner = await this.resolveHolderSigner();
       const holderPublicKeyJwk = await holderSigner.publicKeyJwk();
@@ -244,7 +246,13 @@ export class CredentialsHelper {
       throw new Error("requestUri or request is required");
     }
 
-    const summaries = await this.options.repository.list();
+    let summaries = await this.options.repository.list();
+    // Empty cache (e.g. new top-level origin) — unlock / recover before match.
+    if (summaries.length === 0) {
+      await this.options.ensureReady?.();
+      summaries = await this.options.repository.list();
+    }
+
     let matches = await this.options.oid4vp.matchCredentials(
       definition,
       summaries,

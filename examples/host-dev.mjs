@@ -112,8 +112,19 @@ export function normalizeNgrokDomain(value) {
   }
 }
 
-/** Branding Layer iframe URL (ngrok when NGROK_DOMAIN is set). */
+/**
+ * Branding Layer iframe URL for Host Layer demos.
+ *
+ * Priority:
+ * 1. `WALLET_IFRAME_URL` — full URL override (any branding implementation)
+ * 2. `NGROK_DOMAIN` → `https://<domain>/wallet/`
+ * 3. `http://localhost:5174/wallet/`
+ */
 export function walletIframeUrl() {
+  const override = process.env.WALLET_IFRAME_URL?.trim();
+  if (override) {
+    return override.replace(/\/?$/, "/");
+  }
   const domain = normalizeNgrokDomain(process.env.NGROK_DOMAIN);
   if (domain) {
     return `https://${domain}/wallet/`;

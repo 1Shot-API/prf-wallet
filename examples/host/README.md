@@ -15,14 +15,15 @@ npm run dev -w @1shotapi/ows-example-host
 | Service | URL |
 |---------|-----|
 | Host Layer | http://localhost:5173 (or https — see below) |
-| Branding Layer | http://localhost:5174/wallet/ or `https://<NGROK_DOMAIN>/wallet/` |
+| Branding Layer | `WALLET_IFRAME_URL`, or `https://<NGROK_DOMAIN>/wallet/`, or http://localhost:5174/wallet/ |
 
-The host embeds the Branding Layer iframe URL from repo root `.env`:
+The host embeds the Branding Layer iframe URL from repo root `.env` (shared by issuer/verifier):
 
-- `NGROK_DOMAIN` set → `https://<domain>/wallet/`
-- otherwise → `http://localhost:5174/wallet/`
+1. `WALLET_IFRAME_URL` — full URL override (any branding implementation)
+2. else `NGROK_DOMAIN` → `https://<domain>/wallet/`
+3. else → `http://localhost:5174/wallet/`
 
-Copy [`.env.example`](../../.env.example) to `.env` at the repo root and set `NGROK_AUTHTOKEN` + `NGROK_DOMAIN` when using ngrok for passkey testing.
+Copy [`.env.example`](../../.env.example) to `.env` at the repo root. Set `NGROK_AUTHTOKEN` + `NGROK_DOMAIN` for the general-wallet tunnel, or point `WALLET_IFRAME_URL` at another wallet.
 
 ## Secure contexts (passkeys)
 
