@@ -1,5 +1,11 @@
 # @1shotapi/ows-types
 
+## 0.1.1
+
+### Patch Changes
+
+- afc99f3: Replace PasskeyPublicKey with branded COSEPublicKey / SPKIPublicKey. Signing Layer emits COSE (`cosePublicKey`) from attestation authenticator data; add COSEToSPKIPublicKey in ows-signer-utils for Web Crypto consumers.
+
 ## 0.1.0
 
 ### Minor Changes

@@ -2,6 +2,7 @@ import {
   EVMAccountAddress,
   SolanaAccountAddress,
 } from "@1shotapi/ows-types";
+import { getAddress, isAddress } from "viem";
 
 const WALLET_CREATED_KEY = "ows-wallet-created";
 const CREDENTIAL_ID_KEY = "ows-credential-id";
@@ -24,10 +25,10 @@ export function saveWalletCreated(credentialId: string): void {
 
 export function loadCachedEvmAddress(): EVMAccountAddress | undefined {
   const value = localStorage.getItem(EVM_ADDRESS_KEY);
-  if (!value) {
+  if (!value || !isAddress(value)) {
     return undefined;
   }
-  return EVMAccountAddress(value as `0x${string}`);
+  return EVMAccountAddress(getAddress(value));
 }
 
 export function loadCachedSolanaAddress(): SolanaAccountAddress | undefined {

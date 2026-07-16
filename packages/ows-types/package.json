@@ -1,6 +1,6 @@
 {
   "name": "@1shotapi/ows-types",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Shared OWS TypeScript types and error classes for host, wallet, and signer SDKs",
   "type": "module",
   "main": "./dist/index.js",
