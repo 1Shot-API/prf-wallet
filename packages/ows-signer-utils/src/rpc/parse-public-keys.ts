@@ -1,6 +1,6 @@
 import {
+  COSEPublicKey,
   ED25519PublicKey,
-  PasskeyPublicKey,
   SECP256K1PublicKey,
 } from "@1shotapi/ows-types";
 import type {
@@ -9,12 +9,12 @@ import type {
   PublicKeyData,
 } from "@1shotapi/ows-types";
 
-function parsePasskeyPublicKey(value: unknown): PasskeyPublicKey | null {
+function parseCosePublicKey(value: unknown): COSEPublicKey | null {
   if (value === null || value === undefined) {
     return null;
   }
   if (typeof value === "string") {
-    return PasskeyPublicKey(value);
+    return COSEPublicKey(value);
   }
   return null;
 }
@@ -56,7 +56,7 @@ export function publicKeyDataFromEvent(
     typeof data.credentialId === "string" ? data.credentialId : undefined;
 
   return {
-    passkeyPublicKey: parsePasskeyPublicKey(data.passkeyPublicKey),
+    cosePublicKey: parseCosePublicKey(data.cosePublicKey),
     secp256k1PublicKey,
     ed25519PublicKey,
     credentialId,
@@ -75,7 +75,7 @@ export function credentialCreatedDataFromEvent(
   }
   return {
     credentialId: data.credentialId,
-    passkeyPublicKey: parsePasskeyPublicKey(data.passkeyPublicKey),
+    cosePublicKey: parseCosePublicKey(data.cosePublicKey),
     secp256k1PublicKey,
   };
 }

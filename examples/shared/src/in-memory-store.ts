@@ -48,7 +48,6 @@ export class InMemoryCredentialRepository implements ICredentialRepository {
 
   async delete(credentialId: CredentialId): Promise<void> {
     this.credentials.delete(credentialId);
-    this.revoked.delete(credentialId);
   }
 
   async revoke(credentialId: CredentialId): Promise<void> {

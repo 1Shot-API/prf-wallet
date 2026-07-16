@@ -2,23 +2,28 @@
 
 ## Install
 
+Aligned with `examples/general-wallet/package.json`:
+
 ```bash
 npm install \
   @1shotapi/ows-types \
   @1shotapi/ows-wallet-utils \
   @1shotapi/ows-signer-utils \
-  zod
+  @1shotapi/ows-oid4 \
+  viem
 ```
 
-Peer / related:
+Notes:
 
-- `postmate` — pulled in by `ows-wallet-utils` / provider; do not vendor
-- `@1shotapi/ows-signer` — plain JS sources; **copy or static-serve** into your app (no build step). Same origin as branding so `rpId === location.hostname`.
+- `viem` is a peer of `ows-signer-utils` (EVM helpers).
+- `postmate` and `zod` are **transitive** via `ows-wallet-utils` — do not vendor Postmate; add a direct `zod` dep only if you author custom `registerRpc` schemas.
+- `@1shotapi/ows-signer` is plain JS sources. Prefer **copy or static-serve** into your app (no build step). Same origin as branding so `rpId === location.hostname`. Consuming it solely as an npm import of TS modules is not the reference pattern.
+- `@1shotapi/ows-provider` is for **host** apps only — omit from a branding-only package unless the same origin also serves a demo host.
 
-Until packages are published to npm, depend on the monorepo via workspace, `file:`, or git:
+Until packages are on npm, depend via workspace, `file:`, or git:
 
 ```bash
-# example — adjust when consuming from a sibling clone
+# example — sibling clone
 npm install ../open-wallet/packages/ows-types
 ```
 
@@ -26,26 +31,40 @@ npm install ../open-wallet/packages/ows-types
 
 | Package | Import surface | Branding uses it for |
 |---------|----------------|----------------------|
-| `ows-types` | primitives, errors, credentials, EIP-1193 tables | Branded addresses, offer/request URIs, shared errors |
-| `ows-wallet-utils` | `OWSWallet`, `RpcHelper` | Postmate child, EIP-1193 registration, reads/chain, `requestDisplay` |
+| `ows-types` | primitives, errors, credentials, EIP-1193 tables, `CredentialCryptoUtils`, `PresentationUtils`, `ProofUtils` | Branded values, holder signer bridge, shared errors |
+| `ows-wallet-utils` | `OWSWallet`, `RpcHelper`, display child client | Postmate child, EIP-1193 / custom RPC registration, reads/chain, `requestDisplay` |
 | `ows-signer-utils` | `OWSSigner`, `SignHelper`, `overlaySignerIframe`, `evm.*` | Nested signer iframe, consent→sign wiring, digests → signatures |
-| `ows-signer` | static files | Custody kernel document under `/signer/` |
+| `ows-oid4` | `CredentialsHelper`, `HttpOid4vciClient`, `HttpOid4vpClient`, … | Optional OID4 accept/present orchestration |
+| `ows-signer` | static files | Custody kernel under `/signer/` |
 
 There is **no** branding-core / registry package. App-local UI and wiring live in your repo (see `examples/general-wallet/src/ows/`).
+
+### Constructor arg order (easy to swap)
+
+| Helper | Order |
+|--------|-------|
+| `SignHelper` | `(signer, wallet, options)` |
+| `CredentialsHelper` | `(wallet, signer, options)` |
 
 ## Serving the Signing Layer
 
 Mirror `examples/general-wallet`:
 
-- Dev: Vite middleware (or equivalent) maps `/signer/src` → `ows-signer/src` and `/signer/` → signer `index.html`
-- Prod: copy `ows-signer` HTML + `src/` into `dist/signer/` (see `scripts/copy-signer.mjs`)
-
-Signer URL in app code:
+- Branding app may use Vite `base: "/wallet/"` for the UI.
+- Signer is served at **`/signer/` outside that base** via middleware so WebAuthn + nest stay same-origin (`vite.config.ts` `serveSignerPlugin`).
+- HTML shell: `signer-static/index.html`; JS from package `src/`.
+- Prod: `scripts/copy-signer.mjs` → `dist/signer/`.
 
 ```typescript
 const signerUrl = new URL("/signer/", window.location.origin).href;
 ```
 
+## Credentials stack (optional)
+
+Prefer `CredentialsHelper` + HTTP clients from **`@1shotapi/ows-oid4`**. Demo-only stores / trust / keys live under `examples/shared` in open-wallet (not published) — product apps supply their own `ICredentialRepository`, trust registry, and OID4 clients.
+
+Holder signing: omit `holderSigner` to use the default OWS Ed25519 bridge (`CredentialCryptoUtils.createOwsEd25519HolderSigner` in `ows-types`), or pass your own `IHolderSigner`.
+
 ## Host apps (not branding)
 
-Hosts use `@1shotapi/ows-provider` (`OWSProxy`) only. Do not add `ows-provider` to a branding-only app unless the same origin also hosts a demo host page.
+Hosts use `@1shotapi/ows-provider` (`OWSProxy`) only. Host-only options include `allowLocalAccess` (iframe permissions for Local Network Access when branding on a public origin fetches `127.0.0.1` / private LAN OID4 endpoints).

@@ -13,6 +13,7 @@ import {
   applyHiddenWalletContainerStyles,
   applyHiddenWalletFrameStyles,
   DisplayHostHandler,
+  EWalletPresentationMode,
 } from "../src/display/host-handler.ts";
 
 class MockHTMLIFrameElement {}
@@ -125,7 +126,6 @@ describe("DisplayHostHandler", () => {
     new DisplayHostHandler(mock.parent);
 
     const displayId = DisplayRequestId("10");
-    // Branding may request other dimensions; host popover size wins.
     mock.listeners.get(OWS_REQUEST_DISPLAY_EVENT)?.(
       serializeRpc({ displayId, width: 448, height: 360 }),
     );
@@ -142,8 +142,8 @@ describe("DisplayHostHandler", () => {
     assert.equal(containerStyle.bottom, "16px");
     assert.equal(containerStyle.right, "16px");
     assert.equal(containerStyle.opacity, "1");
-    assert.equal(containerStyle.width, "300px");
-    assert.equal(containerStyle.height, "400px");
+    assert.equal(containerStyle.width, "360px");
+    assert.equal(containerStyle.height, "600px");
   });
 
   it("uses walletSizeX / walletSizeY when provided", () => {
@@ -259,6 +259,55 @@ describe("DisplayHostHandler", () => {
     >;
     assert.equal(containerStyle["clip-path"], "none");
     assert.equal(containerStyle.overflow, "hidden");
+    assert.equal(containerStyle.width, "1px");
+    handler.destroy();
+  });
+
+  it("prepareForRpcAccess keeps a visible host panel instead of collapsing to 1×1", () => {
+    const mock = createMockParent();
+    Object.setPrototypeOf(mock.frame, MockHTMLIFrameElement.prototype);
+    const handler = new DisplayHostHandler(mock.parent, {
+      walletSizeX: 360,
+      walletSizeY: 600,
+    });
+
+    handler.show();
+    handler.prepareForRpcAccess();
+
+    const containerStyle = mock.frame.parentElement.style as unknown as Record<
+      string,
+      string
+    >;
+    assert.equal(containerStyle.width, "360px");
+    assert.equal(containerStyle.height, "600px");
+    assert.equal(containerStyle.opacity, "1");
+    handler.destroy();
+  });
+
+  it("inline mode fills create container and ignores host hide", () => {
+    const mock = createMockParent();
+    Object.setPrototypeOf(mock.frame, MockHTMLIFrameElement.prototype);
+    const handler = new DisplayHostHandler(mock.parent, {
+      presentationMode: EWalletPresentationMode.Inline,
+    });
+    handler.initializeInlineVisible();
+
+    const containerStyle = mock.frame.parentElement.style as unknown as Record<
+      string,
+      string
+    >;
+    assert.equal(containerStyle.position, "absolute");
+    assert.equal(containerStyle.width, "100%");
+    assert.equal(containerStyle.height, "100%");
+
+    handler.hide();
+    assert.equal(containerStyle.width, "100%");
+    assert.equal(containerStyle.opacity, "1");
+
+    mock.listeners.get(OWS_REQUEST_HIDE_EVENT)?.(serializeRpc({}));
+    assert.equal(mock.calls[0]?.method, OWS_HIDE_READY_MODEL_METHOD);
+    assert.equal(containerStyle.width, "100%");
+    assert.equal(containerStyle.opacity, "1");
     handler.destroy();
   });
 

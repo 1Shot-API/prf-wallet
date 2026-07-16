@@ -1,6 +1,6 @@
 {
   "name": "@1shotapi/ows-signer",
-  "version": "0.1.0",
+  "version": "0.2.1",
   "description": "OWS Signing Layer — plain JavaScript WebAuthn PRF key custody with curve-based signing (on-chain via EIP-8244)",
   "type": "module",
   "files": [

@@ -17,15 +17,41 @@ const POPOVER_MARGIN_PX = 16;
 const POPOVER_SHADOW =
   "0 8px 32px color-mix(in srgb, CanvasText 22%, transparent)";
 
-/** Default visible wallet flyout size (host-controlled). */
-export const DEFAULT_WALLET_SIZE_X = 300;
-export const DEFAULT_WALLET_SIZE_Y = 400;
+/**
+ * How the host presents the Branding Layer iframe.
+ * Fixed at {@link OWSProxy.create} — do not move/reparent the iframe later
+ * (Postmate messaging breaks if the frame is detached/reparented).
+ *
+ * To change presentation, destroy the proxy and create a new one against the
+ * desired container with a new mode.
+ */
+export enum EWalletPresentationMode {
+  /**
+   * Host-controlled flyout: collapsed when hidden, fixed lower-right when shown.
+   * Responds to show/hide and branding display requests.
+   */
+  Flyout = "flyout",
+  /**
+   * Always-visible fill of the create() container (sidebar, design slot, etc.).
+   * Show/hide and branding hide do not collapse the panel.
+   */
+  Inline = "inline",
+}
+
+/** Default visible wallet size (host-controlled; MetaMask-like). */
+export const DEFAULT_WALLET_SIZE_X = 360;
+export const DEFAULT_WALLET_SIZE_Y = 600;
 
 export type DisplayHostHandlerOptions = {
-  /** Visible flyout width in CSS pixels. Default: {@link DEFAULT_WALLET_SIZE_X}. */
+  /** Visible panel width in CSS pixels. Default: {@link DEFAULT_WALLET_SIZE_X}. */
   walletSizeX?: number;
-  /** Visible flyout height in CSS pixels. Default: {@link DEFAULT_WALLET_SIZE_Y}. */
+  /** Visible panel height in CSS pixels. Default: {@link DEFAULT_WALLET_SIZE_Y}. */
   walletSizeY?: number;
+  /**
+   * Presentation mode for this proxy instance. Default: flyout.
+   * Immutable after construct — recreate the proxy to switch modes.
+   */
+  presentationMode?: EWalletPresentationMode;
 };
 
 type StoredLayout = {
@@ -65,10 +91,13 @@ export class DisplayHostHandler {
   private originalLayout: StoredLayout | null = null;
   private childDisplayId: DisplayRequestId | null = null;
   private rpcAccessCount = 0;
-  /** Host-initiated visible flyout (e.g. demo "Show Wallet" button). */
+  /** Host-initiated visible panel (flyout mode). */
   private hostDisplayActive = false;
+  /** True while the last applied layout was 1×1 WebAuthn passthrough. */
+  private usePassthroughLayout = false;
   private readonly walletSizeX: number;
   private readonly walletSizeY: number;
+  private readonly presentationMode: EWalletPresentationMode;
 
   constructor(
     private readonly parent: Postmate.ParentAPI,
@@ -76,6 +105,8 @@ export class DisplayHostHandler {
   ) {
     this.walletSizeX = options?.walletSizeX ?? DEFAULT_WALLET_SIZE_X;
     this.walletSizeY = options?.walletSizeY ?? DEFAULT_WALLET_SIZE_Y;
+    this.presentationMode =
+      options?.presentationMode ?? EWalletPresentationMode.Flyout;
 
     parent.on(OWS_REQUEST_DISPLAY_EVENT, (data: unknown) => {
       this.handleRequestDisplay(data);
@@ -88,16 +119,25 @@ export class DisplayHostHandler {
     });
   }
 
+  get isInline(): boolean {
+    return this.presentationMode === EWalletPresentationMode.Inline;
+  }
+
   destroy(): void {
     this.hostDisplayActive = false;
-    this.hideLayout();
+    if (!this.isInline) {
+      this.hideLayout();
+    }
   }
 
   /**
-   * Collapse the host container and iframe until {@link show} or a branding display
-   * request. Call once after Postmate creates the iframe so hosts need no wallet CSS.
+   * Collapse the host container until {@link show} (flyout only).
+   * Inline mode skips this — the create() container stays filled/visible.
    */
   initializeHidden(): void {
+    if (this.isInline) {
+      return;
+    }
     const frame = this.parent.frame;
     if (!(frame instanceof HTMLIFrameElement)) {
       return;
@@ -108,19 +148,34 @@ export class DisplayHostHandler {
   }
 
   /**
-   * Host-initiated lower-right flyout (visible branding panel).
-   * Kept open until {@link hide} or the branding layer requests hide.
-   * Uses the configured {@link DisplayHostHandlerOptions.walletSizeX} /
-   * {@link DisplayHostHandlerOptions.walletSizeY}.
+   * Inline mode: fill the create() container and keep the panel visible.
+   * Call after Postmate handshake when {@link EWalletPresentationMode.Inline}.
+   */
+  initializeInlineVisible(): void {
+    if (!this.isInline) {
+      return;
+    }
+    this.hostDisplayActive = true;
+    this.showVisiblePanel();
+  }
+
+  /**
+   * Host-initiated show. Flyout: lower-right panel. Inline: ensure filled/visible.
    */
   show(): void {
     this.hostDisplayActive = true;
-    this.showVisibleFlyout();
+    this.showVisiblePanel();
     this.focusFrame();
   }
 
-  /** Hide a host-initiated flyout unless branding still holds a display session. */
+  /**
+   * Host-initiated hide. Flyout: collapse unless branding holds a session.
+   * Inline: no-op (panel stays in the page slot).
+   */
   hide(): void {
+    if (this.isInline) {
+      return;
+    }
     this.hostDisplayActive = false;
     if (this.rpcAccessCount === 0 && !this.childDisplayId) {
       this.hideLayout();
@@ -129,15 +184,26 @@ export class DisplayHostHandler {
 
   /**
    * Synchronously show/focus the wallet iframe before Postmate RPC is sent.
-   * Preserves host user activation for WebAuthn in cross-origin embeds (1ShotPay pattern).
+   * Preserves host user activation for WebAuthn in cross-origin embeds.
+   *
+   * Never reparents the iframe (that breaks Postmate). When a full-size panel
+   * is already visible, keep it instead of collapsing to 1×1.
    */
   prepareForRpcAccess(): void {
     this.rpcAccessCount++;
+    if (this.isInline || this.hostDisplayActive) {
+      this.focusFrame();
+      return;
+    }
+    if (this.childDisplayId !== null && !this.usePassthroughLayout) {
+      this.focusFrame();
+      return;
+    }
     this.showLayout(1, 1);
     this.focusFrame();
   }
 
-  /** Hide the wallet iframe after RPC completes unless branding still holds a display session. */
+  /** Restore/hide after RPC unless branding still holds a display session. */
   completeRpcAccess(): void {
     this.rpcAccessCount = Math.max(0, this.rpcAccessCount - 1);
     if (this.rpcAccessCount !== 0) {
@@ -148,9 +214,12 @@ export class DisplayHostHandler {
       if (this.rpcAccessCount !== 0) {
         return;
       }
+      if (this.isInline) {
+        this.showVisiblePanel();
+        return;
+      }
       if (this.childDisplayId || this.hostDisplayActive) {
-        // Restore host-sized flyout after passthrough (1×1) WebAuthn layout.
-        this.showVisibleFlyout();
+        this.showVisiblePanel();
         return;
       }
       this.hideLayout();
@@ -172,17 +241,30 @@ export class DisplayHostHandler {
     }
 
     this.childDisplayId = envelope.displayId;
-    // Passthrough (≤1×1) stays 1×1 for WebAuthn; visible requests use host popover size.
+
+    if (this.isInline) {
+      // Stay filled; still ack so branding display handshake completes.
+      if (isPassthroughDisplay(envelope.width, envelope.height)) {
+        // Prefer keeping the visible panel — WebAuthn works in a full-size frame.
+        this.showVisiblePanel();
+      } else {
+        this.showVisiblePanel();
+      }
+      this.focusFrame();
+      this.notifyDisplayReady(envelope.displayId);
+      return;
+    }
+
     if (isPassthroughDisplay(envelope.width, envelope.height)) {
       this.showLayout(1, 1);
     } else {
-      this.showVisibleFlyout();
+      this.showVisiblePanel();
     }
     this.focusFrame();
     this.notifyDisplayReady(envelope.displayId);
   }
 
-  private showVisibleFlyout(): void {
+  private showVisiblePanel(): void {
     this.showLayout(this.walletSizeX, this.walletSizeY);
   }
 
@@ -199,6 +281,10 @@ export class DisplayHostHandler {
     }
 
     this.childDisplayId = null;
+    if (this.isInline) {
+      this.showVisiblePanel();
+      return;
+    }
     if (this.rpcAccessCount === 0 && !this.hostDisplayActive) {
       this.hideLayout();
     }
@@ -221,6 +307,14 @@ export class DisplayHostHandler {
     }
 
     this.childDisplayId = null;
+
+    if (this.isInline) {
+      // Ack hide to branding, but keep the page-embedded panel visible.
+      this.notifyHideReady(envelope.displayId);
+      this.showVisiblePanel();
+      return;
+    }
+
     this.hostDisplayActive = false;
     this.hideLayout();
     this.notifyHideReady(envelope.displayId);
@@ -265,15 +359,19 @@ export class DisplayHostHandler {
     this.applyDisplayLayout(frame, width, height);
   }
 
-  private applyDisplayLayout(frame: HTMLIFrameElement, width: number, height: number): void {
+  private applyDisplayLayout(
+    frame: HTMLIFrameElement,
+    width: number,
+    height: number,
+  ): void {
     const container = frame.parentElement;
     const passthrough = isPassthroughDisplay(width, height);
+    this.usePassthroughLayout = passthrough;
 
-    // Container owns placement; iframe only fills the container (no position:fixed —
-    // fixed + width/height 100% resolves against the viewport and goes full-screen).
+    // Container owns placement; iframe only fills the container (no position:fixed
+    // on the iframe — fixed + width/height 100% resolves against the viewport).
     if (container) {
       container.style.setProperty("display", "block", "important");
-      container.style.setProperty("position", "fixed", "important");
       container.style.setProperty("clip-path", "none", "important");
       container.style.setProperty("overflow", "hidden", "important");
       container.removeAttribute("aria-hidden");
@@ -296,6 +394,7 @@ export class DisplayHostHandler {
 
     if (passthrough) {
       if (container) {
+        container.style.setProperty("position", "fixed", "important");
         container.style.setProperty("inset", "auto", "important");
         container.style.setProperty("top", "0", "important");
         container.style.setProperty("left", "0", "important");
@@ -320,29 +419,10 @@ export class DisplayHostHandler {
       return;
     }
 
-    // Lower-right flyout — no modal backdrop; opaque wallet panel only.
-    if (container) {
-      container.style.setProperty("inset", "auto", "important");
-      container.style.setProperty("top", "auto", "important");
-      container.style.setProperty("left", "auto", "important");
-      container.style.setProperty(
-        "bottom",
-        `${POPOVER_MARGIN_PX}px`,
-        "important",
-      );
-      container.style.setProperty(
-        "right",
-        `${POPOVER_MARGIN_PX}px`,
-        "important",
-      );
-      container.style.setProperty("width", `${width}px`, "important");
-      container.style.setProperty("height", `${height}px`, "important");
-      container.style.setProperty("pointer-events", "auto", "important");
-      container.style.setProperty("z-index", "9999", "important");
-      container.style.setProperty("opacity", "1", "important");
-      container.style.setProperty("background", "Canvas", "important");
-      container.style.setProperty("border-radius", "12px", "important");
-      container.style.setProperty("box-shadow", POPOVER_SHADOW, "important");
+    if (this.isInline) {
+      this.applyInlineVisibleLayout(container, width, height);
+    } else {
+      this.applyFlyoutVisibleLayout(container, width, height);
     }
 
     frame.style.setProperty("opacity", "1", "important");
@@ -353,13 +433,71 @@ export class DisplayHostHandler {
     frame.style.removeProperty("box-shadow");
   }
 
-  /** Default hidden embed: zero-size clipped container; iframe loaded but not visible. */
+  private applyFlyoutVisibleLayout(
+    container: HTMLElement | null,
+    width: number,
+    height: number,
+  ): void {
+    if (!container) return;
+
+    container.style.setProperty("position", "fixed", "important");
+    container.style.setProperty("inset", "auto", "important");
+    container.style.setProperty("top", "auto", "important");
+    container.style.setProperty("left", "auto", "important");
+    container.style.setProperty(
+      "bottom",
+      `${POPOVER_MARGIN_PX}px`,
+      "important",
+    );
+    container.style.setProperty(
+      "right",
+      `${POPOVER_MARGIN_PX}px`,
+      "important",
+    );
+    container.style.setProperty("width", `${width}px`, "important");
+    container.style.setProperty("height", `${height}px`, "important");
+    container.style.setProperty("pointer-events", "auto", "important");
+    container.style.setProperty("z-index", "9999", "important");
+    container.style.setProperty("opacity", "1", "important");
+    container.style.setProperty("background", "Canvas", "important");
+    container.style.setProperty("border-radius", "12px", "important");
+    container.style.setProperty("box-shadow", POPOVER_SHADOW, "important");
+  }
+
+  private applyInlineVisibleLayout(
+    container: HTMLElement | null,
+    width: number,
+    height: number,
+  ): void {
+    if (!container) return;
+
+    // Fill the create() container in-place (no reparent). Host sizes the mount.
+    container.style.setProperty("position", "absolute", "important");
+    container.style.setProperty("inset", "0", "important");
+    container.style.setProperty("top", "0", "important");
+    container.style.setProperty("left", "0", "important");
+    container.style.setProperty("right", "0", "important");
+    container.style.setProperty("bottom", "0", "important");
+    container.style.setProperty("width", "100%", "important");
+    container.style.setProperty("height", "100%", "important");
+    container.style.setProperty("margin", "0", "important");
+    container.style.setProperty("pointer-events", "auto", "important");
+    container.style.setProperty("z-index", "1", "important");
+    container.style.setProperty("opacity", "1", "important");
+    container.style.setProperty("background", "Canvas", "important");
+    container.style.setProperty("border-radius", "12px", "important");
+    container.style.removeProperty("box-shadow");
+    container.style.setProperty("--ows-wallet-size-x", `${width}px`);
+    container.style.setProperty("--ows-wallet-size-y", `${height}px`);
+  }
+
   private applyHiddenLayout(frame: HTMLIFrameElement): void {
     const container = frame.parentElement;
     if (container) {
       applyHiddenWalletContainerStyles(container);
     }
     applyHiddenWalletFrameStyles(frame);
+    this.usePassthroughLayout = false;
   }
 
   private focusFrame(): void {
@@ -377,6 +515,8 @@ export class DisplayHostHandler {
   }
 
   private hideLayout(): void {
+    this.usePassthroughLayout = false;
+
     if (!this.originalLayout) {
       const frame = this.parent.frame;
       if (frame instanceof HTMLIFrameElement) {

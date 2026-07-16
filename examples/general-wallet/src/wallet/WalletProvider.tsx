@@ -483,6 +483,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let cancelled = false;
+    let onChainChanged: ((next: EVMChainId) => void) | undefined;
 
     async function boot(): Promise<void> {
       // Wait a tick so SignerHost has committed the ref.
@@ -588,9 +589,10 @@ export function WalletProvider({ children }: { children: ReactNode }) {
       );
       rpcHelperRef.current = rpcHelper;
       setChainId(rpcHelper.getChainId());
-      rpcHelper.events.on("chainChanged", (next) => {
+      onChainChanged = (next) => {
         setChainId(next);
-      });
+      };
+      rpcHelper.events.on("chainChanged", onChainChanged);
 
       // Register Postmate.Model immediately — before nested signer iframe load.
       void wallet.start().catch((error: unknown) => {
@@ -629,6 +631,9 @@ export function WalletProvider({ children }: { children: ReactNode }) {
 
     return () => {
       cancelled = true;
+      if (onChainChanged) {
+        rpcHelperRef.current?.events.off("chainChanged", onChainChanged);
+      }
     };
   }, []);
 

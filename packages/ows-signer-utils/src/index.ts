@@ -38,3 +38,4 @@ export {
   publicKeyDataFromEvent,
   credentialCreatedDataFromEvent,
 } from "./rpc/client.js";
+export { COSEToSPKIPublicKey } from "./webauthn/cose-to-spki.js";

@@ -91,7 +91,6 @@ export class LocalStorageCredentialRepository implements ICredentialRepository {
   async delete(credentialId: CredentialId): Promise<void> {
     const blob = this.readBlob();
     delete blob.credentials[credentialId];
-    blob.revoked = blob.revoked.filter((id) => id !== credentialId);
     this.writeBlob(blob);
   }
 
