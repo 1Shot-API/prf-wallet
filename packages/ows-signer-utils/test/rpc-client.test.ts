@@ -149,7 +149,7 @@ describe("SignerRpcClient", () => {
     });
 
     emit("PublicKey", {
-      passkeyPublicKey: null,
+      cosePublicKey: null,
       secp256k1PublicKey: "0x" + "04".repeat(32),
       ed25519PublicKey: "0x" + "05".repeat(32),
     });

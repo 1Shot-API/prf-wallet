@@ -1,5 +1,5 @@
+import type { COSEPublicKey } from "../primitives/COSEPublicKey.js";
 import type { ED25519PublicKey } from "../primitives/ED25519PublicKey.js";
-import type { PasskeyPublicKey } from "../primitives/PasskeyPublicKey.js";
 import type { SECP256K1PublicKey } from "../primitives/SECP256K1PublicKey.js";
 
 export const API_VERSION = 1 as const;
@@ -66,7 +66,8 @@ export type KeyDerivedData = {
 
 export type CredentialCreatedData = {
   credentialId: string;
-  passkeyPublicKey: PasskeyPublicKey | null;
+  /** Authenticator COSE public key; only available on create (attestation). */
+  cosePublicKey: COSEPublicKey | null;
   secp256k1PublicKey: SECP256K1PublicKey;
 };
 
@@ -90,7 +91,11 @@ export type RecoverySessionClearedData = {
 };
 
 export type PublicKeyData = {
-  passkeyPublicKey: PasskeyPublicKey | null;
+  /**
+   * Authenticator COSE public key when available (create/attestation only).
+   * Assertions do not include credentialPublicKey — typically `null` here.
+   */
+  cosePublicKey: COSEPublicKey | null;
   secp256k1PublicKey: SECP256K1PublicKey;
   ed25519PublicKey: ED25519PublicKey;
   credentialId?: string;

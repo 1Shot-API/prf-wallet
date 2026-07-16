@@ -22,6 +22,17 @@ export class ConversionUtils {
     return bytes;
   }
 
+  /**
+   * Narrow an unknown value to {@link Uint8Array}, or throw.
+   * @param label — included in the error message (e.g. field name).
+   */
+  static asUint8Array(value: unknown, label = "value"): Uint8Array {
+    if (!(value instanceof Uint8Array)) {
+      throw new Error(`${label} must be bytes`);
+    }
+    return value;
+  }
+
   /** Encode bytes as a `0x`-prefixed {@link HexString}. */
   static bytesToHex(bytes: Uint8Array): HexString {
     return HexString(

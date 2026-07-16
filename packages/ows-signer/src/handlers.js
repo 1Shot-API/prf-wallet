@@ -36,7 +36,7 @@ import {
   getAssertionSignatureBase64Url,
   getCredentialId,
   getPasskeyAssertion,
-  getPasskeyPublicKeyBase64Url,
+  getCosePublicKeyBase64Url,
 } from "./webauthn.js";
 
 /**
@@ -227,7 +227,7 @@ async function handleCreateCredential(params, correlationId, targetOrigin) {
 
     emitEvent(window.parent, targetOrigin, "CredentialCreated", correlationId, {
       credentialId,
-      passkeyPublicKey: getPasskeyPublicKeyBase64Url(credential),
+      cosePublicKey: getCosePublicKeyBase64Url(credential),
       secp256k1PublicKey: to0xHex(keys.secp256k1PublicKey),
     });
     zeroize(keys.secp256k1PrivateKey);
@@ -626,7 +626,7 @@ async function handleGetPublicKey(params, correlationId, targetOrigin) {
 
     emitEvent(window.parent, targetOrigin, "PublicKey", correlationId, {
       credentialId: getCredentialId(credential),
-      passkeyPublicKey: getPasskeyPublicKeyBase64Url(credential),
+      cosePublicKey: getCosePublicKeyBase64Url(credential),
       secp256k1PublicKey: to0xHex(keys.secp256k1PublicKey),
       ed25519PublicKey: to0xHex(keys.ed25519PublicKey),
     });
