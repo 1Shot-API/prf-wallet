@@ -1,5 +1,13 @@
 # @1shotapi/ows-oid4
 
+## 0.1.1
+
+### Patch Changes
+
+- fd48ab0: Call ensureReady before acceptOffer display and before present match when the local credential cache is empty, so locked / first-visit wallets unlock before OID4 consent.
+- Updated dependencies
+  - @1shotapi/ows-types@0.1.2
+
 ## 0.1.0
 
 ### Minor Changes

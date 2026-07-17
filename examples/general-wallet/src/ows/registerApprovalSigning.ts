@@ -2,17 +2,30 @@ import { SignHelper } from "@1shotapi/ows-signer-utils";
 import type {
   OWSSigner,
   PersonalSignApprovalRequest,
+  SendTransactionApprovalRequest,
+  SignHelperChainRpc,
   SignTypedDataApprovalRequest,
 } from "@1shotapi/ows-signer-utils";
 import type { OWSWallet } from "@1shotapi/ows-wallet-utils";
 
 export type RegisterApprovalSigningOptions = {
+  /**
+   * Setup-only gate for signed actions: run onboarding when no credential
+   * exists. With a known credential, skip unlock — the signing ceremony
+   * authenticates. Pair with {@link onAuthenticated}.
+   */
   ensureReady?: () => Promise<void>;
+  /** Mark unlocked + refresh addresses after a successful signing ceremony. */
+  onAuthenticated?: () => void | Promise<void>;
+  chainRpc: SignHelperChainRpc;
   requestPersonalSignApproval: (
     request: PersonalSignApprovalRequest,
   ) => Promise<boolean>;
   requestSignTypedDataApproval: (
     request: SignTypedDataApprovalRequest,
+  ) => Promise<boolean>;
+  requestSendTransactionApproval: (
+    request: SendTransactionApprovalRequest,
   ) => Promise<boolean>;
 };
 
@@ -26,8 +39,11 @@ export function registerApprovalSigning(
 ): SignHelper {
   const helper = new SignHelper(signer, wallet, {
     ensureReady: options.ensureReady,
+    onAuthenticated: options.onAuthenticated,
+    chainRpc: options.chainRpc,
     requestPersonalSignApproval: options.requestPersonalSignApproval,
     requestSignTypedDataApproval: options.requestSignTypedDataApproval,
+    requestSendTransactionApproval: options.requestSendTransactionApproval,
   });
 
   for (const [method, handler] of Object.entries(helper.handlers)) {

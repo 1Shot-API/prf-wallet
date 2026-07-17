@@ -81,15 +81,18 @@ try {
 
 ### EIP-1193 signing (`SignHelper`)
 
-Headless `personal_sign` / `eth_signTypedData*` orchestration (display → consent → ensureReady → sign). Does not register handlers — the branding app owns order:
+Headless `personal_sign` / `eth_signTypedData*` / `eth_sendTransaction` orchestration (display → consent → sign; send also prepares via Viem and broadcasts with `eth_sendRawTransaction`). Does not register handlers — the branding app owns order:
 
 ```typescript
 import { SignHelper } from "@1shotapi/ows-signer-utils";
 
 const signHelper = new SignHelper(signer, wallet, {
-  ensureReady,
+  ensureReady: ensureOnboardedForSigning, // setup only if no credential
+  onAuthenticated, // mark unlocked after successful ceremony
+  chainRpc: rpcHelper, // active-chain prepare + broadcast
   requestPersonalSignApproval,
   requestSignTypedDataApproval,
+  requestSendTransactionApproval,
 });
 for (const [method, handler] of Object.entries(signHelper.handlers)) {
   wallet.registerEip1193(method, handler);

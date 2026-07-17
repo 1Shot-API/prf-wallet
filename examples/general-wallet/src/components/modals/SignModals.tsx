@@ -1,5 +1,6 @@
 import type {
   PersonalSignApprovalRequest,
+  SendTransactionApprovalRequest,
   SignTypedDataApprovalRequest,
 } from "@1shotapi/ows-signer-utils";
 import { ConversionUtils, HexString } from "@1shotapi/ows-types";
@@ -71,6 +72,44 @@ export function TypedDataModal({
       <LabeledBlock label="Primary type" content={typedData.primaryType} />
       <LabeledBlock label="Domain" content={formatJson(typedData.domain)} />
       <LabeledBlock label="Message" content={formatJson(typedData.message)} />
+    </Modal>
+  );
+}
+
+export function SendTransactionModal({
+  request,
+  onResolve,
+}: {
+  request: SendTransactionApprovalRequest;
+  onResolve: (approved: boolean) => void;
+}) {
+  return (
+    <Modal
+      title="Send transaction"
+      onBackdropDismiss={() => onResolve(false)}
+      actions={[
+        {
+          label: "Reject",
+          variant: "secondary",
+          onClick: () => onResolve(false),
+        },
+        {
+          label: "Sign",
+          variant: "primary",
+          autoFocus: true,
+          onClick: () => onResolve(true),
+        },
+      ]}
+    >
+      <p className="mb-1 text-[0.8rem] font-medium opacity-75">Account</p>
+      <p className="mb-3 break-all font-mono text-[0.8rem]">{request.address}</p>
+      <LabeledBlock
+        label="Contract"
+        content={request.to ?? "(contract creation)"}
+      />
+      <LabeledBlock label="Value" content={request.value} />
+      <LabeledBlock label="Data" content={request.data} />
+      <LabeledBlock label="Chain" content={request.chainId} />
     </Modal>
   );
 }

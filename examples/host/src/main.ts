@@ -1,15 +1,48 @@
 import { OWSProxy } from "@1shotapi/ows-provider";
-import { EVMAccountAddress, EVMChainId } from "@1shotapi/ows-types";
+import {
+  EVMAccountAddress,
+  EVMChainId,
+  HexString,
+  type EVMTransactionHash,
+} from "@1shotapi/ows-types";
 import {
   createPublicClient,
   custom,
+  encodeFunctionData,
   erc20Abi,
   formatUnits,
   getAddress,
   isAddress,
+  parseUnits,
   type Address,
+  type Hex,
 } from "viem";
 import "./styles.css";
+
+const USDC_DECIMALS = 6;
+
+const HOST_CHAINS = [
+  {
+    chainId: EVMChainId("0xaa36a7"),
+    label: "Sepolia",
+    usdc: EVMAccountAddress("0x1c7D4B196Cb0C7B01d743Fbc6116a902379C7238"),
+    blockExplorerUrl: "https://sepolia.etherscan.io",
+  },
+  {
+    chainId: EVMChainId("0x14a34"),
+    label: "Base Sepolia",
+    usdc: EVMAccountAddress("0x036CbD53842c5426634e7929541eC2318f3dCF7e"),
+    blockExplorerUrl: "https://sepolia.basescan.org",
+  },
+  {
+    chainId: EVMChainId("0x4cef52"),
+    label: "Arc Testnet",
+    usdc: EVMAccountAddress("0x3600000000000000000000000000000000000000"),
+    blockExplorerUrl: "https://testnet.arcscan.app",
+  },
+] as const;
+
+type UsdcMode = "balance" | "send";
 
 const messageInput = document.getElementById("message-input") as HTMLTextAreaElement;
 const signButton = document.getElementById("sign-button") as HTMLButtonElement;
@@ -20,15 +53,22 @@ const chainSelect = document.getElementById("chain-select") as HTMLSelectElement
 const chainRefreshButton = document.getElementById(
   "chain-refresh-button",
 ) as HTMLButtonElement;
-const tokenAddressInput = document.getElementById(
-  "token-address-input",
+const usdcModeSelect = document.getElementById(
+  "usdc-mode-select",
+) as HTMLSelectElement;
+const usdcContractEl = document.getElementById("usdc-contract") as HTMLParagraphElement;
+const usdcSendFields = document.getElementById("usdc-send-fields") as HTMLDivElement;
+const usdcDestinationInput = document.getElementById(
+  "usdc-destination-input",
 ) as HTMLInputElement;
-const checkBalanceButton = document.getElementById(
-  "check-balance-button",
+const usdcAmountInput = document.getElementById(
+  "usdc-amount-input",
+) as HTMLInputElement;
+const usdcActionButton = document.getElementById(
+  "usdc-action-button",
 ) as HTMLButtonElement;
-const tokenBalanceOutput = document.getElementById(
-  "token-balance-output",
-) as HTMLPreElement;
+const usdcOutput = document.getElementById("usdc-output") as HTMLPreElement;
+const usdcTxLink = document.getElementById("usdc-tx-link") as HTMLParagraphElement;
 const statusEl = document.getElementById("status") as HTMLParagraphElement;
 const signatureOutput = document.getElementById("signature-output") as HTMLPreElement;
 const walletContainer = document.getElementById("wallet-container")!;
@@ -38,9 +78,12 @@ function setStatus(message: string, isError = false): void {
   statusEl.classList.toggle("status--error", isError);
 }
 
-/** Canonical hex chain id for `<option value>` matching. */
 function normalizeChainIdHex(value: string): EVMChainId {
   return EVMChainId(`0x${BigInt(value).toString(16)}`);
+}
+
+function chainMeta(chainId: EVMChainId) {
+  return HOST_CHAINS.find((chain) => chain.chainId === chainId) ?? null;
 }
 
 function setChainSelectValue(chainId: EVMChainId): void {
@@ -49,7 +92,6 @@ function setChainSelectValue(chainId: EVMChainId): void {
     chainSelect.value = value;
     return;
   }
-  // Unknown chain — show it as a temporary option so the UI stays honest.
   const option = document.createElement("option");
   option.value = value;
   option.textContent = value;
@@ -57,11 +99,31 @@ function setChainSelectValue(chainId: EVMChainId): void {
   chainSelect.value = value;
 }
 
+function clearUsdcOutputs(): void {
+  usdcOutput.hidden = true;
+  usdcOutput.textContent = "";
+  usdcTxLink.hidden = true;
+  usdcTxLink.textContent = "";
+}
+
+function syncUsdcUi(): void {
+  const mode = usdcModeSelect.value as UsdcMode;
+  const meta = chainMeta(EVMChainId(chainSelect.value as `0x${string}`));
+  usdcSendFields.hidden = mode !== "send";
+  usdcActionButton.textContent =
+    mode === "send" ? "Send USDC" : "Check Balance";
+  usdcContractEl.textContent = meta
+    ? `USDC: ${meta.usdc}`
+    : "USDC: unsupported chain";
+  clearUsdcOutputs();
+}
+
 async function refreshChainFromWallet(proxy: OWSProxy): Promise<EVMChainId> {
   const chainId = normalizeChainIdHex(
     await proxy.ethereum.request({ method: "eth_chainId" }),
   );
   setChainSelectValue(chainId);
+  syncUsdcUi();
   return chainId;
 }
 
@@ -83,8 +145,15 @@ async function resolveAccount(proxy: OWSProxy): Promise<EVMAccountAddress> {
   return account;
 }
 
+function explorerTxUrl(chainId: EVMChainId, hash: string): string | null {
+  const meta = chainMeta(chainId);
+  if (!meta) return null;
+  return `${meta.blockExplorerUrl}/tx/${hash}`;
+}
+
 async function main(): Promise<void> {
   setStatus("Connecting to wallet…");
+  syncUsdcUi();
   console.info("[ows-example-host] embedding Branding Layer", __WALLET_IFRAME_URL__);
 
   const proxy = await OWSProxy.create(walletContainer, __WALLET_IFRAME_URL__);
@@ -103,11 +172,13 @@ async function main(): Promise<void> {
     void (async () => {
       const selected = EVMChainId(chainSelect.value as `0x${string}`);
       chainSelect.disabled = true;
+      clearUsdcOutputs();
       try {
         await proxy.ethereum.request({
           method: "wallet_switchEthereumChain",
           params: [{ chainId: selected }],
         });
+        syncUsdcUi();
         setStatus(`Switched to ${selected}`);
       } catch (error) {
         await refreshChainFromWallet(proxy).catch(() => undefined);
@@ -138,12 +209,21 @@ async function main(): Promise<void> {
     })();
   });
 
+  usdcModeSelect.addEventListener("change", () => {
+    syncUsdcUi();
+  });
+
   signButton.addEventListener("click", () => {
     void handleSign(proxy);
   });
 
-  checkBalanceButton.addEventListener("click", () => {
-    void handleCheckBalance(proxy);
+  usdcActionButton.addEventListener("click", () => {
+    const mode = usdcModeSelect.value as UsdcMode;
+    if (mode === "send") {
+      void handleSendUsdc(proxy);
+    } else {
+      void handleCheckUsdcBalance(proxy);
+    }
   });
 
   showWalletButton.addEventListener("click", () => {
@@ -185,26 +265,25 @@ async function handleSign(proxy: OWSProxy): Promise<void> {
   }
 }
 
-async function handleCheckBalance(proxy: OWSProxy): Promise<void> {
-  const rawAddress = tokenAddressInput.value.trim();
-  if (!isAddress(rawAddress)) {
-    setStatus("Enter a valid ERC-20 contract address.", true);
-    tokenBalanceOutput.hidden = true;
+async function handleCheckUsdcBalance(proxy: OWSProxy): Promise<void> {
+  const chainId = normalizeChainIdHex(chainSelect.value);
+  const meta = chainMeta(chainId);
+  if (!meta) {
+    setStatus("USDC is not configured for this chain.", true);
+    clearUsdcOutputs();
     return;
   }
 
-  checkBalanceButton.disabled = true;
-  tokenBalanceOutput.hidden = true;
-  setStatus("Reading token balance…");
+  usdcActionButton.disabled = true;
+  clearUsdcOutputs();
+  setStatus("Reading USDC balance…");
 
   try {
-    const token = getAddress(rawAddress) as Address;
+    const token = getAddress(meta.usdc) as Address;
     const account = await resolveAccount(proxy);
     const owner = getAddress(account) as Address;
     const client = createPublicClientFromProxy(proxy);
 
-    // name / symbol / balanceOf via eth_call through the EIP-1193 proxy.
-    // decimals is only used to format the balance for display.
     const [name, symbol, balance, decimals] = await Promise.all([
       client.readContract({
         address: token,
@@ -229,7 +308,7 @@ async function handleCheckBalance(proxy: OWSProxy): Promise<void> {
       }),
     ]);
 
-    tokenBalanceOutput.textContent = [
+    usdcOutput.textContent = [
       `Contract: ${token}`,
       `Account:  ${owner}`,
       `Name:     ${name}`,
@@ -237,15 +316,97 @@ async function handleCheckBalance(proxy: OWSProxy): Promise<void> {
       `Balance:  ${formatUnits(balance, decimals)} ${symbol}`,
       `Raw:      ${balance.toString()}`,
     ].join("\n");
-    tokenBalanceOutput.hidden = false;
+    usdcOutput.hidden = false;
     setStatus(`Balance for ${symbol}: ${formatUnits(balance, decimals)}`);
   } catch (error) {
     setStatus(
-      error instanceof Error ? error.message : "Failed to read token balance",
+      error instanceof Error ? error.message : "Failed to read USDC balance",
       true,
     );
   } finally {
-    checkBalanceButton.disabled = false;
+    usdcActionButton.disabled = false;
+  }
+}
+
+async function handleSendUsdc(proxy: OWSProxy): Promise<void> {
+  const chainId = normalizeChainIdHex(chainSelect.value);
+  const meta = chainMeta(chainId);
+  if (!meta) {
+    setStatus("USDC is not configured for this chain.", true);
+    clearUsdcOutputs();
+    return;
+  }
+
+  const destinationRaw = usdcDestinationInput.value.trim();
+  if (!isAddress(destinationRaw)) {
+    setStatus("Enter a valid destination address.", true);
+    clearUsdcOutputs();
+    return;
+  }
+
+  const amountRaw = usdcAmountInput.value.trim();
+  let amount: bigint;
+  try {
+    amount = parseUnits(amountRaw, USDC_DECIMALS);
+  } catch {
+    setStatus("Enter a valid USDC amount.", true);
+    clearUsdcOutputs();
+    return;
+  }
+  if (amount <= 0n) {
+    setStatus("Amount must be greater than zero.", true);
+    clearUsdcOutputs();
+    return;
+  }
+
+  usdcActionButton.disabled = true;
+  clearUsdcOutputs();
+  setStatus("Preparing USDC transfer…");
+
+  try {
+    const account = await resolveAccount(proxy);
+    const to = getAddress(destinationRaw) as Address;
+    const data = encodeFunctionData({
+      abi: erc20Abi,
+      functionName: "transfer",
+      args: [to, amount],
+    }) as Hex;
+
+    setStatus("Approve the transaction in the wallet…");
+    const hash = (await proxy.ethereum.request({
+      method: "eth_sendTransaction",
+      params: [
+        {
+          from: account,
+          to: meta.usdc,
+          data: HexString(data),
+          value: HexString("0x0"),
+          chainId,
+        },
+      ],
+    })) as EVMTransactionHash;
+
+    usdcOutput.textContent = `Transaction hash:\n${hash}`;
+    usdcOutput.hidden = false;
+    const url = explorerTxUrl(chainId, hash);
+    if (url) {
+      usdcTxLink.innerHTML = "";
+      const link = document.createElement("a");
+      link.href = url;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      link.textContent = "View on explorer";
+      usdcTxLink.append(link);
+      usdcTxLink.hidden = false;
+    }
+    setStatus(`USDC sent. Hash ${hash}`);
+  } catch (error) {
+    setStatus(
+      error instanceof Error ? error.message : "Failed to send USDC",
+      true,
+    );
+  } finally {
+    usdcActionButton.disabled = false;
   }
 }
 

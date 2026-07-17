@@ -21,6 +21,7 @@ import {
 } from "@1shotapi/ows-types";
 import type {
   PersonalSignApprovalRequest,
+  SendTransactionApprovalRequest,
   SignTypedDataApprovalRequest,
 } from "@1shotapi/ows-signer-utils";
 import {
@@ -399,6 +400,23 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     await ensureReadyRef.current();
   }, [awaitSignerReady]);
 
+  /**
+   * Signed-action gate: only run setup/login when no credential exists.
+   * With a known credential, the signing ceremony itself unlocks.
+   */
+  const ensureOnboardedForSigning = useCallback(async () => {
+    await awaitSignerReady();
+    if (isWalletCreated()) {
+      return;
+    }
+    await ensureReadyRef.current();
+  }, [awaitSignerReady]);
+
+  const onSigningAuthenticated = useCallback(async () => {
+    await refreshAddresses();
+    setUnlocked(true);
+  }, [refreshAddresses, setUnlocked]);
+
   const uiBridgeRef = useRef({
     pushModal,
   });
@@ -533,8 +551,24 @@ export function WalletProvider({ children }: { children: ReactNode }) {
           })),
       });
 
+      const defaultChainId = DEMO_CHAINS[0]!.chainId;
+      const rpcHelper = new RpcHelper(
+        new Map(DEMO_CHAINS.map((chain) => [chain.chainId, chain.rpcUrl])),
+        wallet,
+        signer,
+        { defaultChainId },
+      );
+      rpcHelperRef.current = rpcHelper;
+      setChainId(rpcHelper.getChainId());
+      onChainChanged = (next) => {
+        setChainId(next);
+      };
+      rpcHelper.events.on("chainChanged", onChainChanged);
+
       registerApprovalSigning(wallet, signer, {
-        ensureReady,
+        ensureReady: ensureOnboardedForSigning,
+        onAuthenticated: onSigningAuthenticated,
+        chainRpc: rpcHelper,
         requestPersonalSignApproval: (request: PersonalSignApprovalRequest) =>
           ask<boolean>(({ id, resolve }) => ({
             id,
@@ -548,6 +582,15 @@ export function WalletProvider({ children }: { children: ReactNode }) {
           ask<boolean>(({ id, resolve }) => ({
             id,
             kind: "typedData",
+            request,
+            resolve,
+          })),
+        requestSendTransactionApproval: (
+          request: SendTransactionApprovalRequest,
+        ) =>
+          ask<boolean>(({ id, resolve }) => ({
+            id,
+            kind: "sendTransaction",
             request,
             resolve,
           })),
@@ -579,20 +622,6 @@ export function WalletProvider({ children }: { children: ReactNode }) {
             resolve,
           })),
       });
-
-      const defaultChainId = DEMO_CHAINS[0]!.chainId;
-      const rpcHelper = new RpcHelper(
-        new Map(DEMO_CHAINS.map((chain) => [chain.chainId, chain.rpcUrl])),
-        wallet,
-        signer,
-        { defaultChainId },
-      );
-      rpcHelperRef.current = rpcHelper;
-      setChainId(rpcHelper.getChainId());
-      onChainChanged = (next) => {
-        setChainId(next);
-      };
-      rpcHelper.events.on("chainChanged", onChainChanged);
 
       // Register Postmate.Model immediately — before nested signer iframe load.
       void wallet.start().catch((error: unknown) => {

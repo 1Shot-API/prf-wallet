@@ -1,4 +1,8 @@
-import type { EVMAccountAddress } from "@1shotapi/ows-types";
+import type {
+  EVMAccountAddress,
+  EVMChainId,
+  HexString,
+} from "@1shotapi/ows-types";
 
 /** EIP-191 personal_sign consent payload for branding UI. */
 export type PersonalSignApprovalRequest = {
@@ -18,4 +22,13 @@ export type SignTypedDataPayload = {
 export type SignTypedDataApprovalRequest = {
   address: EVMAccountAddress;
   typedData: SignTypedDataPayload;
+};
+
+/** `eth_sendTransaction` consent payload for branding UI. */
+export type SendTransactionApprovalRequest = {
+  address: EVMAccountAddress;
+  to: EVMAccountAddress | null;
+  data: HexString;
+  value: HexString;
+  chainId: EVMChainId;
 };

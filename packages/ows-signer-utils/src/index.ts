@@ -12,6 +12,7 @@ export {
   parseTypedData,
   type Eip1193Handler,
   type Eip1193SignHandlers,
+  type SignHelperChainRpc,
   type SignHelperDisplaySession,
   type SignHelperDisplaySize,
   type SignHelperOptions,
@@ -20,6 +21,7 @@ export {
 } from "./eip1193/sign-helper.js";
 export type {
   PersonalSignApprovalRequest,
+  SendTransactionApprovalRequest,
   SignTypedDataApprovalRequest,
   SignTypedDataPayload,
 } from "./eip1193/approval-types.js";

@@ -41,19 +41,40 @@
 
       <hr class="panel-divider" />
 
-      <label for="token-address-input">ERC-20 contract address</label>
-      <input
-        id="token-address-input"
-        type="text"
-        class="text-input"
-        spellcheck="false"
-        autocomplete="off"
-        placeholder="0x…"
-      />
-      <div class="actions">
-        <button type="button" id="check-balance-button">Check Balance</button>
+      <label for="usdc-mode-select">USDC</label>
+      <select id="usdc-mode-select" aria-label="USDC action">
+        <option value="balance">Check Balance</option>
+        <option value="send">Send USDC</option>
+      </select>
+      <p id="usdc-contract" class="hint" aria-live="polite"></p>
+
+      <div id="usdc-send-fields" hidden>
+        <label for="usdc-destination-input">Destination</label>
+        <input
+          id="usdc-destination-input"
+          type="text"
+          class="text-input"
+          spellcheck="false"
+          autocomplete="off"
+          placeholder="0x…"
+        />
+        <label for="usdc-amount-input">Amount (USDC)</label>
+        <input
+          id="usdc-amount-input"
+          type="text"
+          class="text-input"
+          spellcheck="false"
+          autocomplete="off"
+          placeholder="1.0"
+          inputmode="decimal"
+        />
       </div>
-      <pre id="token-balance-output" class="signature-output" hidden></pre>
+
+      <div class="actions">
+        <button type="button" id="usdc-action-button">Check Balance</button>
+      </div>
+      <pre id="usdc-output" class="signature-output" hidden></pre>
+      <p id="usdc-tx-link" class="hint" hidden></p>
     </section>
   </main>
 
