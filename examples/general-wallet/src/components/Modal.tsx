@@ -65,14 +65,16 @@ export function Modal({
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className={`max-h-[min(85vh,36rem)] overflow-auto rounded-[10px] bg-[Canvas] p-5 text-[CanvasText] shadow-[0_12px_40px_color-mix(in_srgb,CanvasText_25%,transparent)] ${
+        className={`max-h-[min(85vh,36rem)] min-w-0 overflow-x-hidden overflow-y-auto rounded-[10px] bg-[Canvas] p-5 text-[CanvasText] shadow-[0_12px_40px_color-mix(in_srgb,CanvasText_25%,transparent)] ${
           wide ? "w-[min(32rem,100%)]" : "w-[min(28rem,100%)]"
         }`}
       >
         <h2 id={titleId} className="mb-3 text-lg font-semibold">
           {title}
         </h2>
-        <div className="text-[0.95rem] opacity-90">{children}</div>
+        <div className="min-w-0 overflow-x-hidden text-[0.95rem] opacity-90">
+          {children}
+        </div>
         {footer}
         {actions && actions.length > 0 ? (
           <div className="mt-4 flex flex-wrap justify-end gap-2">
