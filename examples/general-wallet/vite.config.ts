@@ -107,7 +107,8 @@ function serveSignerPlugin(): Plugin {
           url.slice("/signer/".length),
         );
         if (!filePath || !fs.existsSync(filePath)) {
-          next();
+          res.statusCode = 404;
+          res.end("Not found");
           return;
         }
         sendFile(res, filePath);
