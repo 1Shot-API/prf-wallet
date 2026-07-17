@@ -2,7 +2,9 @@ import type {
   EVMAccountAddress,
   EVMChainId,
   EVMSignatureHex,
+  EVMTransactionHash,
 } from "../primitives/index.js";
+import type { IEVMTransactionRequest } from "./transaction.js";
 
 /**
  * Typed EIP-1193 methods supported by host `EIP1193Provider.request`.
@@ -25,6 +27,10 @@ export type EIP1193Requests = {
   eth_signTypedData_v4: {
     params: readonly [address: EVMAccountAddress, typedData: unknown];
     result: EVMSignatureHex;
+  };
+  eth_sendTransaction: {
+    params: readonly [IEVMTransactionRequest];
+    result: EVMTransactionHash;
   };
   wallet_switchEthereumChain: {
     params: readonly [{ chainId: EVMChainId }];

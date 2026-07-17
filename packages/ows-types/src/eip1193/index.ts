@@ -13,3 +13,5 @@ export type {
   EIP1193Requests,
   KnownEIP1193Method,
 } from "./requests.js";
+
+export type { IEVMTransactionRequest } from "./transaction.js";

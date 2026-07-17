@@ -17,6 +17,7 @@ export * from "./UriString.js";
 export * from "./EVMAccountAddress.js";
 export * from "./EVMChainId.js";
 export * from "./EVMSignatureHex.js";
+export * from "./EVMTransactionHash.js";
 export * from "./HexString.js";
 export * from "./JWKThumbprint.js";
 export * from "./COSEPublicKey.js";

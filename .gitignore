@@ -37,6 +37,9 @@ npm-debug.log*
 # Coverage
 coverage/
 
+# Local npm pack output for consumer installs before registry publish
+.release-tarballs/
+
 # Local HTTPS certs (mkcert) for host demos
 examples/host/certs/*.pem
 examples/credential-issuer/certs/*.pem

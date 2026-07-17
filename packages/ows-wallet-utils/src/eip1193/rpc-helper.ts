@@ -2,6 +2,8 @@ import {
   EIP1193_READ_METHODS,
   EIP1193_UNRECOGNIZED_CHAIN_ID,
   EVMChainId,
+  EVMTransactionHash,
+  HexString,
   OwsInvalidParamsError,
   OwsRpcError,
 } from "@1shotapi/ows-types";
@@ -158,6 +160,46 @@ export class RpcHelper {
 
   getConfiguredChainIds(): readonly EVMChainId[] {
     return [...this.providers.keys()];
+  }
+
+  /**
+   * JSON-RPC against the active chain's configured provider.
+   * Used by Branding Layer helpers (e.g. transaction prepare / broadcast).
+   * Does not register Host-facing methods such as `eth_sendRawTransaction`.
+   */
+  async request(method: string, params: unknown[] = []): Promise<unknown> {
+    const url = this.providers.get(this.currentChainId);
+    if (!url) {
+      throw new OwsRpcError(
+        `No RPC provider configured for chain ${this.currentChainId}`,
+        EIP1193_UNRECOGNIZED_CHAIN_ID,
+        { chainId: this.currentChainId },
+      );
+    }
+    return jsonRpcRequest(url, method, params);
+  }
+
+  /**
+   * Broadcast a signed raw transaction on the active chain.
+   * Intended for SignHelper / branding internals — not Host EIP-1193.
+   */
+  async sendRawTransaction(
+    signedTransaction: HexString | `0x${string}`,
+  ): Promise<EVMTransactionHash> {
+    const result = await this.request("eth_sendRawTransaction", [
+      signedTransaction,
+    ]);
+    if (
+      typeof result !== "string" ||
+      !/^0x[0-9a-fA-F]{64}$/.test(result)
+    ) {
+      throw new OwsRpcError(
+        "eth_sendRawTransaction returned an invalid transaction hash",
+        -32_603,
+        { result },
+      );
+    }
+    return EVMTransactionHash(result as `0x${string}`);
   }
 
   /** Same logic as the EIP-1193 `wallet_switchEthereumChain` handler. */

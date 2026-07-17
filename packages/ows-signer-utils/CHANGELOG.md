@@ -1,5 +1,13 @@
 # @1shotapi/ows-signer-utils
 
+## 0.1.2
+
+### Patch Changes
+
+- Add typed eth_sendTransaction support: branded transaction hash, RpcHelper active-chain request/broadcast helpers, and SignHelper prepare → sign → broadcast with transaction consent.
+- Updated dependencies
+  - @1shotapi/ows-types@0.1.2
+
 ## 0.1.1
 
 ### Patch Changes

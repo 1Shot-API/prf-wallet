@@ -106,6 +106,7 @@ export {
   type EIP1193RequestArgsFor,
   type EIP1193Requests,
   type KnownEIP1193Method,
+  type IEVMTransactionRequest,
 } from "./eip1193/index.js";
 
 export {

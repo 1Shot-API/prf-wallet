@@ -222,4 +222,112 @@ describe("RpcHelper", () => {
       fetchMock.mock.restore();
     }
   });
+
+  it("request() uses the active chain provider", async () => {
+    const { wallet } = createMockWallet();
+    const helper = new RpcHelper(
+      new Map([
+        [SEPOLIA, "https://sepolia.example"],
+        [BASE_SEPOLIA, "https://base.example"],
+      ]),
+      wallet,
+    );
+
+    const fetchMock = mock.method(
+      globalThis,
+      "fetch",
+      async () =>
+        new Response(
+          JSON.stringify({ jsonrpc: "2.0", id: 1, result: "0xabc" }),
+          { status: 200, headers: { "content-type": "application/json" } },
+        ),
+    );
+
+    try {
+      const result = await helper.request("eth_getBalance", [
+        "0x1111111111111111111111111111111111111111",
+        "latest",
+      ]);
+      assert.equal(result, "0xabc");
+      const [url, init] = fetchMock.mock.calls[0]!.arguments as [
+        string,
+        RequestInit,
+      ];
+      assert.equal(url, "https://sepolia.example");
+      const body = JSON.parse(String(init.body)) as {
+        method: string;
+        params: unknown[];
+      };
+      assert.equal(body.method, "eth_getBalance");
+      assert.equal(body.params.length, 2);
+    } finally {
+      fetchMock.mock.restore();
+    }
+  });
+
+  it("sendRawTransaction returns a branded hash", async () => {
+    const { wallet } = createMockWallet();
+    const helper = new RpcHelper(
+      new Map([[SEPOLIA, "https://rpc.example"]]),
+      wallet,
+    );
+    const hash =
+      "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
+
+    const fetchMock = mock.method(
+      globalThis,
+      "fetch",
+      async () =>
+        new Response(
+          JSON.stringify({ jsonrpc: "2.0", id: 1, result: hash }),
+          { status: 200, headers: { "content-type": "application/json" } },
+        ),
+    );
+
+    try {
+      const result = await helper.sendRawTransaction(
+        "0xsignedraw" as `0x${string}`,
+      );
+      assert.equal(result, hash);
+      const [, init] = fetchMock.mock.calls[0]!.arguments as [
+        string,
+        RequestInit,
+      ];
+      const body = JSON.parse(String(init.body)) as {
+        method: string;
+        params: unknown[];
+      };
+      assert.equal(body.method, "eth_sendRawTransaction");
+      assert.deepEqual(body.params, ["0xsignedraw"]);
+    } finally {
+      fetchMock.mock.restore();
+    }
+  });
+
+  it("sendRawTransaction rejects invalid hash results", async () => {
+    const { wallet } = createMockWallet();
+    const helper = new RpcHelper(
+      new Map([[SEPOLIA, "https://rpc.example"]]),
+      wallet,
+    );
+
+    const fetchMock = mock.method(
+      globalThis,
+      "fetch",
+      async () =>
+        new Response(
+          JSON.stringify({ jsonrpc: "2.0", id: 1, result: "0xbad" }),
+          { status: 200, headers: { "content-type": "application/json" } },
+        ),
+    );
+
+    try {
+      await assert.rejects(
+        () => helper.sendRawTransaction("0xsignedraw" as `0x${string}`),
+        (error: unknown) => error instanceof OwsRpcError,
+      );
+    } finally {
+      fetchMock.mock.restore();
+    }
+  });
 });
