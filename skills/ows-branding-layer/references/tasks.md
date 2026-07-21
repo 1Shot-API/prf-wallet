@@ -96,16 +96,16 @@ requestDisplay → consent UI → ensureReady → signer.evm.signMessage | signT
 
 Registers: `personal_sign`, `eth_signTypedData`, `eth_signTypedData_v3`, `eth_signTypedData_v4`, `eth_sendTransaction`. Reject with `OwsUserRejectedError`.
 
-Create `RpcHelper` before `SignHelper` and pass it as `chainRpc`. Use a **setup-only** `ensureReady` (run onboarding only when no credential id) plus `onAuthenticated` after a successful ceremony so known credentials need only one passkey prompt.
+Create `RpcHelper` before `SignHelper`. Pass `getChainId` from RpcHelper. Branding implements `approveAndSignTransaction` (consent + prepare + sign + broadcast; use exported `prepareEvmTransaction`). Use a **setup-only** `ensureReady` plus `onAuthenticated` after message/typed-data ceremonies (send auth side effects live in branding's approve callback).
 
 ```typescript
 const signHelper = new SignHelper(signer, wallet, {
   ensureReady: ensureOnboardedForSigning,
   onAuthenticated,
-  chainRpc: rpcHelper,
+  getChainId: () => rpcHelper.getChainId(),
   requestPersonalSignApproval, // PersonalSignApprovalRequest → boolean
   requestSignTypedDataApproval, // SignTypedDataApprovalRequest → boolean
-  requestSendTransactionApproval, // SendTransactionApprovalRequest → boolean
+  approveAndSignTransaction, // SendTransactionApprovalRequest → EVMTransactionHash
 });
 for (const [method, handler] of Object.entries(signHelper.handlers)) {
   wallet.registerEip1193(method, handler);

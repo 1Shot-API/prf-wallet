@@ -92,12 +92,15 @@ export type SignHelperOptions = {
   requestSignTypedDataApproval: (
     request: SignTypedDataApprovalRequest,
   ) => Promise<boolean>;
-  /** Consent UI for eth_sendTransaction. */
-  requestSendTransactionApproval: (
+  /**
+   * Branding owns consent + prepare + passkey sign + broadcast for
+   * `eth_sendTransaction`. Return the mined/submitted tx hash.
+   */
+  approveAndSignTransaction: (
     request: SendTransactionApprovalRequest,
-  ) => Promise<boolean>;
-  /** Active-chain RPC used to prepare and broadcast transactions. */
-  chainRpc: SignHelperChainRpc;
+  ) => Promise<EVMTransactionHash>;
+  /** Active EIP-1193 chain id (for request validation). */
+  getChainId: () => EVMChainId;
   /** Flyout size for personal_sign (default 448×360). */
   personalSignDisplaySize?: SignHelperDisplaySize;
   /** Flyout size for typed data (default 448×520). */
@@ -135,8 +138,8 @@ const EMPTY_DATA = HexString("0x");
  * Does **not** register handlers — the branding app calls
  * `wallet.registerEip1193` in the order it wants.
  *
- * `eth_sendTransaction` flow: ensureReady → consent → prepare → sign →
- * broadcast via `chainRpc` (`eth_sendRawTransaction`).
+ * `eth_sendTransaction` flow: ensureReady → branding `approveAndSignTransaction`
+ * (consent + prepare + sign + broadcast).
  */
 export class SignHelper {
   readonly handlers: Eip1193SignHandlers;
@@ -212,7 +215,7 @@ export class SignHelper {
     params: unknown[],
   ): Promise<EVMTransactionHash> {
     const tx = parseTransactionRequest(params[0]);
-    const chainId = this.options.chainRpc.getChainId();
+    const chainId = this.options.getChainId();
     if (tx.chainId !== undefined) {
       const requested = normalizeChainId(tx.chainId);
       if (requested !== chainId) {
@@ -226,7 +229,6 @@ export class SignHelper {
       this.options.sendTransactionDisplaySize ?? DEFAULT_SEND_TRANSACTION_SIZE;
 
     return this.withDisplay(size, async () => {
-      // Setup / login before consent when the branding gate requires it.
       if (this.options.ensureReady) {
         await this.options.ensureReady();
       }
@@ -244,33 +246,23 @@ export class SignHelper {
           : EVMAccountAddress(tx.to as `0x${string}`);
       const data = HexString((tx.data ?? EMPTY_DATA) as `0x${string}`);
       const value = HexString((tx.value ?? ZERO_VALUE) as `0x${string}`);
+      const transaction: IEVMTransactionRequest = {
+        ...tx,
+        from: address,
+        chainId,
+      };
 
-      const approved = await this.options.requestSendTransactionApproval({
+      const hash = await this.options.approveAndSignTransaction({
         address,
         to,
         data,
         value,
         chainId,
+        transaction,
       });
-      if (!approved) {
-        throw new OwsUserRejectedError("User rejected the transaction request");
-      }
-
-      const prepared = await prepareEvmTransaction(
-        this.options.chainRpc,
-        address,
-        { ...tx, from: address, chainId },
-      );
-      const signed = await this.signer.evm.signTransaction(prepared);
-      await this.notifyAuthenticated();
-
-      const hash = await this.options.chainRpc.request(
-        "eth_sendRawTransaction",
-        [signed],
-      );
       if (typeof hash !== "string" || !/^0x[0-9a-fA-F]{64}$/.test(hash)) {
         throw new OwsInvalidParamsError(
-          "eth_sendRawTransaction returned an invalid transaction hash",
+          "approveAndSignTransaction returned an invalid transaction hash",
         );
       }
       return EVMTransactionHash(hash as `0x${string}`);
@@ -415,7 +407,7 @@ function hexQuantityToBigInt(value: string | undefined): bigint | undefined {
   return BigInt(value);
 }
 
-async function prepareEvmTransaction(
+export async function prepareEvmTransaction(
   chainRpc: SignHelperChainRpc,
   account: EVMAccountAddress,
   tx: IEVMTransactionRequest,

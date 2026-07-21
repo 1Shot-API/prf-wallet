@@ -95,6 +95,8 @@ export * from "./credentials/index.js";
 
 export * from "./primitives/index.js";
 
+export * from "./enums/index.js";
+
 export {
   EIP1193_METHODS,
   EIP1193_READ_METHODS,

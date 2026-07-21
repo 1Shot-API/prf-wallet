@@ -2,6 +2,7 @@ import type {
   EVMAccountAddress,
   EVMChainId,
   HexString,
+  IEVMTransactionRequest,
 } from "@1shotapi/ows-types";
 
 /** EIP-191 personal_sign consent payload for branding UI. */
@@ -24,11 +25,16 @@ export type SignTypedDataApprovalRequest = {
   typedData: SignTypedDataPayload;
 };
 
-/** `eth_sendTransaction` consent payload for branding UI. */
+/**
+ * `eth_sendTransaction` payload for branding `approveAndSignTransaction`.
+ * Branding owns consent + prepare + sign + broadcast; return the tx hash.
+ */
 export type SendTransactionApprovalRequest = {
   address: EVMAccountAddress;
   to: EVMAccountAddress | null;
   data: HexString;
   value: HexString;
   chainId: EVMChainId;
+  /** Normalized tx ready for `prepareEvmTransaction`. */
+  transaction: IEVMTransactionRequest;
 };

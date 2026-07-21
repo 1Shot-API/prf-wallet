@@ -50,6 +50,8 @@ const WALLET_IFRAME_ALLOW_BASE = [
   "publickey-credentials-create *",
   // Branding-layer UI (e.g. create-backup copy) and delegation to the signer iframe.
   "clipboard-write *",
+  // Address QR scan in Send UI (only used when permission already granted).
+  "camera *",
 ];
 
 const WALLET_IFRAME_ALLOW_LOCAL = [

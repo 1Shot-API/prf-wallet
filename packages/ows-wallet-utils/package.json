@@ -26,9 +26,13 @@
     "postmate": "^1.5.2",
     "zod": "^4.4.0"
   },
+  "peerDependencies": {
+    "viem": "^2.0.0"
+  },
   "devDependencies": {
     "@types/postmate": "^1.5.4",
-    "tsx": "^4.19.0"
+    "tsx": "^4.19.0",
+    "viem": "^2.52.0"
   },
   "keywords": [
     "ows",

@@ -115,10 +115,10 @@ const signHelper = new SignHelper(signer, wallet, {
   // Setup-only when no credential; signing ceremony unlocks when credential exists
   ensureReady: ensureOnboardedForSigning,
   onAuthenticated: markUnlockedAndRefreshAddresses,
-  chainRpc: rpcHelper,
+  getChainId: () => rpcHelper.getChainId(),
   requestPersonalSignApproval,
   requestSignTypedDataApproval,
-  requestSendTransactionApproval,
+  approveAndSignTransaction, // branding: consent + prepare + sign + broadcast
 });
 for (const [method, handler] of Object.entries(signHelper.handlers)) {
   wallet.registerEip1193(method, handler);

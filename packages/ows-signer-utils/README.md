@@ -81,25 +81,25 @@ try {
 
 ### EIP-1193 signing (`SignHelper`)
 
-Headless `personal_sign` / `eth_signTypedData*` / `eth_sendTransaction` orchestration (display → consent → sign; send also prepares via Viem and broadcasts with `eth_sendRawTransaction`). Does not register handlers — the branding app owns order:
+Headless `personal_sign` / `eth_signTypedData*` / `eth_sendTransaction` orchestration (display → consent → sign for messages; send delegates to branding `approveAndSignTransaction`). Does not register handlers — the branding app owns order:
 
 ```typescript
-import { SignHelper } from "@1shotapi/ows-signer-utils";
+import { SignHelper, prepareEvmTransaction } from "@1shotapi/ows-signer-utils";
 
 const signHelper = new SignHelper(signer, wallet, {
   ensureReady: ensureOnboardedForSigning, // setup only if no credential
-  onAuthenticated, // mark unlocked after successful ceremony
-  chainRpc: rpcHelper, // active-chain prepare + broadcast
+  onAuthenticated, // mark unlocked after message/typed-data ceremonies
+  getChainId: () => rpcHelper.getChainId(),
   requestPersonalSignApproval,
   requestSignTypedDataApproval,
-  requestSendTransactionApproval,
+  approveAndSignTransaction, // consent + prepare + sign + broadcast → hash
 });
 for (const [method, handler] of Object.entries(signHelper.handlers)) {
   wallet.registerEip1193(method, handler);
 }
 ```
 
-Consent UI stays app-owned (see `examples/general-wallet` approval dialog).
+Export `prepareEvmTransaction(chainRpc, account, tx)` for branding / relayer submit paths. Consent UI stays app-owned (see `examples/general-wallet` approval dialog).
 
 ## API
 

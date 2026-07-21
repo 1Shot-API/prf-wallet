@@ -1,4 +1,7 @@
-import { SignHelper } from "@1shotapi/ows-signer-utils";
+import {
+  SignHelper,
+  prepareEvmTransaction,
+} from "@1shotapi/ows-signer-utils";
 import type {
   OWSSigner,
   PersonalSignApprovalRequest,
@@ -7,6 +10,12 @@ import type {
   SignTypedDataApprovalRequest,
 } from "@1shotapi/ows-signer-utils";
 import type { OWSWallet } from "@1shotapi/ows-wallet-utils";
+import {
+  EVMTransactionHash,
+  OwsInvalidParamsError,
+  OwsUserRejectedError,
+  type EVMTransactionHash as EVMTransactionHashType,
+} from "@1shotapi/ows-types";
 
 export type RegisterApprovalSigningOptions = {
   /**
@@ -24,9 +33,19 @@ export type RegisterApprovalSigningOptions = {
   requestSignTypedDataApproval: (
     request: SignTypedDataApprovalRequest,
   ) => Promise<boolean>;
+  /**
+   * Consent UI for eth_sendTransaction. When approved, branding continues with
+   * prepare + sign + broadcast (default implementation below if omitted).
+   */
   requestSendTransactionApproval: (
     request: SendTransactionApprovalRequest,
   ) => Promise<boolean>;
+  /**
+   * Full send path. Defaults to modal consent + prepare + sign + eth_sendRawTransaction.
+   */
+  approveAndSignTransaction?: (
+    request: SendTransactionApprovalRequest,
+  ) => Promise<EVMTransactionHashType>;
 };
 
 /**
@@ -37,13 +56,40 @@ export function registerApprovalSigning(
   signer: OWSSigner,
   options: RegisterApprovalSigningOptions,
 ): SignHelper {
+  const approveAndSignTransaction =
+    options.approveAndSignTransaction ??
+    (async (request: SendTransactionApprovalRequest) => {
+      const approved = await options.requestSendTransactionApproval(request);
+      if (!approved) {
+        throw new OwsUserRejectedError("User rejected the transaction request");
+      }
+
+      const prepared = await prepareEvmTransaction(
+        options.chainRpc,
+        request.address,
+        request.transaction,
+      );
+      const signed = await signer.evm.signTransaction(prepared);
+      await options.onAuthenticated?.();
+
+      const hash = await options.chainRpc.request("eth_sendRawTransaction", [
+        signed,
+      ]);
+      if (typeof hash !== "string" || !/^0x[0-9a-fA-F]{64}$/.test(hash)) {
+        throw new OwsInvalidParamsError(
+          "eth_sendRawTransaction returned an invalid transaction hash",
+        );
+      }
+      return EVMTransactionHash(hash as `0x${string}`);
+    });
+
   const helper = new SignHelper(signer, wallet, {
     ensureReady: options.ensureReady,
     onAuthenticated: options.onAuthenticated,
-    chainRpc: options.chainRpc,
+    getChainId: () => options.chainRpc.getChainId(),
     requestPersonalSignApproval: options.requestPersonalSignApproval,
     requestSignTypedDataApproval: options.requestSignTypedDataApproval,
-    requestSendTransactionApproval: options.requestSendTransactionApproval,
+    approveAndSignTransaction,
   });
 
   for (const [method, handler] of Object.entries(helper.handlers)) {

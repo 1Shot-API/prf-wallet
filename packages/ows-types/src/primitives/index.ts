@@ -23,6 +23,7 @@ export * from "./JWKThumbprint.js";
 export * from "./COSEPublicKey.js";
 export * from "./SPKIPublicKey.js";
 export * from "./RPCCallId.js";
+export * from "./RelayerTransactionId.js";
 export * from "./SdJwtVcPresentationString.js";
 export * from "./SECP256K1PublicKey.js";
 export * from "./SolanaAccountAddress.js";

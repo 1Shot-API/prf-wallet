@@ -26,6 +26,14 @@ export type { RpcModelRegistration } from "./rpc/child-wrapper.js";
 export { debugLog, isOwsWalletDebugEnabled } from "./debug.js";
 
 export {
+  AddressUtils,
+} from "./AddressUtils.js";
+export {
+  IBlockchainProviderType,
+  type IBlockchainProvider,
+} from "./IBlockchainProvider.js";
+
+export {
   CREDENTIAL_PARAM_SCHEMAS,
   acceptOfferParamsSchema,
   presentParamsSchema,

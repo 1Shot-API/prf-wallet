@@ -10,6 +10,7 @@ export {
 export {
   SignHelper,
   parseTypedData,
+  prepareEvmTransaction,
   type Eip1193Handler,
   type Eip1193SignHandlers,
   type SignHelperChainRpc,
