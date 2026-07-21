@@ -182,6 +182,8 @@ export function oid4vciDemoPlugin(options: { publicOrigin: string }): Plugin {
               credential: sdJwt,
               c_nonce: session.cNonce,
             });
+            // One-shot access token — prevent replay for additional credentials.
+            ACCESS_TOKENS.delete(token);
             return;
           }
         } catch (error: unknown) {

@@ -385,6 +385,11 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   /** Resolves once `OWSSigner.create` finishes; set during boot. */
   const awaitSignerRef = useRef<(() => Promise<OWSSigner>) | null>(null);
 
+  /**
+   * Stable forever: always reads {@link awaitSignerRef} / {@link ensureReadyRef}
+   * so boot-time registrations (registerAccountConnect, SignHelper, …) never
+   * capture a stale unlock implementation.
+   */
   const awaitSignerReady = useCallback(async (): Promise<OWSSigner> => {
     const awaitSigner = awaitSignerRef.current;
     if (!awaitSigner) {
@@ -396,21 +401,33 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const ensureReady = useCallback(async () => {
-    await awaitSignerReady();
+    const awaitSigner = awaitSignerRef.current;
+    if (!awaitSigner) {
+      throw new Error(
+        "Signing Layer not started — wallet boot has not begun yet",
+      );
+    }
+    await awaitSigner();
     await ensureReadyRef.current();
-  }, [awaitSignerReady]);
+  }, []);
 
   /**
    * Signed-action gate: only run setup/login when no credential exists.
    * With a known credential, the signing ceremony itself unlocks.
    */
   const ensureOnboardedForSigning = useCallback(async () => {
-    await awaitSignerReady();
+    const awaitSigner = awaitSignerRef.current;
+    if (!awaitSigner) {
+      throw new Error(
+        "Signing Layer not started — wallet boot has not begun yet",
+      );
+    }
+    await awaitSigner();
     if (isWalletCreated()) {
       return;
     }
     await ensureReadyRef.current();
-  }, [awaitSignerReady]);
+  }, []);
 
   const onSigningAuthenticated = useCallback(async () => {
     await refreshAddresses();
