@@ -1,5 +1,13 @@
 # @1shotapi/ows-provider
 
+## 0.2.1
+
+### Patch Changes
+
+- 498d823: Replace SignHelper `requestSendTransactionApproval` with branding-owned `approveAndSignTransaction`; export `prepareEvmTransaction`. Allow `camera` on the branding iframe for optional QR address scan.
+- Updated dependencies [498d823]
+  - @1shotapi/ows-types@0.1.3
+
 ## 0.2.0
 
 ### Minor Changes

@@ -1,5 +1,11 @@
 # @1shotapi/ows-types
 
+## 0.1.3
+
+### Patch Changes
+
+- 498d823: Add EChainTechnology and RelayerTransactionId; move IBlockchainProvider and AddressUtils (ENS-aware) into ows-wallet-utils with viem as a peer dependency.
+
 ## 0.1.2
 
 ### Patch Changes
