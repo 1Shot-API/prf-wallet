@@ -15,7 +15,7 @@ export function WalletChrome() {
         onClick={() => {
           void requestHide();
         }}
-        className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-md border border-[color-mix(in_srgb,CanvasText_20%,transparent)] bg-transparent text-lg leading-none text-inherit"
+        className="flex size-7 cursor-pointer items-center justify-center rounded-md border border-[color-mix(in_srgb,CanvasText_20%,transparent)] bg-transparent text-lg leading-none text-inherit"
       >
         ×
       </button>

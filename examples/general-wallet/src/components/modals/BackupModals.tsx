@@ -172,7 +172,7 @@ export function CreateBackupModal({
         <p className="mb-4">
           Enter a passphrase of at least {DEFAULT_MIN_PASSWORD_LENGTH}{" "}
           characters to encrypt your private key. Store the backup somewhere
-          safe — you will need it to restore your wallet.
+          safe; you will need it to restore your wallet.
         </p>
       ) : null}
       {error ? (
