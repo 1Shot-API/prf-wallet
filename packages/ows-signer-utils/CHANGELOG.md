@@ -1,5 +1,11 @@
 # @1shotapi/ows-signer-utils
 
+## 0.2.2
+
+### Patch Changes
+
+- 6856913: Always return `yParity` from `signedAuthorizationFromSignature`. After recoverable ECDSA started emitting `v` 27/28, the previous branch returned only `v`, so relayer auth payloads sent `yParity: null` ("Invalid authorization list entry").
+
 ## 0.2.1
 
 ### Patch Changes
