@@ -38,7 +38,8 @@ Only accepts messages when `event.source === window.parent`. Replies use the par
 |--------|--------|----------------|
 | `getVersion` | — | `Version` |
 | `createCredential` | `name`, `options?` (`rpName`, `userDisplayName`, `userId`) | `KeyDerived`, `CredentialCreated` |
-| `signDigest` | `digestData`, `scheme`, `credentialId?` | `KeyDerived` (PRF path), `DigestSigned` |
+| `signDigest` | `digests[]` (`digestData`, `scheme`), `credentialId?` | `KeyDerived` (PRF path), `DigestSigned` (`results[]`) |
+| `executeBatch` | `digests?`, `plaintexts?`, `ciphertexts?`, `includePublicKey?`, `challenge?`, `credentialId?` | `KeyDerived` (when keys derived), `BatchExecuted` |
 | `revealPrivateKey` | `credentialId?` | `KeyDerived` (+ DOM display) |
 | `createRecoveryData` | `passwordText`, `buttonText`, `minPasswordLength`, `credentialId?` | `KeyDerived`, `RecoveryDataCreated` |
 | `recoverKey` | `aes256EncryptedPrivateKey`, `passwordText`, `buttonText`, `credentialId?` | DOM display; `RecoverySessionStarted` or re-bind → `RecoverySessionCleared` |
@@ -59,7 +60,7 @@ Failure events: `NotAllowed`, `InvalidRequest`.
 
 `secp256k1-ecdsa`, `secp256k1-ecdsa-recoverable`, `secp256k1-bip340` (not yet implemented), `ed25519`.
 
-`digestData` is `0x`-prefixed hex. Hash schemes require 32 bytes.
+`digestData` is `0x`-prefixed hex. Hash schemes require 32 bytes. `signDigest` and `executeBatch` take **arrays** of digests so one passkey ceremony covers many signatures. Empty `digests` arrays succeed without a ceremony. `executeBatch` with a `challenge` always forces a real WebAuthn assertion (recovery session alone cannot produce an assertion signature).
 
 ## PRF labels
 
@@ -77,7 +78,7 @@ Failure events: `NotAllowed`, `InvalidRequest`.
 
 ## Recovery session
 
-`recoverKey` caches the secp256k1 scalar in memory for subsequent `signDigest` / `encryptAES256` / `decryptAES256` calls without PRF. Cleared via `clearRecoverySession` or successful `credentialId` re-bind after recovery.
+`recoverKey` caches the secp256k1 scalar in memory for subsequent `signDigest` / `encryptAES256` / `decryptAES256` / `executeBatch` (without `challenge`) calls without PRF. Cleared via `clearRecoverySession` or successful `credentialId` re-bind after recovery.
 
 ## Layout
 

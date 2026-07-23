@@ -9,9 +9,8 @@ import type { Hasher, SaltGenerator, Signer, Verifier } from "@sd-jwt/core";
 export interface IOwsEd25519HolderSignerDeps {
   getEd25519PublicKeyHex: () => Promise<ED25519PublicKey>;
   signDigest: (
-    digestData: HexString,
-    scheme?: "ed25519",
-  ) => Promise<{ signature: HexString }>;
+    digests: Array<{ digestData: HexString; scheme?: "ed25519" }>,
+  ) => Promise<Array<{ signature: HexString }>>;
 }
 
 function toHashBytes(data: string | ArrayBuffer): Uint8Array {
@@ -139,7 +138,14 @@ export class CredentialCryptoUtils {
       },
       async signKbJwt(unsignedJwt) {
         const digestHex = ConversionUtils.utf8ToHex(unsignedJwt);
-        const result = await deps.signDigest(digestHex, "ed25519");
+        const [result] = await deps.signDigest([
+          { digestData: digestHex, scheme: "ed25519" },
+        ]);
+        if (!result) {
+          throw new Error(
+            "CredentialCryptoUtils.createOwsEd25519HolderSigner: empty signDigest result",
+          );
+        }
         return ConversionUtils.bytesToBase64Url(
           ConversionUtils.hexToBytes(result.signature),
         );

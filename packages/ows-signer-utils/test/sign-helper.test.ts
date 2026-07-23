@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   EVMAccountAddress,
   EVMChainId,
+  EVMSignatureHex,
   EVMTransactionHash,
   HexString,
   OwsInvalidParamsError,
@@ -47,17 +48,17 @@ function createMocks(options?: {
         cached = address;
         return address;
       },
-      async signMessage({ message }) {
-        calls.push(`signMessage:${message}`);
-        return "0xsig";
+      async signMessage(messages) {
+        calls.push(`signMessage:${messages[0]}`);
+        return [EVMSignatureHex("0xsig")];
       },
-      async signTypedData(typedData) {
-        calls.push(`signTypedData:${typedData.primaryType}`);
-        return "0xtyped";
+      async signTypedData(typedDataList) {
+        calls.push(`signTypedData:${typedDataList[0]?.primaryType}`);
+        return [EVMSignatureHex("0xtyped")];
       },
-      async signTransaction(transaction) {
-        calls.push(`signTransaction:${transaction.chainId}`);
-        return "0xsignedraw";
+      async signTransaction(transactions) {
+        calls.push(`signTransaction:${transactions[0]?.chainId}`);
+        return [HexString("0xsignedraw")];
       },
     },
   };

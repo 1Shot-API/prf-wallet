@@ -42,6 +42,7 @@ describe("constants", () => {
     assert.ok(METHODS.includes("signDigest"));
     assert.ok(METHODS.includes("encryptAES256"));
     assert.ok(METHODS.includes("decryptAES256"));
+    assert.ok(METHODS.includes("executeBatch"));
     assert.ok(SIGN_SCHEMES.includes("secp256k1-ecdsa-recoverable"));
   });
 });

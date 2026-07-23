@@ -20,16 +20,22 @@ export async function toViemLocalAccount(
     source: "owsSigner",
     publicKey: publicKeyResult.secp256k1PublicKey,
     async signMessage({ message }) {
-      return signer.evm.signMessage({ message });
+      const [signature] = await signer.evm.signMessage([message]);
+      return signature!;
     },
     async signTransaction(transaction) {
-      return signer.evm.signTransaction(transaction);
+      const [signed] = await signer.evm.signTransaction([transaction]);
+      return signed!;
     },
     async signTypedData(typedData) {
-      return signer.evm.signTypedData(typedData as TypedDataDefinition);
+      const [signature] = await signer.evm.signTypedData([
+        typedData as TypedDataDefinition,
+      ]);
+      return signature!;
     },
     async signAuthorization(authorization) {
-      return signer.evm.signAuthorization(authorization);
+      const [signed] = await signer.evm.signAuthorization([authorization]);
+      return signed!;
     },
   } satisfies LocalAccount;
 

@@ -6,6 +6,8 @@ import type {
   CreateCredentialOptions,
   CredentialCreatedData,
   DigestSignedData,
+  ExecuteBatchParams,
+  ExecuteBatchResult,
   GetPublicKeyParams,
   PublicKeyData,
   RecoveryDataCreatedData,
@@ -33,11 +35,19 @@ export interface IOWSSigner {
     name: string,
     options?: CreateCredentialOptions,
   ): Promise<CredentialCreatedData>;
+  /**
+   * Sign digests under one passkey ceremony.
+   * Default scheme per item (when omitted on the call site) is
+   * `secp256k1-ecdsa-recoverable`.
+   */
   signDigest(
-    digestData: HexString | `0x${string}`,
-    scheme?: SignScheme,
+    digests: Array<{
+      digestData: HexString | `0x${string}`;
+      scheme?: SignScheme;
+    }>,
     credentialId?: string,
-  ): Promise<DigestSignedData>;
+  ): Promise<DigestSignedData[]>;
+  executeBatch(params: ExecuteBatchParams): Promise<ExecuteBatchResult>;
   getPublicKey(
     params?: GetPublicKeyParams,
   ): Promise<PublicKeyData & { challengeSignature?: string }>;

@@ -157,6 +157,10 @@ export async function handleRequest(
       case "decryptAES256":
         await handleDecryptAES256(params, correlationId, targetOrigin);
         return;
+
+      case "executeBatch":
+        await handleExecuteBatch(params, correlationId, targetOrigin);
+        return;
     }
   } catch (error) {
     handleError(error, correlationId, targetOrigin);
@@ -235,52 +239,137 @@ async function handleCreateCredential(params, correlationId, targetOrigin) {
 }
 
 /**
+ * @typedef {{
+ *   digestData: string,
+ *   scheme: import('./constants.js').SignScheme,
+ *   digest: Uint8Array,
+ * }} ParsedDigestItem
+ */
+
+/**
+ * @param {unknown} digests
+ * @returns {{ ok: true, items: ParsedDigestItem[] } | { ok: false, reason: string }}
+ */
+function parseDigestItems(digests) {
+  if (!Array.isArray(digests)) {
+    return { ok: false, reason: "invalidParams" };
+  }
+  /** @type {ParsedDigestItem[]} */
+  const items = [];
+  for (const entry of digests) {
+    if (!entry || typeof entry !== "object") {
+      return { ok: false, reason: "invalidParams" };
+    }
+    const record = /** @type {Record<string, unknown>} */ (entry);
+    const digestData = record.digestData;
+    const scheme = record.scheme;
+    if (typeof digestData !== "string" || typeof scheme !== "string") {
+      return { ok: false, reason: "invalidParams" };
+    }
+    if (
+      !SIGN_SCHEMES.includes(
+        /** @type {import('./constants.js').SignScheme} */ (scheme),
+      )
+    ) {
+      return { ok: false, reason: "unknownScheme" };
+    }
+    const digest = parse0xHex(digestData);
+    try {
+      validateSignPayload(
+        /** @type {import('./constants.js').SignScheme} */ (scheme),
+        digest,
+      );
+    } catch (error) {
+      return {
+        ok: false,
+        reason: error instanceof Error ? error.message : "invalidPayload",
+      };
+    }
+    items.push({
+      digestData,
+      scheme: /** @type {import('./constants.js').SignScheme} */ (scheme),
+      digest,
+    });
+  }
+  return { ok: true, items };
+}
+
+/**
+ * @param {ParsedDigestItem[]} items
+ * @param {Uint8Array} secp256k1PrivateKey
+ * @param {Uint8Array} ed25519Seed
+ * @param {string | null} credentialId
+ * @returns {Promise<Array<{
+ *   digest: string,
+ *   scheme: string,
+ *   signature: string,
+ *   credentialId: string | null,
+ * }>>}
+ */
+async function signParsedDigests(
+  items,
+  secp256k1PrivateKey,
+  ed25519Seed,
+  credentialId,
+) {
+  /** @type {Array<{ digest: string, scheme: string, signature: string, credentialId: string | null }>} */
+  const results = [];
+  for (const item of items) {
+    const signature = await signWithScheme(
+      item.scheme,
+      item.digest,
+      secp256k1PrivateKey,
+      ed25519Seed,
+    );
+    results.push({
+      digest: item.digestData,
+      scheme: item.scheme,
+      signature,
+      credentialId,
+    });
+  }
+  return results;
+}
+
+/**
  * @param {Record<string, unknown>} params
  * @param {string | undefined} correlationId
  * @param {string} targetOrigin
  */
 async function handleSignDigest(params, correlationId, targetOrigin) {
-  const digestData = params.digestData;
-  const scheme = params.scheme;
   const credentialId =
     typeof params.credentialId === "string" ? params.credentialId : undefined;
-
-  if (typeof digestData !== "string" || typeof scheme !== "string") {
-    emitInvalid(correlationId, targetOrigin, "invalidParams");
+  const parsed = parseDigestItems(params.digests);
+  if (!parsed.ok) {
+    emitInvalid(correlationId, targetOrigin, parsed.reason);
     return;
   }
-  if (
-    !SIGN_SCHEMES.includes(
-      /** @type {import('./constants.js').SignScheme} */ (scheme),
-    )
-  ) {
-    emitInvalid(correlationId, targetOrigin, "unknownScheme");
+  const { items } = parsed;
+
+  if (items.length === 0) {
+    emitEvent(window.parent, targetOrigin, "DigestSigned", correlationId, {
+      results: [],
+    });
     return;
   }
-
-  const digest = parse0xHex(digestData);
-  validateSignPayload(
-    /** @type {import('./constants.js').SignScheme} */ (scheme),
-    digest,
-  );
 
   if (hasRecoverySession()) {
     const cached = getRecoveryPrivateKey();
     if (!cached) throw new Error("recoverySessionEmpty");
     const ed25519Seed = await ed25519SeedFromSecp256k1Scalar(cached);
-    const signature = await signWithScheme(
-      /** @type {import('./constants.js').SignScheme} */ (scheme),
-      digest,
-      cached,
-      ed25519Seed,
-    );
-    zeroize(ed25519Seed);
-    emitEvent(window.parent, targetOrigin, "DigestSigned", correlationId, {
-      digest: digestData,
-      scheme,
-      signature,
-      credentialId: credentialId ?? null,
-    });
+    try {
+      const results = await signParsedDigests(
+        items,
+        cached,
+        ed25519Seed,
+        credentialId ?? null,
+      );
+      emitEvent(window.parent, targetOrigin, "DigestSigned", correlationId, {
+        results,
+      });
+    } finally {
+      zeroize(ed25519Seed);
+    }
     return;
   }
 
@@ -294,22 +383,20 @@ async function handleSignDigest(params, correlationId, targetOrigin) {
       keys.secp256k1PublicKey,
       keys.ed25519PublicKey,
     );
-
-    const signature = await signWithScheme(
-      /** @type {import('./constants.js').SignScheme} */ (scheme),
-      digest,
-      keys.secp256k1PrivateKey,
-      ed25519Seed,
-    );
-    zeroize(keys.secp256k1PrivateKey);
-    zeroize(ed25519Seed);
-
-    emitEvent(window.parent, targetOrigin, "DigestSigned", correlationId, {
-      digest: digestData,
-      scheme,
-      signature,
-      credentialId: credentialId ?? getCredentialId(credential),
-    });
+    try {
+      const results = await signParsedDigests(
+        items,
+        keys.secp256k1PrivateKey,
+        ed25519Seed,
+        credentialId ?? getCredentialId(credential),
+      );
+      emitEvent(window.parent, targetOrigin, "DigestSigned", correlationId, {
+        results,
+      });
+    } finally {
+      zeroize(keys.secp256k1PrivateKey);
+      zeroize(ed25519Seed);
+    }
   });
 }
 
@@ -649,6 +736,179 @@ async function handleGetPublicKey(params, correlationId, targetOrigin) {
 
     zeroize(keys.secp256k1PrivateKey);
   });
+}
+
+/**
+ * Mixed ceremony: digests + AES + public key + optional WebAuthn challenge.
+ *
+ * @param {Record<string, unknown>} params
+ * @param {string | undefined} correlationId
+ * @param {string} targetOrigin
+ */
+async function handleExecuteBatch(params, correlationId, targetOrigin) {
+  const credentialId =
+    typeof params.credentialId === "string" ? params.credentialId : undefined;
+  const includePublicKey = params.includePublicKey === true;
+  const challengeHex =
+    typeof params.challenge === "string" ? params.challenge : undefined;
+  const challenge = challengeHex ? parse0xHex(challengeHex) : undefined;
+
+  /** @type {ParsedDigestItem[] | undefined} */
+  let digestItems;
+  if (params.digests !== undefined) {
+    const parsed = parseDigestItems(params.digests);
+    if (!parsed.ok) {
+      emitInvalid(correlationId, targetOrigin, parsed.reason);
+      return;
+    }
+    digestItems = parsed.items;
+  }
+
+  /** @type {string[] | undefined} */
+  let plaintexts;
+  if (params.plaintexts !== undefined) {
+    if (!isStringArray(params.plaintexts)) {
+      emitInvalid(correlationId, targetOrigin, "invalidParams");
+      return;
+    }
+    plaintexts = params.plaintexts;
+  }
+
+  /** @type {string[] | undefined} */
+  let ciphertextsIn;
+  if (params.ciphertexts !== undefined) {
+    if (!isStringArray(params.ciphertexts)) {
+      emitInvalid(correlationId, targetOrigin, "invalidParams");
+      return;
+    }
+    ciphertextsIn = params.ciphertexts;
+  }
+
+  const hasDigests = (digestItems?.length ?? 0) > 0;
+  const hasPlaintexts = (plaintexts?.length ?? 0) > 0;
+  const hasCiphertexts = (ciphertextsIn?.length ?? 0) > 0;
+  if (
+    !hasDigests &&
+    !hasPlaintexts &&
+    !hasCiphertexts &&
+    !includePublicKey &&
+    !challenge
+  ) {
+    emitInvalid(correlationId, targetOrigin, "emptyBatch");
+    return;
+  }
+
+  /**
+   * @param {Uint8Array} secp256k1PrivateKey
+   * @param {Uint8Array} ed25519Seed
+   * @param {Uint8Array} secp256k1PublicKey
+   * @param {Uint8Array} ed25519PublicKey
+   * @param {string | null} resolvedCredentialId
+   * @param {PublicKeyCredential | null} credential
+   */
+  async function runOps(
+    secp256k1PrivateKey,
+    ed25519Seed,
+    secp256k1PublicKey,
+    ed25519PublicKey,
+    resolvedCredentialId,
+    credential,
+  ) {
+    /** @type {Record<string, unknown>} */
+    const data = { credentialId: resolvedCredentialId };
+
+    if (hasDigests && digestItems) {
+      data.results = await signParsedDigests(
+        digestItems,
+        secp256k1PrivateKey,
+        ed25519Seed,
+        resolvedCredentialId,
+      );
+    }
+    if (hasPlaintexts && plaintexts) {
+      data.ciphertexts = await encryptAes256Batch(
+        plaintexts,
+        secp256k1PrivateKey,
+      );
+    }
+    if (hasCiphertexts && ciphertextsIn) {
+      data.plaintexts = await decryptAes256Batch(
+        ciphertextsIn,
+        secp256k1PrivateKey,
+      );
+    }
+    if (includePublicKey) {
+      data.publicKey = {
+        credentialId: resolvedCredentialId ?? undefined,
+        cosePublicKey: credential
+          ? getCosePublicKeyBase64Url(credential)
+          : null,
+        secp256k1PublicKey: to0xHex(secp256k1PublicKey),
+        ed25519PublicKey: to0xHex(ed25519PublicKey),
+      };
+    }
+    if (challenge && credential) {
+      const signature = getAssertionSignatureBase64Url(credential);
+      if (signature) {
+        data.challengeSignature = signature;
+      }
+    }
+
+    emitEvent(window.parent, targetOrigin, "BatchExecuted", correlationId, data);
+  }
+
+  // Challenge always forces a real assertion (assertion signature required).
+  if (challenge || !hasRecoverySession()) {
+    await withCeremony(async () => {
+      const credential = await getPasskeyAssertion(challenge, credentialId);
+      const keys = await deriveKeysFromCredential(credential);
+      const ed25519Seed = await ed25519SeedFromCredential(credential);
+      emitKeyDerived(
+        targetOrigin,
+        correlationId,
+        keys.secp256k1PublicKey,
+        keys.ed25519PublicKey,
+      );
+      try {
+        await runOps(
+          keys.secp256k1PrivateKey,
+          ed25519Seed,
+          keys.secp256k1PublicKey,
+          keys.ed25519PublicKey,
+          credentialId ?? getCredentialId(credential),
+          credential,
+        );
+      } finally {
+        zeroize(keys.secp256k1PrivateKey);
+        zeroize(ed25519Seed);
+      }
+    });
+    return;
+  }
+
+  const cached = getRecoveryPrivateKey();
+  if (!cached) throw new Error("recoverySessionEmpty");
+  const ed25519Seed = await ed25519SeedFromSecp256k1Scalar(cached);
+  const secp256k1PublicKey = secpGetPublicKey(cached, false);
+  const ed25519PublicKey = await edGetPublicKeyAsync(ed25519Seed);
+  emitKeyDerived(
+    targetOrigin,
+    correlationId,
+    secp256k1PublicKey,
+    ed25519PublicKey,
+  );
+  try {
+    await runOps(
+      cached,
+      ed25519Seed,
+      secp256k1PublicKey,
+      ed25519PublicKey,
+      credentialId ?? null,
+      null,
+    );
+  } finally {
+    zeroize(ed25519Seed);
+  }
 }
 
 /**

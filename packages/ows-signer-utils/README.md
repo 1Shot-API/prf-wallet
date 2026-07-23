@@ -25,13 +25,15 @@ const signer = await OWSSigner.create(
 await signer.createCredential("my-wallet", { rpName: "MyBrand" });
 
 const address = await signer.evm.getAccountAddress();
-const sig = await signer.evm.signMessage({ message: "hello" });
-const typedSig = await signer.evm.signTypedData({
-  domain: { name: "App", version: "1", chainId: 1, verifyingContract: "0x…" },
-  types: { … },
-  primaryType: "Mail",
-  message: { … },
-});
+const [sig] = await signer.evm.signMessage(["hello"]);
+const [typedSig] = await signer.evm.signTypedData([
+  {
+    domain: { name: "App", version: "1", chainId: 1, verifyingContract: "0x…" },
+    types: { … },
+    primaryType: "Mail",
+    message: { … },
+  },
+]);
 
 // Optional: viem LocalAccount for smart-account kits
 const account = await toViemLocalAccount(signer);
@@ -117,7 +119,8 @@ Export `prepareEvmTransaction(chainRpc, account, tx)` for branding / relayer sub
 |--------|-------------|
 | `getVersion()` | Signer API/version info |
 | `createCredential(name, options?)` | Register passkey; options include `rpName`, `userDisplayName`, `userId` |
-| `signDigest(digest, scheme?, credentialId?)` | Sign a 32-byte `0x` digest |
+| `signDigest(digests[], credentialId?)` | Sign digests under one ceremony (default scheme `secp256k1-ecdsa-recoverable`) |
+| `executeBatch(params)` | Mixed ceremony: digests + AES + public key + optional WebAuthn `challenge` |
 | `getPublicKey(params?)` | Derive keys; optional `challenge` for `ChallengeSigned` |
 | `createRecoveryData(...)` | Encrypt recovery blob |
 | `recoverKey(...)` | Decrypt recovery blob into session |
@@ -131,12 +134,12 @@ Export `prepareEvmTransaction(chainRpc, account, tx)` for branding / relayer sub
 | Method | Description |
 |--------|-------------|
 | `getAccountAddress()` | Ethereum address from secp256k1 public key |
-| `signMessage({ message })` | EIP-191 personal sign |
-| `signTypedData(typedData)` | EIP-712 |
-| `signTransaction(transaction)` | Returns signed serialized tx hex |
-| `signAuthorization(authorization)` | EIP-7702 authorization |
+| `signMessage(messages[], options?)` | EIP-191 personal sign (batch) |
+| `signTypedData(typedDataList[], options?)` | EIP-712 (batch) |
+| `signTransaction(transactions[], options?)` | Signed serialized tx hex (batch) |
+| `signAuthorization(authorizations[], options?)` | EIP-7702 authorization (batch) |
 
-All EVM methods accept optional `{ credentialId }` per call.
+All EVM batch methods accept optional `{ credentialId }` once for the whole batch.
 
 ### `signer.solana`
 

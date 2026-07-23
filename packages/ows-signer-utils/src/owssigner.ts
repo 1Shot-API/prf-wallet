@@ -5,6 +5,9 @@ import type {
   CreateCredentialOptions,
   CredentialCreatedData,
   DigestSignedData,
+  DigestSignedResult,
+  ExecuteBatchParams,
+  ExecuteBatchResult,
   GetPublicKeyParams,
   PublicKeyData,
   RecoveryDataCreatedData,
@@ -164,17 +167,21 @@ export class OWSSigner implements IOWSSigner {
   }
 
   async signDigest(
-    digestData: Hex,
-    scheme: SignScheme = "secp256k1-ecdsa-recoverable",
+    digests: Array<{
+      digestData: Hex;
+      scheme?: SignScheme;
+    }>,
     credentialId?: string,
-  ): Promise<DigestSignedData> {
+  ): Promise<DigestSignedData[]> {
     const restoreSignerDisplay = prepareSignerIframeForWebAuthn(this.iframe);
     try {
-      const result = await this.rpc.request<DigestSignedData>(
+      const result = await this.rpc.request<DigestSignedResult>(
         "signDigest",
         {
-          digestData,
-          scheme,
+          digests: digests.map((item) => ({
+            digestData: item.digestData,
+            scheme: item.scheme ?? "secp256k1-ecdsa-recoverable",
+          })),
           credentialId: credentialId ?? this.credentialId,
         },
         {
@@ -182,8 +189,44 @@ export class OWSSigner implements IOWSSigner {
           onIntermediate: (_event, data) => this.onKeyDerived(data),
         },
       );
+      const firstCredentialId = result.results.find((r) => r.credentialId)
+        ?.credentialId;
+      if (firstCredentialId) {
+        this.credentialId = firstCredentialId;
+      }
+      return result.results;
+    } finally {
+      restoreSignerDisplay();
+    }
+  }
+
+  /**
+   * Mixed ceremony: digests, AES encrypt/decrypt, public key, and/or
+   * WebAuthn challenge auth under one passkey assertion.
+   */
+  async executeBatch(params: ExecuteBatchParams): Promise<ExecuteBatchResult> {
+    const restoreSignerDisplay = prepareSignerIframeForWebAuthn(this.iframe);
+    try {
+      const result = await this.rpc.request<ExecuteBatchResult>(
+        "executeBatch",
+        {
+          ...params,
+          credentialId: params.credentialId ?? this.credentialId,
+        },
+        {
+          terminalEvent: "BatchExecuted",
+          onIntermediate: (_event, data) => this.onKeyDerived(data),
+        },
+      );
       if (result.credentialId) {
         this.credentialId = result.credentialId;
+      }
+      if (result.publicKey) {
+        this.lastPublicKeyData = result.publicKey;
+        this.cacheAddressesFromPublicKeys(
+          result.publicKey.secp256k1PublicKey,
+          result.publicKey.ed25519PublicKey,
+        );
       }
       return result;
     } finally {

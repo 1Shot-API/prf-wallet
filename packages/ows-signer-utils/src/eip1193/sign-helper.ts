@@ -1,6 +1,8 @@
 import {
+  CredentialId,
   EVMAccountAddress,
   EVMChainId,
+  EVMSignatureHex,
   EVMTransactionHash,
   HexString,
   OwsInvalidParamsError,
@@ -46,17 +48,20 @@ export type SignHelperSigner = {
   getCachedAddress?: () => EVMAccountAddress | null | undefined;
   evm: {
     getAccountAddress(options?: {
-      credentialId?: string;
+      credentialId?: CredentialId;
     }): Promise<EVMAccountAddress>;
-    signMessage(args: { message: string }): Promise<string>;
+    signMessage(
+      messages: string[],
+      options?: { credentialId?: CredentialId },
+    ): Promise<EVMSignatureHex[]>;
     signTypedData(
-      typedData: TypedDataDefinition,
-      options?: { credentialId?: string },
-    ): Promise<string>;
+      typedDataList: TypedDataDefinition[],
+      options?: { credentialId?: CredentialId },
+    ): Promise<EVMSignatureHex[]>;
     signTransaction(
-      transaction: TransactionSerializable,
-      options?: { credentialId?: string },
-    ): Promise<string>;
+      transactions: TransactionSerializable[],
+      options?: { credentialId?: CredentialId },
+    ): Promise<HexString[]>;
   };
 };
 
@@ -161,7 +166,7 @@ export class SignHelper {
     };
   }
 
-  private async handlePersonalSign(params: unknown[]): Promise<string> {
+  private async handlePersonalSign(params: unknown[]): Promise<EVMSignatureHex> {
     const [message, addressParam] = params as [string, string];
     const address = EVMAccountAddress(addressParam as `0x${string}`);
     const size =
@@ -178,13 +183,13 @@ export class SignHelper {
       if (this.options.ensureReady) {
         await this.options.ensureReady();
       }
-      const signature = await this.signer.evm.signMessage({ message });
+      const [signature] = await this.signer.evm.signMessage([message]);
       await this.notifyAuthenticated();
-      return signature;
+      return signature!;
     });
   }
 
-  private async handleTypedData(params: unknown[]): Promise<string> {
+  private async handleTypedData(params: unknown[]): Promise<EVMSignatureHex> {
     const [addressParam, typedDataParam] = params as [
       string,
       SignTypedDataPayload | string,
@@ -205,11 +210,11 @@ export class SignHelper {
       if (this.options.ensureReady) {
         await this.options.ensureReady();
       }
-      const signature = await this.signer.evm.signTypedData(
+      const [signature] = await this.signer.evm.signTypedData([
         typedData as unknown as TypedDataDefinition,
-      );
+      ]);
       await this.notifyAuthenticated();
-      return signature;
+      return signature!;
     });
   }
 

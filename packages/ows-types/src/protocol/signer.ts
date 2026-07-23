@@ -20,7 +20,8 @@ export type SignerMethod =
   | "getPublicKey"
   | "clearRecoverySession"
   | "encryptAES256"
-  | "decryptAES256";
+  | "decryptAES256"
+  | "executeBatch";
 
 export type SignerEvent =
   | "Version"
@@ -34,6 +35,7 @@ export type SignerEvent =
   | "ChallengeSigned"
   | "AES256Encrypted"
   | "AES256Decrypted"
+  | "BatchExecuted"
   | "NotAllowed"
   | "InvalidRequest";
 
@@ -71,11 +73,45 @@ export type CredentialCreatedData = {
   secp256k1PublicKey: SECP256K1PublicKey;
 };
 
+export type DigestSignItem = {
+  digestData: `0x${string}`;
+  scheme: SignScheme;
+};
+
 export type DigestSignedData = {
   digest: `0x${string}`;
   scheme: SignScheme;
   signature: `0x${string}`;
   credentialId: string | null;
+};
+
+/** Terminal `DigestSigned` event payload (batch). */
+export type DigestSignedResult = {
+  results: DigestSignedData[];
+};
+
+/**
+ * Batch sign digests under one passkey ceremony.
+ * Arrays amortize a single unlock across multiple digests.
+ */
+export type SignDigestParams = {
+  digests: DigestSignItem[];
+  credentialId?: string;
+};
+
+/**
+ * Mixed ceremony: sign digests, AES encrypt/decrypt, public key, and/or
+ * WebAuthn challenge auth under a single passkey assertion.
+ */
+export type ExecuteBatchParams = {
+  credentialId?: string;
+  /** WebAuthn assertion challenge (e.g. relayer auth). Forces a real assertion. */
+  challenge?: `0x${string}`;
+  digests?: DigestSignItem[];
+  plaintexts?: string[];
+  ciphertexts?: string[];
+  /** Include PublicKey payload in the result (addresses via KeyDerived). */
+  includePublicKey?: boolean;
 };
 
 export type RecoveryDataCreatedData = {
@@ -99,6 +135,16 @@ export type PublicKeyData = {
   secp256k1PublicKey: SECP256K1PublicKey;
   ed25519PublicKey: ED25519PublicKey;
   credentialId?: string;
+};
+
+/** Terminal `BatchExecuted` event payload. */
+export type ExecuteBatchResult = {
+  results?: DigestSignedData[];
+  ciphertexts?: string[];
+  plaintexts?: string[];
+  publicKey?: PublicKeyData;
+  challengeSignature?: string;
+  credentialId?: string | null;
 };
 
 export type ChallengeSignedData = {
