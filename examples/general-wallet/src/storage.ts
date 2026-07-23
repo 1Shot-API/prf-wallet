@@ -5,6 +5,7 @@ import {
 import { getAddress, isAddress } from "viem";
 
 const WALLET_CREATED_KEY = "ows-wallet-created";
+/** WebAuthn credential id (public selector for allowCredentials) — not a bearer secret. */
 const CREDENTIAL_ID_KEY = "ows-credential-id";
 const BACKUP_KEY = "ows-wallet-backup";
 const EVM_ADDRESS_KEY = "ows-evm-address";
@@ -20,6 +21,8 @@ export function loadCredentialId(): string | undefined {
 
 export function saveWalletCreated(credentialId: string): void {
   localStorage.setItem(WALLET_CREATED_KEY, "true");
+  // WebAuthn credential id is a public allowCredentials selector — not a bearer token.
+  // react-doctor-disable-next-line react-doctor/auth-token-in-web-storage
   localStorage.setItem(CREDENTIAL_ID_KEY, credentialId);
 }
 

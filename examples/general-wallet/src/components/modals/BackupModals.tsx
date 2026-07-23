@@ -30,10 +30,8 @@ function formatBackupError(error: unknown): string {
 
 export function CreateBackupModal({
   onResolve,
-  onReject,
 }: {
   onResolve: () => void;
-  onReject: (error: unknown) => void;
 }) {
   const { getSigner, signerContainerRef, ensureReady, persistBackup } =
     useWallet();
@@ -50,7 +48,8 @@ export function CreateBackupModal({
     const home = signerContainerRef.current;
     const slot = signerSlotRef.current;
     if (!home || !slot) {
-      onReject(new Error("Signer not ready for backup"));
+      setError("Signer not ready for backup");
+      setPhase("error");
       return;
     }
 
@@ -99,25 +98,14 @@ export function CreateBackupModal({
         setError(formatBackupError(err));
         setPhase("error");
       }
-    })().catch((err: unknown) => {
-      if (abortedRef.current) return;
-      restoreOverlayRef.current?.();
-      restoreOverlayRef.current = null;
-      onReject(err);
-    });
+    })();
 
     return () => {
       abortedRef.current = true;
       restoreOverlayRef.current?.();
       restoreOverlayRef.current = null;
     };
-  }, [
-    ensureReady,
-    getSigner,
-    onReject,
-    persistBackup,
-    signerContainerRef,
-  ]);
+  }, [ensureReady, getSigner, persistBackup, signerContainerRef]);
 
   if (phase === "result" && result) {
     return (
@@ -217,11 +205,9 @@ function formatRestoreError(error: unknown): string {
 export function RestoreBackupModal({
   encryptedPrivateKey,
   onResolve,
-  onReject,
 }: {
   encryptedPrivateKey: string;
   onResolve: (restored: boolean) => void;
-  onReject: (error: unknown) => void;
 }) {
   const { getSigner, signerContainerRef, awaitSignerReady } = useWallet();
   const signerSlotRef = useRef<HTMLDivElement>(null);
@@ -235,7 +221,8 @@ export function RestoreBackupModal({
     const home = signerContainerRef.current;
     const slot = signerSlotRef.current;
     if (!home || !slot) {
-      onReject(new Error("Signer not ready for restore"));
+      setError("Signer not ready for restore");
+      setPhase("error");
       return;
     }
 
@@ -276,12 +263,7 @@ export function RestoreBackupModal({
         setError(formatRestoreError(err));
         setPhase("error");
       }
-    })().catch((err: unknown) => {
-      if (abortedRef.current) return;
-      restoreOverlayRef.current?.();
-      restoreOverlayRef.current = null;
-      onReject(err);
-    });
+    })();
 
     return () => {
       abortedRef.current = true;
@@ -292,7 +274,6 @@ export function RestoreBackupModal({
     awaitSignerReady,
     encryptedPrivateKey,
     getSigner,
-    onReject,
     signerContainerRef,
   ]);
 

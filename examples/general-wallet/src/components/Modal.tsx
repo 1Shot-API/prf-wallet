@@ -19,6 +19,10 @@ export type ModalProps = {
   wide?: boolean;
 };
 
+/**
+ * Consent / status panel. Uses the native `<dialog>` + `showModal()` so the
+ * browser owns focus trapping, Escape, and the backdrop.
+ */
 export function Modal({
   title,
   children,
@@ -28,44 +32,57 @@ export function Modal({
   wide,
 }: ModalProps) {
   const titleId = useId();
-  const panelRef = useRef<HTMLDivElement>(null);
+  const dialogRef = useRef<HTMLDialogElement>(null);
 
   useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+
+    if (!dialog.open) {
+      dialog.showModal();
+    }
+
     const focusTarget =
-      panelRef.current?.querySelector<HTMLElement>("[data-autofocus]") ??
-      panelRef.current?.querySelector<HTMLElement>(
+      dialog.querySelector<HTMLElement>("[data-autofocus]") ??
+      dialog.querySelector<HTMLElement>(
         "button, [href], input, select, textarea",
       );
     focusTarget?.focus();
-  }, []);
 
-  useEffect(() => {
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && onBackdropDismiss) {
+    const onCancel = (event: Event) => {
+      // Escape — only dismiss when the host offered a dismiss handler.
+      if (!onBackdropDismiss) {
         event.preventDefault();
-        onBackdropDismiss();
+        return;
+      }
+      onBackdropDismiss();
+    };
+
+    dialog.addEventListener("cancel", onCancel);
+    return () => {
+      dialog.removeEventListener("cancel", onCancel);
+      if (dialog.open) {
+        dialog.close();
       }
     };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
   }, [onBackdropDismiss]);
 
   return (
-    <div
-      className="fixed inset-0 z-[10000] flex items-center justify-center bg-[color-mix(in_srgb,CanvasText_35%,transparent)] p-4"
-      role="presentation"
-      onClick={(event) => {
-        if (event.target === event.currentTarget) {
-          onBackdropDismiss?.();
-        }
-      }}
+    <dialog
+      ref={dialogRef}
+      aria-labelledby={titleId}
+      className="fixed inset-0 m-0 h-full max-h-none w-full max-w-none border-0 bg-transparent p-4 open:grid open:place-items-center backdrop:bg-[color-mix(in_srgb,CanvasText_35%,transparent)]"
     >
+      {onBackdropDismiss ? (
+        <button
+          type="button"
+          aria-label="Dismiss"
+          className="absolute inset-0 z-0 cursor-default border-0 bg-transparent p-0"
+          onClick={onBackdropDismiss}
+        />
+      ) : null}
       <div
-        ref={panelRef}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={titleId}
-        className={`max-h-[min(85vh,36rem)] min-w-0 overflow-x-hidden overflow-y-auto rounded-[10px] bg-[Canvas] p-5 text-[CanvasText] shadow-[0_12px_40px_color-mix(in_srgb,CanvasText_25%,transparent)] ${
+        className={`relative z-10 max-h-[min(85vh,36rem)] min-w-0 overflow-x-hidden overflow-y-auto rounded-[10px] bg-[Canvas] p-5 text-[CanvasText] shadow-[0_12px_40px_color-mix(in_srgb,CanvasText_25%,transparent)] ${
           wide ? "w-[min(32rem,100%)]" : "w-[min(28rem,100%)]"
         }`}
       >
@@ -97,6 +114,6 @@ export function Modal({
           </div>
         ) : null}
       </div>
-    </div>
+    </dialog>
   );
 }
