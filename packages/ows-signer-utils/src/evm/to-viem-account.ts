@@ -5,10 +5,14 @@ import type { OWSSigner } from "../owssigner.js";
 export async function toViemLocalAccount(
   signer: OWSSigner,
 ): Promise<LocalAccount> {
-  const address = await signer.evm.getAccountAddress();
-  const publicKeyResult = await signer.getPublicKey({
-    credentialId: signer.getCredentialId(),
-  });
+  const address =
+    signer.getCachedAddress?.() ?? (await signer.evm.getAccountAddress());
+  const cached = signer.getLastPublicKeyData?.();
+  const publicKeyResult =
+    cached ??
+    (await signer.getPublicKey({
+      credentialId: signer.getCredentialId(),
+    }));
 
   const account = {
     address: address,

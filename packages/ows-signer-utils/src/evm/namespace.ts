@@ -7,6 +7,7 @@ import type {
   TransactionSerializable,
   TypedDataDefinition,
 } from "viem";
+import { parseSignature, serializeSignature } from "viem";
 import { publicKeyToAddress } from "viem/utils";
 import type { OWSSigner } from "../owssigner.js";
 import {
@@ -19,6 +20,11 @@ import {
 } from "./marshal.js";
 
 const EVM_SIGN_SCHEME = "secp256k1-ecdsa-recoverable" as const;
+
+/** Canonical 65-byte secp256k1 sig with v ∈ {27, 28} for on-chain ecrecover. */
+function toEvmRecoverableSignature(signature: Hex): Hex {
+  return serializeSignature(parseSignature(signature));
+}
 
 export type EvmCallOptions = {
   credentialId?: string;
@@ -54,7 +60,7 @@ export class EvmSigner {
       EVM_SIGN_SCHEME,
       credentialId ?? this.signer.getCredentialId(),
     );
-    return result.signature;
+    return toEvmRecoverableSignature(result.signature);
   }
 
   async signTypedData<const typedData extends TypedDataDefinition>(
@@ -67,7 +73,7 @@ export class EvmSigner {
       EVM_SIGN_SCHEME,
       options?.credentialId ?? this.signer.getCredentialId(),
     );
-    return result.signature;
+    return toEvmRecoverableSignature(result.signature);
   }
 
   async signTransaction(

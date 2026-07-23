@@ -29,6 +29,8 @@ export type Eip1193Handler = (params: unknown[]) => Promise<unknown>;
 
 export type SignHelperDisplaySession = {
   hide(): Promise<void>;
+  /** Preferred end-of-session cleanup; keeps host RPC flyout alive when nested. */
+  release?(): void;
 };
 
 /** Wallet surface used to show the branding iframe during consent / signing. */
@@ -301,7 +303,13 @@ export class SignHelper {
     try {
       return await run();
     } finally {
-      await display.hide();
+      // Prefer release over hide so an in-flight host RPC (rpcAccessCount > 0)
+      // can keep the flyout visible until eth_sendTransaction fully settles.
+      if ("release" in display && typeof display.release === "function") {
+        display.release();
+      } else {
+        await display.hide();
+      }
     }
   }
 }

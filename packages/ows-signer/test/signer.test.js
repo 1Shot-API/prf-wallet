@@ -112,3 +112,37 @@ describe("sign validation", () => {
     validateSignPayload("secp256k1-ecdsa", new Uint8Array(32));
   });
 });
+
+describe("sign recoverable", () => {
+  it("emits 65-byte signatures with v in {27, 28}", async () => {
+    const { signWithScheme } = await import("../src/crypto/sign.js");
+    const digest = crypto.getRandomValues(new Uint8Array(32));
+    const priv = crypto.getRandomValues(new Uint8Array(32));
+    priv[0] %= 0xf0;
+    priv[31] |= 1;
+    const signature = await signWithScheme(
+      "secp256k1-ecdsa-recoverable",
+      digest,
+      priv,
+      new Uint8Array(32),
+    );
+    assert.match(signature, /^0x[0-9a-f]{130}$/i);
+    const v = Number.parseInt(signature.slice(-2), 16);
+    assert.ok(v === 27 || v === 28, `expected v 27|28, got ${v}`);
+  });
+
+  it("compact scheme stays 64 bytes", async () => {
+    const { signWithScheme } = await import("../src/crypto/sign.js");
+    const digest = crypto.getRandomValues(new Uint8Array(32));
+    const priv = crypto.getRandomValues(new Uint8Array(32));
+    priv[0] %= 0xf0;
+    priv[31] |= 1;
+    const signature = await signWithScheme(
+      "secp256k1-ecdsa",
+      digest,
+      priv,
+      new Uint8Array(32),
+    );
+    assert.match(signature, /^0x[0-9a-f]{128}$/i);
+  });
+});

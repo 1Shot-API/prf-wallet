@@ -66,10 +66,11 @@ function setupBrowserMocks() {
     }
 
     if (method === "signDigest") {
+      // yParity=1 (not 27/28) — EvmSigner must canonicalize for ecrecover.
       reply("DigestSigned", {
         digest: "0x" + "22".repeat(32),
         scheme: "secp256k1-ecdsa-recoverable",
-        signature: "0x" + "33".repeat(65),
+        signature: ("0x" + "33".repeat(64) + "01") as `0x${string}`,
         credentialId: "cred-1",
       }, id);
       return;
@@ -145,10 +146,10 @@ describe("OWSSigner", () => {
 
     const digestResult = await signer.signDigest(hashMessage("hi"));
     assert.equal(digestResult.scheme, "secp256k1-ecdsa-recoverable");
-    assert.match(digestResult.signature, /^0x/);
+    assert.equal(digestResult.signature.slice(-2), "01");
 
     const signature = await signer.evm.signMessage({ message: "hi" });
-    assert.match(signature, /^0x/);
+    assert.equal(signature.slice(-2), "1c");
 
     signer.destroy();
   });

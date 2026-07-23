@@ -27,10 +27,12 @@ export async function signWithScheme(
         lowS: true,
       });
       const compact = sig.toCompactRawBytes();
+      // Ethereum ecrecover / OpenZeppelin ECDSA require v ∈ {27, 28}.
+      // Noble returns recovery ∈ {0,1} (rarely 2,3); mask to yParity then +27.
       const recovery = sig.recovery ?? 0;
       const out = new Uint8Array(65);
       out.set(compact, 0);
-      out[64] = recovery;
+      out[64] = 27 + (recovery & 1);
       return to0xHex(out);
     }
     case "secp256k1-bip340":
