@@ -16,10 +16,12 @@
     "dev:credential-verifier": "npm run dev -w @1shotapi/ows-example-credential-verifier",
     "changeset": "changeset",
     "version-packages": "changeset version",
-    "release": "npm run build && changeset publish"
+    "release": "npm run build && changeset publish",
+    "doctor": "npx react-doctor@latest"
   },
   "devDependencies": {
     "@changesets/cli": "^2.29.0",
+    "react-doctor": "^0.9.1",
     "typescript": "~5.8.0"
   },
   "engines": {
