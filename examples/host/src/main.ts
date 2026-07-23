@@ -3,7 +3,7 @@ import {
   EVMAccountAddress,
   EVMChainId,
   HexString,
-  type EVMTransactionHash,
+  EVMTransactionHash,
 } from "@1shotapi/ows-types";
 import {
   createPublicClient,
@@ -373,7 +373,7 @@ async function handleSendUsdc(proxy: OWSProxy): Promise<void> {
     }) as Hex;
 
     setStatus("Approve the transaction in the wallet…");
-    const hash = (await proxy.ethereum.request({
+    const hash = EVMTransactionHash(await proxy.ethereum.request({
       method: "eth_sendTransaction",
       params: [
         {
@@ -384,7 +384,7 @@ async function handleSendUsdc(proxy: OWSProxy): Promise<void> {
           chainId,
         },
       ],
-    })) as EVMTransactionHash;
+    }));
 
     usdcOutput.textContent = `Transaction hash:\n${hash}`;
     usdcOutput.hidden = false;
