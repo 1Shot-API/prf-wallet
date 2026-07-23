@@ -10,13 +10,18 @@ import {
   serializeSignature,
 } from "viem";
 import { privateKeyToAccount, generatePrivateKey } from "viem/accounts";
-import { publicKeyToAddress } from "viem/utils";
+import {
+  publicKeyToAddress,
+  recoverAuthorizationAddress,
+} from "viem/utils";
 import { signWithScheme } from "../../ows-signer/src/crypto/sign.js";
 import { getPublicKey } from "../../ows-signer/src/crypto/vendor/noble-secp256k1.js";
 import { parse0xHex, to0xHex } from "../../ows-signer/src/hex.js";
 import {
+  digestForAuthorization,
   digestForMessage,
   digestForTypedData,
+  signedAuthorizationFromSignature,
 } from "../src/evm/marshal.ts";
 
 describe("evm recoverable signatures", () => {
@@ -132,6 +137,39 @@ describe("evm recoverable signatures", () => {
     assert.equal(
       await recoverAddress({ hash: digest, signature: sig }),
       expected,
+    );
+  });
+
+  it("EIP-7702 authorization recovers to signer and exposes yParity", async () => {
+    const privateKey = generatePrivateKey();
+    const privBytes = parse0xHex(privateKey);
+    const account = privateKeyToAccount(privateKey);
+    const authorization = {
+      chainId: 84532,
+      contractAddress:
+        "0x63c0c19a282a1B52b07dD5a65b58948A07DAE32B" as const,
+      nonce: 7,
+    };
+
+    const digest = digestForAuthorization(authorization);
+    const owsSig = await signWithScheme(
+      "secp256k1-ecdsa-recoverable",
+      parse0xHex(digest),
+      privBytes,
+      new Uint8Array(32),
+    );
+    const signed = signedAuthorizationFromSignature(authorization, owsSig);
+    assert.ok(signed.yParity === 0 || signed.yParity === 1);
+
+    const recovered = await recoverAuthorizationAddress({
+      authorization: signed,
+    });
+    assert.equal(recovered, account.address);
+
+    const viemSigned = await account.signAuthorization(authorization);
+    assert.equal(
+      await recoverAuthorizationAddress({ authorization: viemSigned }),
+      account.address,
     );
   });
 });

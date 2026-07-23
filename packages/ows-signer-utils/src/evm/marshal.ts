@@ -55,15 +55,13 @@ export function signedAuthorizationFromSignature(
     throw new Error("Authorization requires address or contractAddress");
   }
 
-  if ("v" in parsed && parsed.v !== undefined) {
-    return {
-      address,
-      chainId: authorization.chainId,
-      nonce: authorization.nonce,
-      r: parsed.r,
-      s: parsed.s,
-      v: parsed.v,
-    };
+  // Relayers and EIP-7702 JSON payloads expect `yParity` (0|1). Prefer that even when
+  // parseSignature also returns `v` (27|28) — omitting yParity becomes JSON null.
+  const yParity =
+    parsed.yParity ??
+    (parsed.v !== undefined ? (Number(parsed.v) % 2 === 0 ? 1 : 0) : undefined);
+  if (yParity !== 0 && yParity !== 1) {
+    throw new Error("Authorization signature missing yParity");
   }
 
   return {
@@ -72,6 +70,6 @@ export function signedAuthorizationFromSignature(
     nonce: authorization.nonce,
     r: parsed.r,
     s: parsed.s,
-    yParity: parsed.yParity,
+    yParity,
   };
 }

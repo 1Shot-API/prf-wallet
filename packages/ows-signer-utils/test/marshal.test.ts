@@ -94,8 +94,20 @@ describe("evm/marshal", () => {
     assert.equal(signed.nonce, authorization.nonce);
     assert.match(signed.r, /^0x/);
     assert.match(signed.s, /^0x/);
-    assert.ok(
-      typeof signed.yParity === "number" || typeof signed.v === "bigint",
-    );
+    // Must expose yParity for relayer JSON (not only v), even when sig ends in 0x1b.
+    assert.equal(signed.yParity, 0);
+    assert.equal("v" in signed, false);
+  });
+
+  it("signedAuthorizationFromSignature maps v=28 to yParity=1", () => {
+    const authorization = {
+      chainId: 84532,
+      address: "0x0000000000000000000000000000000000000001",
+      nonce: 3,
+    } as const;
+    const signature =
+      `0x${"11".repeat(32)}${"22".repeat(32)}1c` as const;
+    const signed = signedAuthorizationFromSignature(authorization, signature);
+    assert.equal(signed.yParity, 1);
   });
 });
