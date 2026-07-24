@@ -131,6 +131,12 @@ export class OWSSigner implements IOWSSigner {
   private onKeyDerived = (data: Record<string, unknown>): void => {
     const derived = keyDerivedDataFromEvent(data);
     if (derived) {
+      this.lastPublicKeyData = {
+        cosePublicKey: null,
+        secp256k1PublicKey: derived.secp256k1PublicKey,
+        ed25519PublicKey: derived.ed25519PublicKey,
+        credentialId: this.credentialId,
+      };
       this.cacheAddressesFromPublicKeys(
         derived.secp256k1PublicKey,
         derived.ed25519PublicKey,
