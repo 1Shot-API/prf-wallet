@@ -11,6 +11,7 @@ export {
 export {
   OwsSignerError,
   OwsNotAllowedError,
+  OwsSignDeniedError,
   OwsInvalidRequestError,
   OwsTimeoutError,
 } from "./errors/signer.js";
@@ -80,12 +81,14 @@ export type {
   RecoverySessionClearedData,
   PublicKeyData,
   ChallengeSignedData,
+  CeremonyUiParams,
   CreateCredentialOptions,
   GetPublicKeyParams,
   EncryptAES256Params,
   EncryptAES256Result,
   DecryptAES256Params,
   DecryptAES256Result,
+  RecoveryCeremonyOptions,
 } from "./protocol/signer.js";
 
 export type { IOWSSigner } from "./protocol/ows-signer.js";

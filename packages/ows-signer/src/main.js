@@ -1,9 +1,10 @@
 import { handleRequest } from "./handlers.js";
 import {
+  abandonCeremony,
   isValidNesting,
   setTrustedParentOrigin,
 } from "./state.js";
-import { initUi } from "./ui.js";
+import { cancelPendingCeremonyConfirm, initUi } from "./ui.js";
 import { isValidParentMessage, parseRequest } from "./rpc.js";
 
 function bootstrap() {
@@ -20,13 +21,28 @@ function bootstrap() {
 
   window.addEventListener("message", async (event) => {
     if (!isValidParentMessage(event)) return;
-    if (!parseRequest(event.data)) return;
+
+    const data = event.data;
+    if (
+      data &&
+      typeof data === "object" &&
+      /** @type {{ kind?: unknown }} */ (data).kind === "cancel"
+    ) {
+      setTrustedParentOrigin(event.origin);
+      await abandonCeremony(cancelPendingCeremonyConfirm);
+      return;
+    }
+
+    if (!parseRequest(data)) return;
 
     setTrustedParentOrigin(event.origin);
     const targetOrigin = event.origin;
     const { method, correlationId, params = {} } = /** @type {{ method: string, correlationId?: string, params?: Record<string, unknown> }} */ (
-      event.data
+      data
     );
+
+    // Drop a stuck Confirm wait (e.g. parent timed out) before starting anew.
+    await abandonCeremony(cancelPendingCeremonyConfirm);
 
     await handleRequest(
       method,

@@ -1,8 +1,8 @@
-import type { SolanaAccountAddress } from "@1shotapi/ows-types";
+import type { CeremonyUiParams, SolanaAccountAddress } from "@1shotapi/ows-types";
 import type { OWSSigner } from "../owssigner.js";
 import { addressFromEd25519PublicKey } from "./address.js";
 
-export type SolanaCallOptions = {
+export type SolanaCallOptions = CeremonyUiParams & {
   credentialId?: string;
 };
 
@@ -17,6 +17,10 @@ export class SolanaSigner {
 
     const publicKey = await this.signer.getPublicKey({
       credentialId: options?.credentialId ?? this.signer.getCredentialId(),
+      explanationHeader: options?.explanationHeader,
+      explanationText: options?.explanationText,
+      confirmButtonText: options?.confirmButtonText,
+      denyButtonText: options?.denyButtonText,
     });
     const address = addressFromEd25519PublicKey(publicKey.ed25519PublicKey);
     this.signer.setCachedSolanaAddress(address);

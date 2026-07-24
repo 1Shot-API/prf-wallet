@@ -2,6 +2,7 @@ import {
   EVMAccountAddress,
   EVMSignatureHex,
   HexString,
+  type CeremonyUiParams,
 } from "@1shotapi/ows-types";
 import type {
   AuthorizationRequest,
@@ -30,7 +31,7 @@ function toEvmRecoverableSignature(signature: Hex): EVMSignatureHex {
   return EVMSignatureHex(serializeSignature(parseSignature(signature)));
 }
 
-export type EvmCallOptions = {
+export type EvmCallOptions = CeremonyUiParams & {
   credentialId?: string;
 };
 
@@ -45,6 +46,10 @@ export class EvmSigner {
 
     const publicKey = await this.signer.getPublicKey({
       credentialId: options?.credentialId ?? this.signer.getCredentialId(),
+      explanationHeader: options?.explanationHeader,
+      explanationText: options?.explanationText,
+      confirmButtonText: options?.confirmButtonText,
+      denyButtonText: options?.denyButtonText,
     });
 
     const address = EVMAccountAddress(
@@ -59,14 +64,18 @@ export class EvmSigner {
     options?: EvmCallOptions,
   ): Promise<EVMSignatureHex[]> {
     if (messages.length === 0) return [];
-    const credentialId =
-      options?.credentialId ?? this.signer.getCredentialId();
     const results = await this.signer.signDigest(
       messages.map((message) => ({
         digestData: digestForMessage(message),
         scheme: EVM_SIGN_SCHEME,
       })),
-      credentialId,
+      {
+        credentialId: options?.credentialId ?? this.signer.getCredentialId(),
+        explanationHeader: options?.explanationHeader,
+        explanationText: options?.explanationText,
+        confirmButtonText: options?.confirmButtonText,
+        denyButtonText: options?.denyButtonText,
+      },
     );
     return results.map((r) => toEvmRecoverableSignature(r.signature));
   }
@@ -76,14 +85,18 @@ export class EvmSigner {
     options?: EvmCallOptions,
   ): Promise<EVMSignatureHex[]> {
     if (typedDataList.length === 0) return [];
-    const credentialId =
-      options?.credentialId ?? this.signer.getCredentialId();
     const results = await this.signer.signDigest(
       typedDataList.map((typedData) => ({
         digestData: digestForTypedData(typedData),
         scheme: EVM_SIGN_SCHEME,
       })),
-      credentialId,
+      {
+        credentialId: options?.credentialId ?? this.signer.getCredentialId(),
+        explanationHeader: options?.explanationHeader,
+        explanationText: options?.explanationText,
+        confirmButtonText: options?.confirmButtonText,
+        denyButtonText: options?.denyButtonText,
+      },
     );
     return results.map((r) => toEvmRecoverableSignature(r.signature));
   }
@@ -93,14 +106,18 @@ export class EvmSigner {
     options?: EvmCallOptions,
   ): Promise<HexString[]> {
     if (transactions.length === 0) return [];
-    const credentialId =
-      options?.credentialId ?? this.signer.getCredentialId();
     const results = await this.signer.signDigest(
       transactions.map((transaction) => ({
         digestData: digestForTransaction(transaction),
         scheme: EVM_SIGN_SCHEME,
       })),
-      credentialId,
+      {
+        credentialId: options?.credentialId ?? this.signer.getCredentialId(),
+        explanationHeader: options?.explanationHeader,
+        explanationText: options?.explanationText,
+        confirmButtonText: options?.confirmButtonText,
+        denyButtonText: options?.denyButtonText,
+      },
     );
     return results.map((r, i) =>
       HexString(serializeSignedTransaction(transactions[i]!, r.signature)),
@@ -112,14 +129,18 @@ export class EvmSigner {
     options?: EvmCallOptions,
   ): Promise<SignedAuthorization[]> {
     if (authorizations.length === 0) return [];
-    const credentialId =
-      options?.credentialId ?? this.signer.getCredentialId();
     const results = await this.signer.signDigest(
       authorizations.map((authorization) => ({
         digestData: digestForAuthorization(authorization),
         scheme: EVM_SIGN_SCHEME,
       })),
-      credentialId,
+      {
+        credentialId: options?.credentialId ?? this.signer.getCredentialId(),
+        explanationHeader: options?.explanationHeader,
+        explanationText: options?.explanationText,
+        confirmButtonText: options?.confirmButtonText,
+        denyButtonText: options?.denyButtonText,
+      },
     );
     return results.map((r, i) =>
       signedAuthorizationFromSignature(authorizations[i]!, r.signature),

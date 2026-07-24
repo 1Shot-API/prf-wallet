@@ -1,6 +1,7 @@
 import {
   OwsInvalidRequestError,
   OwsNotAllowedError,
+  OwsSignDeniedError,
   OwsTimeoutError,
 } from "../errors.js";
 import {
@@ -70,6 +71,7 @@ export class SignerRpcClient {
     return new Promise<TData>((resolve, reject) => {
       const timeoutId = setTimeout(() => {
         this.pending.delete(correlationId);
+        this.postCancel();
         reject(
           new OwsTimeoutError(
             `Signer RPC timed out: ${method}`,
@@ -115,6 +117,7 @@ export class SignerRpcClient {
 
   destroy(): void {
     window.removeEventListener("message", this.listener);
+    this.postCancel();
     for (const [id, pending] of this.pending) {
       clearTimeout(pending.timeoutId);
       if (pending.alsoWaitForTimeoutId) {
@@ -123,6 +126,16 @@ export class SignerRpcClient {
       pending.reject(new Error("SignerRpcClient destroyed"));
       this.pending.delete(id);
     }
+  }
+
+  /** Tell the signer to drop a stuck Confirm wait / ceremony lock. */
+  private postCancel(): void {
+    const target = this.iframe.contentWindow;
+    if (!target) return;
+    target.postMessage(
+      { v: API_VERSION, kind: "cancel" },
+      this.signerOrigin,
+    );
   }
 
   private handleMessage(event: MessageEvent): void {
@@ -137,6 +150,18 @@ export class SignerRpcClient {
 
     const pending = this.pending.get(correlationId);
     if (!pending) return;
+
+    if (data.event === "SignDenied") {
+      this.finishPending(
+        correlationId,
+        pending,
+        new OwsSignDeniedError(
+          String(data.data.reason ?? "signDenied"),
+          typeof data.data.reason === "string" ? data.data.reason : undefined,
+        ),
+      );
+      return;
+    }
 
     if (data.event === "NotAllowed") {
       this.finishPending(

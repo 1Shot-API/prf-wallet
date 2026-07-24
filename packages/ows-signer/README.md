@@ -37,18 +37,20 @@ Only accepts messages when `event.source === window.parent`. Replies use the par
 | Method | Params | Success events |
 |--------|--------|----------------|
 | `getVersion` | — | `Version` |
-| `createCredential` | `name`, `options?` (`rpName`, `userDisplayName`, `userId`) | `KeyDerived`, `CredentialCreated` |
-| `signDigest` | `digests[]` (`digestData`, `scheme`), `credentialId?` | `KeyDerived` (PRF path), `DigestSigned` (`results[]`) |
-| `executeBatch` | `digests?`, `plaintexts?`, `ciphertexts?`, `includePublicKey?`, `challenge?`, `credentialId?` | `KeyDerived` (when keys derived), `BatchExecuted` |
-| `revealPrivateKey` | `credentialId?` | `KeyDerived` (+ DOM display) |
-| `createRecoveryData` | `passwordText`, `buttonText`, `minPasswordLength`, `credentialId?` | `KeyDerived`, `RecoveryDataCreated` |
-| `recoverKey` | `aes256EncryptedPrivateKey`, `passwordText`, `buttonText`, `credentialId?` | DOM display; `RecoverySessionStarted` or re-bind → `RecoverySessionCleared` |
-| `getPublicKey` | `credentialId?`, `challenge?` | `KeyDerived`, `PublicKey`, `ChallengeSigned?` |
+| `createCredential` | `name`, `options?` (incl. ceremony UI) | `KeyDerived`, `CredentialCreated` |
+| `signDigest` | `digests[]`, `credentialId?`, ceremony UI? | `KeyDerived` (PRF path), `DigestSigned` (`results[]`) |
+| `executeBatch` | batch fields + ceremony UI? | `KeyDerived` (when keys derived), `BatchExecuted` |
+| `revealPrivateKey` | `credentialId?`, ceremony UI? | `KeyDerived` (+ DOM display) |
+| `createRecoveryData` | passphrase fields + ceremony UI? | `KeyDerived`, `RecoveryDataCreated` |
+| `recoverKey` | envelope + passphrase fields + ceremony UI? | DOM display; `RecoverySessionStarted` or re-bind → `RecoverySessionCleared` |
+| `getPublicKey` | `credentialId?`, `challenge?`, ceremony UI? | `KeyDerived`, `PublicKey`, `ChallengeSigned?` |
 | `clearRecoverySession` | — | `RecoverySessionCleared` |
-| `encryptAES256` | `plaintexts[]`, `credentialId?` | `KeyDerived` (PRF path), `AES256Encrypted` |
-| `decryptAES256` | `ciphertexts[]`, `credentialId?` | `KeyDerived` (PRF path), `AES256Decrypted` |
+| `encryptAES256` | `plaintexts[]`, `credentialId?`, ceremony UI? | `KeyDerived` (PRF path), `AES256Encrypted` |
+| `decryptAES256` | `ciphertexts[]`, `credentialId?`, ceremony UI? | `KeyDerived` (PRF path), `AES256Decrypted` |
 
-Failure events: `NotAllowed`, `InvalidRequest`.
+Failure events: `SignDenied` (user cancelled Confirm UI), `NotAllowed` (WebAuthn cancel/policy), `InvalidRequest`.
+
+Ceremony UI params (optional on WebAuthn-triggering methods): `explanationHeader`, `explanationText`, `confirmButtonText`, `denyButtonText`. Defaults: “Confirm passkey” / “Your device will ask for a passkey to continue.” / “Continue” / “Cancel”. Confirm click starts WebAuthn in the same turn (mobile activation).
 
 `createCredential` options:
 

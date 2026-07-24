@@ -17,7 +17,7 @@ metadata:
 
 Teach an agent how to scaffold and extend an **OWS Branding Layer** in any repository.
 
-UI, flow ownership, and display queuing stay **app-owned**. Published packages provide thin protocol helpers (`RpcHelper`, `SignHelper`, `CredentialsHelper`, `overlaySignerIframe`) — not a module/registry runtime.
+UI, flow ownership, and display queuing stay **app-owned**. Published packages provide thin protocol helpers (`RpcHelper`, `SignHelper`, `CredentialsHelper`, `showSignerCeremonyPanel`) — not a module/registry runtime.
 
 When a local clone of [open-wallet](https://github.com/1Shot-API/open-wallet) is available (multi-root workspace), prefer grepping `examples/general-wallet` over guessing from this skill alone.
 
@@ -52,7 +52,7 @@ Details: [references/architecture.md](references/architecture.md)
 |---------|------|
 | `@1shotapi/ows-types` | Branded primitives, errors, credential types, EIP-1193 tables, `CredentialCryptoUtils` / `PresentationUtils` / `ProofUtils` |
 | `@1shotapi/ows-wallet-utils` | Branding ↔ Host (`OWSWallet`, `RpcHelper`, `requestDisplay`) |
-| `@1shotapi/ows-signer-utils` | Branding ↔ Signing (`OWSSigner`, `SignHelper`, `overlaySignerIframe`) |
+| `@1shotapi/ows-signer-utils` | Branding ↔ Signing (`OWSSigner`, `SignHelper`, `showSignerCeremonyPanel`) |
 | `@1shotapi/ows-oid4` | Optional credentials (`CredentialsHelper`, HTTP OID4VCI/OID4VP clients) |
 | `@1shotapi/ows-signer` | Plain JS Signing Layer sources (serve as static `/signer/`) |
 
@@ -80,7 +80,7 @@ Branding Layer Progress:
 - [ ] 3. Display shell — requestDisplay / hide + app-owned modal queue
 - [ ] 4. Host RPC — EIP-1193 (RpcHelper + account connect) and/or custom registerRpc
 - [ ] 5. Signing consent — SignHelper + app approval UI
-- [ ] 6. Recovery overlay — create/restore with overlaySignerIframe (no reparent)
+- [ ] 6. Recovery — create/restore via `OWSSigner` auto ceremony panel (no iframe reparent)
 - [ ] 7. Credentials — CredentialsHelper.register + consent UI (optional)
 ```
 
@@ -154,7 +154,7 @@ Restore-backup must use **`awaitSignerReady` only** — calling `ensureReady` fi
 3. Prefer **methods on objects** over free helpers when logic belongs to one class.
 4. Set iframe `allow` for WebAuthn/clipboard **before** navigation (`OWSSigner` / host `OWSProxy` already do this).
 5. Do not vendor Postmate — use the `postmate` package (transitive).
-6. Do **not** reparent the signer iframe for passphrase UI — use `overlaySignerIframe`.
+6. Do **not** reparent the signer iframe. Passphrase / Confirm UI is shown by `OWSSigner` via `showSignerCeremonyPanel` (centered panel). Prefer that over manual `overlaySignerIframe`.
 7. Prefer Vite `/signer/` at **origin root** even if the branding app uses a subpath `base` (e.g. `/wallet/`).
 
 ## Reference implementation

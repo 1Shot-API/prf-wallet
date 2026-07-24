@@ -3,6 +3,7 @@ import type { EVMAccountAddress } from "../primitives/EVMAccountAddress.js";
 import type { HexString } from "../primitives/HexString.js";
 import type { SolanaAccountAddress } from "../primitives/SolanaAccountAddress.js";
 import type {
+  CeremonyUiParams,
   CreateCredentialOptions,
   CredentialCreatedData,
   DigestSignedData,
@@ -10,6 +11,7 @@ import type {
   ExecuteBatchResult,
   GetPublicKeyParams,
   PublicKeyData,
+  RecoveryCeremonyOptions,
   RecoveryDataCreatedData,
   SignScheme,
   VersionData,
@@ -45,7 +47,7 @@ export interface IOWSSigner {
       digestData: HexString | `0x${string}`;
       scheme?: SignScheme;
     }>,
-    credentialId?: string,
+    options?: CeremonyUiParams & { credentialId?: string },
   ): Promise<DigestSignedData[]>;
   executeBatch(params: ExecuteBatchParams): Promise<ExecuteBatchResult>;
   getPublicKey(
@@ -55,23 +57,23 @@ export interface IOWSSigner {
     passwordText: string,
     buttonText: string,
     minPasswordLength: number,
-    credentialId?: string,
+    options?: RecoveryCeremonyOptions,
   ): Promise<RecoveryDataCreatedData>;
   recoverKey(
     aes256EncryptedPrivateKey: string,
     passwordText: string,
     buttonText: string,
-    credentialId?: string,
+    options?: RecoveryCeremonyOptions,
   ): Promise<void>;
-  revealPrivateKey(credentialId?: string): Promise<void>;
+  revealPrivateKey(options?: RecoveryCeremonyOptions): Promise<void>;
   clearRecoverySession(): Promise<void>;
   encryptAES256(
     plaintexts: string[],
-    credentialId?: string,
+    options?: CeremonyUiParams & { credentialId?: string },
   ): Promise<AES256CipherText[]>;
   decryptAES256(
     ciphertexts: AES256CipherText[],
-    credentialId?: string,
+    options?: CeremonyUiParams & { credentialId?: string },
   ): Promise<string[]>;
   destroy(): void;
 }

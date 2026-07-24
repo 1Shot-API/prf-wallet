@@ -147,3 +147,88 @@ describe("sign recoverable", () => {
     assert.match(signature, /^0x[0-9a-f]{128}$/i);
   });
 });
+
+describe("ceremony UI", () => {
+  it("resolveCeremonyUi applies defaults", async () => {
+    const { resolveCeremonyUi, CeremonyDeniedError } = await import(
+      "../src/ui.js"
+    );
+    const defaults = resolveCeremonyUi({});
+    assert.equal(defaults.header, "Confirm passkey");
+    assert.equal(defaults.confirmButtonText, "Continue");
+    assert.equal(defaults.denyButtonText, "Cancel");
+
+    const custom = resolveCeremonyUi({
+      explanationHeader: "Unlock",
+      explanationText: "Tap continue",
+      confirmButtonText: "Go",
+      denyButtonText: "No",
+    });
+    assert.equal(custom.header, "Unlock");
+    assert.equal(custom.explanation, "Tap continue");
+    assert.equal(custom.confirmButtonText, "Go");
+    assert.equal(custom.denyButtonText, "No");
+
+    const err = new CeremonyDeniedError();
+    assert.equal(err.name, "CeremonyDeniedError");
+  });
+
+  it("sanitizeDisplayText strips HTML and entities", async () => {
+    const { sanitizeDisplayText, resolveCeremonyUi } = await import(
+      "../src/ui.js"
+    );
+    assert.equal(
+      sanitizeDisplayText('<img src=x onerror="alert(1)">Hello'),
+      "Hello",
+    );
+    assert.equal(
+      sanitizeDisplayText("&lt;script&gt;alert(1)&lt;/script&gt;Safe"),
+      "alert(1)Safe",
+    );
+    assert.equal(
+      sanitizeDisplayText("line1\nline2", { allowNewlines: true }),
+      "line1\nline2",
+    );
+    assert.equal(sanitizeDisplayText("a\nb", { allowNewlines: false }), "a b");
+
+    const ui = resolveCeremonyUi({
+      explanationHeader: "<b>Confirm</b>",
+      explanationText: '<a href="javascript:alert(1)">Click</a> please',
+      confirmButtonText: "<script>x</script>OK",
+      denyButtonText: "No",
+    });
+    assert.equal(ui.header, "Confirm");
+    assert.equal(ui.explanation, "Click please");
+    // Tag innards become plain text (not executable) — intentional.
+    assert.equal(ui.confirmButtonText, "xOK");
+  });
+});
+
+describe("ceremony lock", () => {
+  it("abandonCeremony clears lock after cancel rejects the waiter", async () => {
+    const { withCeremony, abandonCeremony } = await import("../src/state.js");
+
+    /** @type {(error: Error) => void} */
+    let rejectWait;
+    const held = withCeremony(
+      () =>
+        new Promise((_, reject) => {
+          rejectWait = reject;
+        }),
+    );
+
+    await Promise.resolve();
+    await assert.rejects(
+      () => withCeremony(async () => "nope"),
+      /ceremonyInProgress/,
+    );
+
+    await abandonCeremony(() => {
+      rejectWait(new Error("ceremonyCancelled"));
+    });
+    await assert.rejects(() => held, /ceremonyCancelled/);
+
+    const result = await withCeremony(async () => "ok");
+    assert.equal(result, "ok");
+  });
+});

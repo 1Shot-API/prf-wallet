@@ -59,27 +59,16 @@ Inbound events: validate `event.origin === signerOrigin` and `event.source === i
 - Do **not** add a restrictive `sandbox` that blocks WebAuthn.
 - Default iframe size is hidden (`0×0`); pass `{ hidden: false }` to show it.
 
-### Showing the signer over UI (passphrase / recovery)
+### Signer display (passkey Confirm / passphrase)
 
-Do **not** reparent the signer iframe into a dialog — that can reload the iframe document and drop in-flight RPCs. Use:
+`OWSSigner` automatically shows a centered visible ceremony panel (`showSignerCeremonyPanel`) for WebAuthn Confirm UI and recovery passphrase/reveal. Callers do **not** need a 1×1 invisible focus layer.
 
 | Helper | Purpose |
 |--------|---------|
-| `overlaySignerIframe(iframe, slot, options?)` | Visible overlay: position the iframe's home container over a slot (e.g. backup dialog). Returns a restore function. |
-| `prepareSignerIframeForWebAuthn(iframe)` | Invisible 1×1 focus layer for passkey ceremonies (used internally by `OWSSigner`). |
+| `showSignerCeremonyPanel(iframe)` | Centered visible panel (used internally by `OWSSigner`). Returns a restore function. |
+| `overlaySignerIframe(iframe, slot, options?)` | Optional slot-aligned overlay if you still need to pin the iframe over a specific element (prefer the auto panel for new code). |
 
-```typescript
-import { overlaySignerIframe } from "@1shotapi/ows-signer-utils";
-
-const restore = overlaySignerIframe(iframe, signerSlot, {
-  homeContainer: document.getElementById("signer-container")!,
-});
-try {
-  await signer.createRecoveryData(/* … */);
-} finally {
-  restore();
-}
-```
+Pass optional `explanationHeader` / `explanationText` / `confirmButtonText` / `denyButtonText` on ceremony RPCs. Cancel emits `SignDenied` → `OwsSignDeniedError`.
 
 ### EIP-1193 signing (`SignHelper`)
 
@@ -118,16 +107,16 @@ Export `prepareEvmTransaction(chainRpc, account, tx)` for branding / relayer sub
 | Method | Description |
 |--------|-------------|
 | `getVersion()` | Signer API/version info |
-| `createCredential(name, options?)` | Register passkey; options include `rpName`, `userDisplayName`, `userId` |
-| `signDigest(digests[], credentialId?)` | Sign digests under one ceremony (default scheme `secp256k1-ecdsa-recoverable`) |
+| `createCredential(name, options?)` | Register passkey; options include `rpName`, ceremony UI fields |
+| `signDigest(digests[], options?)` | Sign digests under one ceremony (`credentialId` + ceremony UI) |
 | `executeBatch(params)` | Mixed ceremony: digests + AES + public key + optional WebAuthn `challenge` |
-| `getPublicKey(params?)` | Derive keys; optional `challenge` for `ChallengeSigned` |
-| `createRecoveryData(...)` | Encrypt recovery blob |
-| `recoverKey(...)` | Decrypt recovery blob into session |
-| `revealPrivateKey(credentialId?)` | Signer UI to reveal key |
+| `getPublicKey(params?)` | Derive keys; optional `challenge` / ceremony UI |
+| `createRecoveryData(..., options?)` | Encrypt recovery blob (ceremony UI + `credentialId`) |
+| `recoverKey(..., options?)` | Decrypt recovery blob into session |
+| `revealPrivateKey(options?)` | Signer UI to reveal key |
 | `clearRecoverySession()` | End recovery session |
-| `encryptAES256(plaintexts, credentialId?)` | Batch AES-256-GCM seal (`ows-aes1:`) |
-| `decryptAES256(ciphertexts, credentialId?)` | Batch AES-256-GCM unseal |
+| `encryptAES256(plaintexts, options?)` | Batch AES-256-GCM seal (`ows-aes1:`) |
+| `decryptAES256(ciphertexts, options?)` | Batch AES-256-GCM unseal |
 
 ### `signer.evm`
 
@@ -139,7 +128,7 @@ Export `prepareEvmTransaction(chainRpc, account, tx)` for branding / relayer sub
 | `signTransaction(transactions[], options?)` | Signed serialized tx hex (batch) |
 | `signAuthorization(authorizations[], options?)` | EIP-7702 authorization (batch) |
 
-All EVM batch methods accept optional `{ credentialId }` once for the whole batch.
+All EVM batch methods accept optional `{ credentialId, explanationHeader, … }` once for the whole batch.
 
 ### `signer.solana`
 
@@ -151,7 +140,8 @@ Accepts optional `{ credentialId }` per call.
 
 ### Errors
 
-- `OwsNotAllowedError` — user cancelled or policy blocked
+- `OwsNotAllowedError` — WebAuthn cancelled or policy blocked
+- `OwsSignDeniedError` — user cancelled Signing Layer Confirm UI (before WebAuthn)
 - `OwsInvalidRequestError` — bad params
 - `OwsTimeoutError` — RPC timeout
 

@@ -30,7 +30,7 @@ import {
   withCeremony,
   zeroize,
 } from "./state.js";
-import { clearUi, promptPassphrase, showPrivateKey } from "./ui.js";
+import { clearUi, CeremonyDeniedError, promptCeremonyConfirm, promptPassphrase, showPrivateKey } from "./ui.js";
 import {
   createPasskeyCredential,
   getAssertionSignatureBase64Url,
@@ -168,6 +168,24 @@ export async function handleRequest(
 }
 
 /**
+ * @param {Record<string, unknown>} params
+ * @returns {{
+ *   explanationHeader?: unknown,
+ *   explanationText?: unknown,
+ *   confirmButtonText?: unknown,
+ *   denyButtonText?: unknown,
+ * }}
+ */
+function ceremonyFieldsFromParams(params) {
+  return {
+    explanationHeader: params.explanationHeader,
+    explanationText: params.explanationText,
+    confirmButtonText: params.confirmButtonText,
+    denyButtonText: params.denyButtonText,
+  };
+}
+
+/**
  * PRF bytes are returned on assertion (`prf.eval`), not registration (`prf.enable`).
  * Some platforms may return results on create; otherwise run a follow-up get.
  *
@@ -188,6 +206,7 @@ async function credentialForKeyDerivation(credential, credentialId) {
   debugLog("no PRF results on registration; running assertion with prf.eval", {
     credentialId: id,
   });
+  // Same RPC — no second Confirm (one screen per call).
   const assertion = await getPasskeyAssertion(undefined, id);
   debugLog(
     "assertion extension results",
@@ -209,13 +228,15 @@ async function handleCreateCredential(params, correlationId, targetOrigin) {
   }
   const options =
     params.options && typeof params.options === "object"
-      ? /** @type {{ rpName?: string, userDisplayName?: string, userId?: string }} */ (
+      ? /** @type {{ rpName?: string, userDisplayName?: string, userId?: string, explanationHeader?: string, explanationText?: string, confirmButtonText?: string, denyButtonText?: string }} */ (
           params.options
         )
       : {};
 
   await withCeremony(async () => {
-    const credential = await createPasskeyCredential(name, options);
+    const credential = await promptCeremonyConfirm(options, () =>
+      createPasskeyCredential(name, options),
+    );
     const credentialId = getCredentialId(credential);
     const prfCredential = await credentialForKeyDerivation(
       credential,
@@ -374,7 +395,10 @@ async function handleSignDigest(params, correlationId, targetOrigin) {
   }
 
   await withCeremony(async () => {
-    const credential = await getPasskeyAssertion(undefined, credentialId);
+    const credential = await promptCeremonyConfirm(
+      ceremonyFieldsFromParams(params),
+      () => getPasskeyAssertion(undefined, credentialId),
+    );
     const keys = await deriveKeysFromCredential(credential);
     const ed25519Seed = await ed25519SeedFromCredential(credential);
     emitKeyDerived(
@@ -410,7 +434,10 @@ async function handleRevealPrivateKey(params, correlationId, targetOrigin) {
     typeof params.credentialId === "string" ? params.credentialId : undefined;
 
   await withCeremony(async () => {
-    const credential = await getPasskeyAssertion(undefined, credentialId);
+    const credential = await promptCeremonyConfirm(
+      ceremonyFieldsFromParams(params),
+      () => getPasskeyAssertion(undefined, credentialId),
+    );
     const keys = await deriveKeysFromCredential(credential);
     emitKeyDerived(
       targetOrigin,
@@ -477,7 +504,10 @@ async function handleCreateRecoveryData(params, correlationId, targetOrigin) {
   }
 
   await withCeremony(async () => {
-    const credential = await getPasskeyAssertion(undefined, credentialId);
+    const credential = await promptCeremonyConfirm(
+      ceremonyFieldsFromParams(params),
+      () => getPasskeyAssertion(undefined, credentialId),
+    );
     const keys = await deriveKeysFromCredential(credential);
     emitKeyDerived(
       targetOrigin,
@@ -542,7 +572,9 @@ async function handleRecoverKey(params, correlationId, targetOrigin) {
 
   if (credentialId) {
     await withCeremony(async () => {
-      await getPasskeyAssertion(undefined, credentialId);
+      await promptCeremonyConfirm(ceremonyFieldsFromParams(params), () =>
+        getPasskeyAssertion(undefined, credentialId),
+      );
       clearRecoveryPrivateKey();
     });
     emitEvent(
@@ -609,7 +641,10 @@ async function handleEncryptAES256(params, correlationId, targetOrigin) {
   }
 
   await withCeremony(async () => {
-    const credential = await getPasskeyAssertion(undefined, credentialId);
+    const credential = await promptCeremonyConfirm(
+      ceremonyFieldsFromParams(params),
+      () => getPasskeyAssertion(undefined, credentialId),
+    );
     const keys = await deriveKeysFromCredential(credential);
     emitKeyDerived(
       targetOrigin,
@@ -666,7 +701,10 @@ async function handleDecryptAES256(params, correlationId, targetOrigin) {
   }
 
   await withCeremony(async () => {
-    const credential = await getPasskeyAssertion(undefined, credentialId);
+    const credential = await promptCeremonyConfirm(
+      ceremonyFieldsFromParams(params),
+      () => getPasskeyAssertion(undefined, credentialId),
+    );
     const keys = await deriveKeysFromCredential(credential);
     emitKeyDerived(
       targetOrigin,
@@ -702,7 +740,10 @@ async function handleGetPublicKey(params, correlationId, targetOrigin) {
       : undefined;
 
   await withCeremony(async () => {
-    const credential = await getPasskeyAssertion(challenge, credentialId);
+    const credential = await promptCeremonyConfirm(
+      ceremonyFieldsFromParams(params),
+      () => getPasskeyAssertion(challenge, credentialId),
+    );
     const keys = await deriveKeysFromCredential(credential);
     emitKeyDerived(
       targetOrigin,
@@ -860,7 +901,10 @@ async function handleExecuteBatch(params, correlationId, targetOrigin) {
   // Challenge always forces a real assertion (assertion signature required).
   if (challenge || !hasRecoverySession()) {
     await withCeremony(async () => {
-      const credential = await getPasskeyAssertion(challenge, credentialId);
+      const credential = await promptCeremonyConfirm(
+        ceremonyFieldsFromParams(params),
+        () => getPasskeyAssertion(challenge, credentialId),
+      );
       const keys = await deriveKeysFromCredential(credential);
       const ed25519Seed = await ed25519SeedFromCredential(credential);
       emitKeyDerived(
@@ -919,6 +963,13 @@ async function handleExecuteBatch(params, correlationId, targetOrigin) {
 function handleError(error, correlationId, targetOrigin) {
   const name = error instanceof Error ? error.name : "";
   const message = error instanceof Error ? error.message : String(error);
+
+  if (error instanceof CeremonyDeniedError || name === "CeremonyDeniedError") {
+    emitEvent(window.parent, targetOrigin, "SignDenied", correlationId, {
+      reason: message || "signDenied",
+    });
+    return;
+  }
 
   if (name === "NotAllowedError" || message.includes("NotAllowed")) {
     emitEvent(window.parent, targetOrigin, "NotAllowed", correlationId, {

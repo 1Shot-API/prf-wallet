@@ -3,7 +3,7 @@ export {
   createSignerIframe,
   getSignerOrigin,
   overlaySignerIframe,
-  prepareSignerIframeForWebAuthn,
+  showSignerCeremonyPanel,
   type CreateSignerIframeOptions,
   type OverlaySignerIframeOptions,
 } from "./iframe.js";
@@ -30,6 +30,7 @@ export {
   OwsSignerError,
   OwsInvalidRequestError,
   OwsNotAllowedError,
+  OwsSignDeniedError,
   OwsTimeoutError,
 } from "./errors.js";
 export { EvmSigner, type EvmCallOptions } from "./evm/namespace.js";
