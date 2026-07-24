@@ -114,20 +114,19 @@ for (const [method, handler] of Object.entries(signHelper.handlers)) {
 
 Reference: `src/ows/registerApprovalSigning.ts`, `src/components/modals/SignModals.tsx`, `src/wallet/withWalletReady.ts` (embedded-wallet).
 
-## 6. Recovery overlay
+## 6. Recovery (create / restore backup)
 
 Create / restore encrypted backup — **never reparent** the signer iframe.
 
 Reference: `src/components/modals/BackupModals.tsx`, called from `WalletProvider` `openCreateBackup` / `openRestoreBackup`.
 
 1. Outer `wallet.requestDisplay` for the dialog shell (WalletProvider wrappers).
-2. `overlaySignerIframe(iframe, slot, { homeContainer })` so the passphrase UI appears over a slot.
-3. **Double `requestAnimationFrame`** after overlay before calling signer RPCs (layout must settle).
-4. Create: `ensureReady()` then `signer.createRecoveryData(passwordText, buttonText, minPasswordLength)`.
-5. Restore: **`awaitSignerReady()` only** (not `ensureReady`) then `signer.recoverKey(encrypted, passwordText, buttonText)`.
-6. Always restore overlay styles in `finally` / abort cleanup; then `display.hide()`.
+2. Call recovery APIs directly — `OWSSigner` shows a centered ceremony panel for passphrase + passkey Confirm automatically.
+3. Create: `ensureReady()` then `signer.createRecoveryData(passwordText, buttonText, minPasswordLength, { explanationHeader, explanationText })`.
+4. Restore: **`awaitSignerReady()` only** (not `ensureReady`) then `signer.recoverKey(encrypted, passwordText, buttonText, ceremonyUi?)`.
+5. Cancel on the Signing Confirm UI rejects with `OwsSignDeniedError` (`SignDenied`).
 
-Distinct from `prepareSignerIframeForWebAuthn` (1×1 invisible passkey focus used **inside** `OWSSigner`).
+Passkey Confirm lives in Signing (required for mobile WebAuthn focus). Branding-native WebAuthn (e.g. Relayer assertion) may still use a Branding explanation overlay.
 
 ## 7. Credentials (optional)
 

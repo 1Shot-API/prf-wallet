@@ -2,11 +2,16 @@ import { EVMAccountAddress, SolanaAccountAddress, AES256CipherText } from "@1sho
 import type {
   ED25519PublicKey,
   SECP256K1PublicKey,
+  CeremonyUiParams,
   CreateCredentialOptions,
   CredentialCreatedData,
   DigestSignedData,
+  DigestSignedResult,
+  ExecuteBatchParams,
+  ExecuteBatchResult,
   GetPublicKeyParams,
   PublicKeyData,
+  RecoveryCeremonyOptions,
   RecoveryDataCreatedData,
   SignScheme,
   VersionData,
@@ -16,7 +21,7 @@ import type {
 } from "@1shotapi/ows-types";
 import type { Hex } from "viem";
 import { publicKeyToAddress } from "viem/utils";
-import { createSignerIframe, getSignerOrigin, prepareSignerIframeForWebAuthn } from "./iframe.js";
+import { createSignerIframe, getSignerOrigin, showSignerCeremonyPanel } from "./iframe.js";
 import { EvmSigner } from "./evm/namespace.js";
 import { addressFromEd25519PublicKey } from "./solana/address.js";
 import { SolanaSigner } from "./solana/namespace.js";
@@ -32,6 +37,28 @@ export type OWSSignerOptions = {
   hidden?: boolean;
   rpcTimeoutMs?: number;
 };
+
+const DEFAULT_CEREMONY_UI: Required<CeremonyUiParams> = {
+  explanationHeader: "Confirm passkey",
+  explanationText: "Your device will ask for a passkey to continue.",
+  confirmButtonText: "Continue",
+  denyButtonText: "Cancel",
+};
+
+function withCeremonyDefaults(
+  fields?: CeremonyUiParams,
+): Required<CeremonyUiParams> {
+  return {
+    explanationHeader:
+      fields?.explanationHeader ?? DEFAULT_CEREMONY_UI.explanationHeader,
+    explanationText:
+      fields?.explanationText ?? DEFAULT_CEREMONY_UI.explanationText,
+    confirmButtonText:
+      fields?.confirmButtonText ?? DEFAULT_CEREMONY_UI.confirmButtonText,
+    denyButtonText:
+      fields?.denyButtonText ?? DEFAULT_CEREMONY_UI.denyButtonText,
+  };
+}
 
 export class OWSSigner implements IOWSSigner {
   readonly evm: EvmSigner;
@@ -104,6 +131,12 @@ export class OWSSigner implements IOWSSigner {
   private onKeyDerived = (data: Record<string, unknown>): void => {
     const derived = keyDerivedDataFromEvent(data);
     if (derived) {
+      this.lastPublicKeyData = {
+        cosePublicKey: null,
+        secp256k1PublicKey: derived.secp256k1PublicKey,
+        ed25519PublicKey: derived.ed25519PublicKey,
+        credentialId: this.credentialId,
+      };
       this.cacheAddressesFromPublicKeys(
         derived.secp256k1PublicKey,
         derived.ed25519PublicKey,
@@ -131,6 +164,15 @@ export class OWSSigner implements IOWSSigner {
     this.cachedAddress = EVMAccountAddress(publicKeyToAddress(publicKey));
   }
 
+  private async withCeremonyPanel<T>(run: () => Promise<T>): Promise<T> {
+    const restore = showSignerCeremonyPanel(this.iframe);
+    try {
+      return await run();
+    } finally {
+      restore();
+    }
+  }
+
   async getVersion(): Promise<VersionData> {
     return this.rpc.request<VersionData>("getVersion", undefined, {
       terminalEvent: "Version",
@@ -141,11 +183,17 @@ export class OWSSigner implements IOWSSigner {
     name: string,
     options?: CreateCredentialOptions,
   ): Promise<CredentialCreatedData> {
-    const restoreSignerDisplay = prepareSignerIframeForWebAuthn(this.iframe);
-    try {
+    const ceremony = withCeremonyDefaults(options);
+    return this.withCeremonyPanel(async () => {
       const result = await this.rpc.request<Record<string, unknown>>(
         "createCredential",
-        { name, options },
+        {
+          name,
+          options: {
+            ...options,
+            ...ceremony,
+          },
+        },
         {
           terminalEvent: "CredentialCreated",
           onIntermediate: (_event, data) => this.onKeyDerived(data),
@@ -158,37 +206,73 @@ export class OWSSigner implements IOWSSigner {
       this.credentialId = created.credentialId;
       this.cacheAddressFromPublicKey(created.secp256k1PublicKey);
       return created;
-    } finally {
-      restoreSignerDisplay();
-    }
+    });
   }
 
   async signDigest(
-    digestData: Hex,
-    scheme: SignScheme = "secp256k1-ecdsa-recoverable",
-    credentialId?: string,
-  ): Promise<DigestSignedData> {
-    const restoreSignerDisplay = prepareSignerIframeForWebAuthn(this.iframe);
-    try {
-      const result = await this.rpc.request<DigestSignedData>(
+    digests: Array<{
+      digestData: Hex;
+      scheme?: SignScheme;
+    }>,
+    options?: CeremonyUiParams & { credentialId?: string },
+  ): Promise<DigestSignedData[]> {
+    const ceremony = withCeremonyDefaults(options);
+    return this.withCeremonyPanel(async () => {
+      const result = await this.rpc.request<DigestSignedResult>(
         "signDigest",
         {
-          digestData,
-          scheme,
-          credentialId: credentialId ?? this.credentialId,
+          digests: digests.map((item) => ({
+            digestData: item.digestData,
+            scheme: item.scheme ?? "secp256k1-ecdsa-recoverable",
+          })),
+          credentialId: options?.credentialId ?? this.credentialId,
+          ...ceremony,
         },
         {
           terminalEvent: "DigestSigned",
           onIntermediate: (_event, data) => this.onKeyDerived(data),
         },
       );
+      const firstCredentialId = result.results.find((r) => r.credentialId)
+        ?.credentialId;
+      if (firstCredentialId) {
+        this.credentialId = firstCredentialId;
+      }
+      return result.results;
+    });
+  }
+
+  /**
+   * Mixed ceremony: digests, AES encrypt/decrypt, public key, and/or
+   * WebAuthn challenge auth under one passkey assertion.
+   */
+  async executeBatch(params: ExecuteBatchParams): Promise<ExecuteBatchResult> {
+    const ceremony = withCeremonyDefaults(params);
+    return this.withCeremonyPanel(async () => {
+      const result = await this.rpc.request<ExecuteBatchResult>(
+        "executeBatch",
+        {
+          ...params,
+          ...ceremony,
+          credentialId: params.credentialId ?? this.credentialId,
+        },
+        {
+          terminalEvent: "BatchExecuted",
+          onIntermediate: (_event, data) => this.onKeyDerived(data),
+        },
+      );
       if (result.credentialId) {
         this.credentialId = result.credentialId;
       }
+      if (result.publicKey) {
+        this.lastPublicKeyData = result.publicKey;
+        this.cacheAddressesFromPublicKeys(
+          result.publicKey.secp256k1PublicKey,
+          result.publicKey.ed25519PublicKey,
+        );
+      }
       return result;
-    } finally {
-      restoreSignerDisplay();
-    }
+    });
   }
 
   async getPublicKey(
@@ -198,14 +282,15 @@ export class OWSSigner implements IOWSSigner {
     const credentialId = params?.discoverable
       ? undefined
       : (params?.credentialId ?? this.credentialId);
+    const ceremony = withCeremonyDefaults(params);
 
-    const restoreSignerDisplay = prepareSignerIframeForWebAuthn(this.iframe);
-    try {
+    return this.withCeremonyPanel(async () => {
       const result = await this.rpc.request<Record<string, unknown>>(
         "getPublicKey",
         {
           credentialId,
           challenge: params?.challenge,
+          ...ceremony,
         },
         {
           terminalEvent: "PublicKey",
@@ -235,29 +320,31 @@ export class OWSSigner implements IOWSSigner {
       return signature
         ? { ...publicKeyData, challengeSignature: signature }
         : publicKeyData;
-    } finally {
-      restoreSignerDisplay();
-    }
+    });
   }
 
   async createRecoveryData(
     passwordText: string,
     buttonText: string,
     minPasswordLength: number,
-    credentialId?: string,
+    options?: RecoveryCeremonyOptions,
   ): Promise<RecoveryDataCreatedData> {
-    return this.rpc.request<RecoveryDataCreatedData>(
-      "createRecoveryData",
-      {
-        passwordText,
-        buttonText,
-        minPasswordLength,
-        credentialId: credentialId ?? this.credentialId,
-      },
-      {
-        terminalEvent: "RecoveryDataCreated",
-        onIntermediate: (_event, data) => this.onKeyDerived(data),
-      },
+    const ceremony = withCeremonyDefaults(options);
+    return this.withCeremonyPanel(async () =>
+      this.rpc.request<RecoveryDataCreatedData>(
+        "createRecoveryData",
+        {
+          passwordText,
+          buttonText,
+          minPasswordLength,
+          credentialId: options?.credentialId ?? this.credentialId,
+          ...ceremony,
+        },
+        {
+          terminalEvent: "RecoveryDataCreated",
+          onIntermediate: (_event, data) => this.onKeyDerived(data),
+        },
+      ),
     );
   }
 
@@ -265,34 +352,45 @@ export class OWSSigner implements IOWSSigner {
     aes256EncryptedPrivateKey: string,
     passwordText: string,
     buttonText: string,
-    credentialId?: string,
+    options?: RecoveryCeremonyOptions,
   ): Promise<void> {
-    await this.rpc.request<{ recoverySessionActive?: true; rebound?: boolean }>(
-      "recoverKey",
-      {
-        aes256EncryptedPrivateKey,
-        passwordText,
-        buttonText,
-        credentialId,
-      },
-      {
-        terminalEvent: credentialId
-          ? "RecoverySessionCleared"
-          : "RecoverySessionStarted",
-        onIntermediate: (_event, data) => this.onKeyDerived(data),
-      },
-    );
+    const ceremony = withCeremonyDefaults(options);
+    const credentialId = options?.credentialId;
+    await this.withCeremonyPanel(async () => {
+      await this.rpc.request<{ recoverySessionActive?: true; rebound?: boolean }>(
+        "recoverKey",
+        {
+          aes256EncryptedPrivateKey,
+          passwordText,
+          buttonText,
+          credentialId,
+          ...ceremony,
+        },
+        {
+          terminalEvent: credentialId
+            ? "RecoverySessionCleared"
+            : "RecoverySessionStarted",
+          onIntermediate: (_event, data) => this.onKeyDerived(data),
+        },
+      );
+    });
   }
 
-  async revealPrivateKey(credentialId?: string): Promise<void> {
-    await this.rpc.request<Record<string, never>>(
-      "revealPrivateKey",
-      { credentialId: credentialId ?? this.credentialId },
-      {
-        terminalEvent: "KeyDerived",
-        onIntermediate: (_event, data) => this.onKeyDerived(data),
-      },
-    );
+  async revealPrivateKey(options?: RecoveryCeremonyOptions): Promise<void> {
+    const ceremony = withCeremonyDefaults(options);
+    await this.withCeremonyPanel(async () => {
+      await this.rpc.request<Record<string, never>>(
+        "revealPrivateKey",
+        {
+          credentialId: options?.credentialId ?? this.credentialId,
+          ...ceremony,
+        },
+        {
+          terminalEvent: "KeyDerived",
+          onIntermediate: (_event, data) => this.onKeyDerived(data),
+        },
+      );
+    });
   }
 
   async clearRecoverySession(): Promise<void> {
@@ -310,15 +408,16 @@ export class OWSSigner implements IOWSSigner {
    */
   async encryptAES256(
     plaintexts: string[],
-    credentialId?: string,
+    options?: CeremonyUiParams & { credentialId?: string },
   ): Promise<AES256CipherText[]> {
-    const restoreSignerDisplay = prepareSignerIframeForWebAuthn(this.iframe);
-    try {
+    const ceremony = withCeremonyDefaults(options);
+    return this.withCeremonyPanel(async () => {
       const result = await this.rpc.request<EncryptAES256Result>(
         "encryptAES256",
         {
           plaintexts,
-          credentialId: credentialId ?? this.credentialId,
+          credentialId: options?.credentialId ?? this.credentialId,
+          ...ceremony,
         },
         {
           terminalEvent: "AES256Encrypted",
@@ -326,9 +425,7 @@ export class OWSSigner implements IOWSSigner {
         },
       );
       return result.ciphertexts.map((c) => AES256CipherText(c));
-    } finally {
-      restoreSignerDisplay();
-    }
+    });
   }
 
   /**
@@ -337,15 +434,16 @@ export class OWSSigner implements IOWSSigner {
    */
   async decryptAES256(
     ciphertexts: AES256CipherText[],
-    credentialId?: string,
+    options?: CeremonyUiParams & { credentialId?: string },
   ): Promise<string[]> {
-    const restoreSignerDisplay = prepareSignerIframeForWebAuthn(this.iframe);
-    try {
+    const ceremony = withCeremonyDefaults(options);
+    return this.withCeremonyPanel(async () => {
       const result = await this.rpc.request<DecryptAES256Result>(
         "decryptAES256",
         {
           ciphertexts: ciphertexts.map(String),
-          credentialId: credentialId ?? this.credentialId,
+          credentialId: options?.credentialId ?? this.credentialId,
+          ...ceremony,
         },
         {
           terminalEvent: "AES256Decrypted",
@@ -353,8 +451,6 @@ export class OWSSigner implements IOWSSigner {
         },
       );
       return result.plaintexts;
-    } finally {
-      restoreSignerDisplay();
-    }
+    });
   }
 }

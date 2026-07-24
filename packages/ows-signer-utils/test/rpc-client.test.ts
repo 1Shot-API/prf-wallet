@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   OwsInvalidRequestError,
   OwsNotAllowedError,
+  OwsSignDeniedError,
   OwsTimeoutError,
 } from "../src/errors.ts";
 import {
@@ -105,7 +106,7 @@ describe("SignerRpcClient", () => {
     client.destroy();
   });
 
-  it("rejects NotAllowed and InvalidRequest terminal errors", async () => {
+  it("rejects NotAllowed, SignDenied, and InvalidRequest terminal errors", async () => {
     const { iframe, emit } = setupDomMocks();
     const client = new SignerRpcClient(iframe, SIGNER_ORIGIN, 5_000);
 
@@ -115,17 +116,23 @@ describe("SignerRpcClient", () => {
     emit("NotAllowed", { reason: "userCancelled" });
     await assert.rejects(notAllowed, OwsNotAllowedError);
 
+    const signDenied = client.request("signDigest", { digests: [] }, {
+      terminalEvent: "DigestSigned",
+    });
+    emit("SignDenied", { reason: "signDenied" }, "2");
+    await assert.rejects(signDenied, OwsSignDeniedError);
+
     const invalid = client.request("getVersion", undefined, {
       terminalEvent: "Version",
     });
-    emit("InvalidRequest", { reason: "badParams" }, "2");
+    emit("InvalidRequest", { reason: "badParams" }, "3");
     await assert.rejects(invalid, OwsInvalidRequestError);
 
     client.destroy();
   });
 
   it("times out when no terminal event arrives", async () => {
-    const { iframe } = setupDomMocks();
+    const { iframe, posted } = setupDomMocks();
     const client = new SignerRpcClient(iframe, SIGNER_ORIGIN, 20);
 
     await assert.rejects(
@@ -135,6 +142,14 @@ describe("SignerRpcClient", () => {
       }),
       OwsTimeoutError,
     );
+
+    const cancel = posted.find(
+      (entry) =>
+        entry.message &&
+        typeof entry.message === "object" &&
+        (entry.message as { kind?: string }).kind === "cancel",
+    );
+    assert.ok(cancel, "timeout should post a cancel to the signer");
 
     client.destroy();
   });

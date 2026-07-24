@@ -56,7 +56,7 @@ Passkeys require HTTPS — use the ngrok branding URL for cross-origin host test
 ## Architecture
 
 - `WalletProvider` boots `OWSSigner` + `OWSWallet`, registers EIP-1193 / credentials handlers, and owns unlock / address / chain state.
-- Shared `Modal` + modal queue drive connect, sign, credential consent, backup/restore (signer iframe overlay via `overlaySignerIframe`).
+- Shared `Modal` + modal queue drive connect, sign, credential consent, backup/restore (Signing Layer ceremony panel via `OWSSigner`).
 - Protocol wiring lives under `src/ows/`; UI under `src/components/`.
 
 ## Status

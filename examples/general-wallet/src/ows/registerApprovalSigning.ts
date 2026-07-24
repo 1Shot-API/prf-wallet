@@ -69,7 +69,7 @@ export function registerApprovalSigning(
         request.address,
         request.transaction,
       );
-      const signed = await signer.evm.signTransaction(prepared);
+      const [signed] = await signer.evm.signTransaction([prepared]);
       await options.onAuthenticated?.();
 
       const hash = await options.chainRpc.request("eth_sendRawTransaction", [

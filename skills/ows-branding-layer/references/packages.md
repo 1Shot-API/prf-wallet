@@ -33,7 +33,7 @@ npm install ../open-wallet/packages/ows-types
 |---------|----------------|----------------------|
 | `ows-types` | primitives, errors, credentials, EIP-1193 tables, `CredentialCryptoUtils`, `PresentationUtils`, `ProofUtils` | Branded values, holder signer bridge, shared errors |
 | `ows-wallet-utils` | `OWSWallet`, `RpcHelper`, display child client | Postmate child, EIP-1193 / custom RPC registration, reads/chain, `requestDisplay` |
-| `ows-signer-utils` | `OWSSigner`, `SignHelper`, `overlaySignerIframe`, `evm.*` | Nested signer iframe, consent→sign wiring, digests → signatures |
+| `ows-signer-utils` | `OWSSigner`, `SignHelper`, `showSignerCeremonyPanel`, `evm.*` | Nested signer iframe, consent→sign wiring, digests → signatures |
 | `ows-oid4` | `CredentialsHelper`, `HttpOid4vciClient`, `HttpOid4vpClient`, … | Optional OID4 accept/present orchestration |
 | `ows-signer` | static files | Custody kernel under `/signer/` |
 

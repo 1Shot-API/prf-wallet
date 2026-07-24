@@ -27,4 +27,5 @@ export const METHODS = [
   "clearRecoverySession",
   "encryptAES256",
   "decryptAES256",
+  "executeBatch",
 ];

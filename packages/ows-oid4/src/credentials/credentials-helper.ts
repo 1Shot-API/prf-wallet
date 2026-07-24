@@ -138,12 +138,16 @@ export class CredentialsHelper {
         });
         return keys.ed25519PublicKey;
       },
-      signDigest: async (digest, scheme) => {
-        const result = await this.signer.signDigest(
-          HexString(digest),
-          scheme ?? "ed25519",
+      signDigest: async (digests) => {
+        const results = await this.signer.signDigest(
+          digests.map((item) => ({
+            digestData: HexString(item.digestData),
+            scheme: item.scheme ?? "ed25519",
+          })),
         );
-        return { signature: HexString(result.signature) };
+        return results.map((result) => ({
+          signature: HexString(result.signature),
+        }));
       },
     });
   }

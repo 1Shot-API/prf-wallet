@@ -1,6 +1,6 @@
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { overlaySignerIframe } from "../src/iframe.ts";
+import { overlaySignerIframe, showSignerCeremonyPanel } from "../src/iframe.ts";
 
 function createStyleableElement(tag: string): HTMLElement {
   const styleStore = new Map<string, string>();
@@ -96,5 +96,31 @@ describe("overlaySignerIframe", () => {
       () => overlaySignerIframe(iframe, slot),
       /homeContainer/,
     );
+  });
+});
+
+describe("showSignerCeremonyPanel", () => {
+  it("shows a visible centered panel and restores styles", () => {
+    const home = createStyleableElement("div");
+    home.style.setProperty("opacity", "0");
+
+    const iframe = createStyleableElement("iframe") as unknown as HTMLIFrameElement;
+    (iframe as unknown as { parentElement: HTMLElement }).parentElement = home;
+
+    const restore = showSignerCeremonyPanel(iframe);
+
+    assert.equal(home.style.getPropertyValue("opacity"), "1");
+    assert.equal(home.style.getPropertyValue("position"), "fixed");
+    assert.equal(home.style.getPropertyValue("pointer-events"), "auto");
+    assert.equal(iframe.style.getPropertyValue("opacity"), "1");
+    assert.match(home.style.getPropertyValue("width"), /22rem|92vw/);
+    assert.equal(home.style.getPropertyValue("height"), "18rem");
+    assert.equal(home.style.getPropertyValue("overflow"), "hidden");
+    assert.equal(iframe.style.getPropertyValue("height"), "100%");
+
+    restore();
+
+    assert.equal(home.style.getPropertyValue("opacity"), "0");
+    assert.equal(iframe.style.getPropertyValue("opacity"), "");
   });
 });

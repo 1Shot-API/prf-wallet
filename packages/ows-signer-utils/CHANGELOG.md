@@ -1,5 +1,18 @@
 # @1shotapi/ows-signer-utils
 
+## 0.3.0
+
+### Minor Changes
+
+- ae79e0f: Batch digest signing and `executeBatch` mixed ceremony so one passkey covers many signs/AES/auth ops; signing APIs are array-only (breaking).
+- a39b7b2: Signing Layer passkey Confirm/Cancel UI (ceremony params + `SignDenied` / `OwsSignDeniedError`) and visible ceremony panel; remove invisible 1×1 WebAuthn prep and fold `credentialId` into options bags.
+
+### Patch Changes
+
+- Updated dependencies [ae79e0f]
+- Updated dependencies [a39b7b2]
+  - @1shotapi/ows-types@0.2.0
+
 ## 0.2.2
 
 ### Patch Changes

@@ -71,17 +71,13 @@ export function ModalHost() {
       );
     case "createBackup":
       return (
-        <CreateBackupModal
-          onResolve={activeModal.resolve}
-          onReject={activeModal.reject}
-        />
+        <CreateBackupModal onResolve={activeModal.resolve} />
       );
     case "restoreBackup":
       return (
         <RestoreBackupModal
           encryptedPrivateKey={activeModal.encryptedPrivateKey}
           onResolve={activeModal.resolve}
-          onReject={activeModal.reject}
         />
       );
     default:

@@ -143,6 +143,8 @@ export default defineConfig({
   build: {
     outDir: "dist/wallet",
     emptyOutDir: true,
-    sourcemap: true,
+    // Do not ship source maps: they embed library strings (e.g. jose PKCS8
+    // "BEGIN PRIVATE KEY" checks) that look like secrets in browser artifacts.
+    sourcemap: false,
   },
 });

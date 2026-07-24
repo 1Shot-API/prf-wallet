@@ -67,12 +67,39 @@ function setupBrowserMocks() {
 
     if (method === "signDigest") {
       // yParity=1 (not 27/28) — EvmSigner must canonicalize for ecrecover.
-      reply("DigestSigned", {
-        digest: "0x" + "22".repeat(32),
-        scheme: "secp256k1-ecdsa-recoverable",
-        signature: ("0x" + "33".repeat(64) + "01") as `0x${string}`,
-        credentialId: "cred-1",
-      }, id);
+      reply(
+        "DigestSigned",
+        {
+          results: [
+            {
+              digest: "0x" + "22".repeat(32),
+              scheme: "secp256k1-ecdsa-recoverable",
+              signature: ("0x" + "33".repeat(64) + "01") as `0x${string}`,
+              credentialId: "cred-1",
+            },
+          ],
+        },
+        id,
+      );
+      return;
+    }
+
+    if (method === "executeBatch") {
+      reply(
+        "BatchExecuted",
+        {
+          results: [
+            {
+              digest: "0x" + "22".repeat(32),
+              scheme: "secp256k1-ecdsa-recoverable",
+              signature: ("0x" + "33".repeat(64) + "01") as `0x${string}`,
+              credentialId: "cred-1",
+            },
+          ],
+          ciphertexts: ["ows-aes1:0xdead"],
+        },
+        id,
+      );
       return;
     }
 
@@ -144,12 +171,31 @@ describe("OWSSigner", () => {
       credentialId: "cred-1",
     });
 
-    const digestResult = await signer.signDigest(hashMessage("hi"));
-    assert.equal(digestResult.scheme, "secp256k1-ecdsa-recoverable");
-    assert.equal(digestResult.signature.slice(-2), "01");
+    const digestResults = await signer.signDigest([
+      { digestData: hashMessage("hi") },
+    ]);
+    assert.equal(digestResults.length, 1);
+    assert.equal(digestResults[0]!.scheme, "secp256k1-ecdsa-recoverable");
+    assert.equal(digestResults[0]!.signature.slice(-2), "01");
 
-    const signature = await signer.evm.signMessage({ message: "hi" });
-    assert.equal(signature.slice(-2), "1c");
+    const [signature] = await signer.evm.signMessage(["hi"]);
+    assert.equal(signature!.slice(-2), "1c");
+
+    signer.destroy();
+  });
+
+  it("executeBatch delegates to RPC", async () => {
+    const { container } = setupBrowserMocks();
+    const signer = await OWSSigner.create(container, SIGNER_URL, {
+      credentialId: "cred-1",
+    });
+
+    const batch = await signer.executeBatch({
+      digests: [{ digestData: hashMessage("hi"), scheme: "secp256k1-ecdsa-recoverable" }],
+      plaintexts: ["secret"],
+    });
+    assert.equal(batch.results?.length, 1);
+    assert.equal(batch.ciphertexts?.length, 1);
 
     signer.destroy();
   });

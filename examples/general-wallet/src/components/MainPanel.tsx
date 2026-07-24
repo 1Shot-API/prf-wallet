@@ -25,7 +25,7 @@ export function MainPanel() {
     <>
       <h1 className="mb-1 text-xl font-semibold">OWS Example General Wallet</h1>
       <p className="mb-4 text-[0.9rem] opacity-75">
-        Branding Layer — general-purpose wallet with nested Signing Layer.
+        Branding Layer: general-purpose wallet with nested Signing Layer.
       </p>
 
       <section className="grid max-w-xl gap-2" aria-label="Wallet status">
@@ -50,7 +50,7 @@ export function MainPanel() {
           <select
             id="chain-select"
             aria-label="Active chain"
-            className="max-w-64 rounded-md border border-[color-mix(in_srgb,CanvasText_25%,transparent)] bg-[Canvas] px-2 py-1.5 text-[0.9rem] text-inherit"
+            className="max-w-64 rounded-md border border-[color-mix(in_srgb,CanvasText_25%,transparent)] bg-[Canvas] px-2 py-1.5 text-base text-inherit"
             value={chainId}
             onChange={(event) => {
               void switchChain(event.target.value);

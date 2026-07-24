@@ -1,5 +1,17 @@
 # @1shotapi/ows-oid4
 
+## 0.2.0
+
+### Minor Changes
+
+- ae79e0f: Batch digest signing and `executeBatch` mixed ceremony so one passkey covers many signs/AES/auth ops; signing APIs are array-only (breaking).
+
+### Patch Changes
+
+- Updated dependencies [ae79e0f]
+- Updated dependencies [a39b7b2]
+  - @1shotapi/ows-types@0.2.0
+
 ## 0.1.1
 
 ### Patch Changes

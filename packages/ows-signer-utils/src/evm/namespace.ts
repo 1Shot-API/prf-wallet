@@ -1,4 +1,9 @@
-import { EVMAccountAddress } from "@1shotapi/ows-types";
+import {
+  EVMAccountAddress,
+  EVMSignatureHex,
+  HexString,
+  type CeremonyUiParams,
+} from "@1shotapi/ows-types";
 import type {
   AuthorizationRequest,
   Hex,
@@ -22,11 +27,11 @@ import {
 const EVM_SIGN_SCHEME = "secp256k1-ecdsa-recoverable" as const;
 
 /** Canonical 65-byte secp256k1 sig with v ∈ {27, 28} for on-chain ecrecover. */
-function toEvmRecoverableSignature(signature: Hex): Hex {
-  return serializeSignature(parseSignature(signature));
+function toEvmRecoverableSignature(signature: Hex): EVMSignatureHex {
+  return EVMSignatureHex(serializeSignature(parseSignature(signature)));
 }
 
-export type EvmCallOptions = {
+export type EvmCallOptions = CeremonyUiParams & {
   credentialId?: string;
 };
 
@@ -41,6 +46,10 @@ export class EvmSigner {
 
     const publicKey = await this.signer.getPublicKey({
       credentialId: options?.credentialId ?? this.signer.getCredentialId(),
+      explanationHeader: options?.explanationHeader,
+      explanationText: options?.explanationText,
+      confirmButtonText: options?.confirmButtonText,
+      denyButtonText: options?.denyButtonText,
     });
 
     const address = EVMAccountAddress(
@@ -51,54 +60,90 @@ export class EvmSigner {
   }
 
   async signMessage(
-    args: { message: SignableMessage } & EvmCallOptions,
-  ): Promise<Hex> {
-    const { message, credentialId } = args;
-    const digest = digestForMessage(message);
-    const result = await this.signer.signDigest(
-      digest,
-      EVM_SIGN_SCHEME,
-      credentialId ?? this.signer.getCredentialId(),
+    messages: SignableMessage[],
+    options?: EvmCallOptions,
+  ): Promise<EVMSignatureHex[]> {
+    if (messages.length === 0) return [];
+    const results = await this.signer.signDigest(
+      messages.map((message) => ({
+        digestData: digestForMessage(message),
+        scheme: EVM_SIGN_SCHEME,
+      })),
+      {
+        credentialId: options?.credentialId ?? this.signer.getCredentialId(),
+        explanationHeader: options?.explanationHeader,
+        explanationText: options?.explanationText,
+        confirmButtonText: options?.confirmButtonText,
+        denyButtonText: options?.denyButtonText,
+      },
     );
-    return toEvmRecoverableSignature(result.signature);
+    return results.map((r) => toEvmRecoverableSignature(r.signature));
   }
 
-  async signTypedData<const typedData extends TypedDataDefinition>(
-    typedData: typedData,
+  async signTypedData(
+    typedDataList: TypedDataDefinition[],
     options?: EvmCallOptions,
-  ): Promise<Hex> {
-    const digest = digestForTypedData(typedData);
-    const result = await this.signer.signDigest(
-      digest,
-      EVM_SIGN_SCHEME,
-      options?.credentialId ?? this.signer.getCredentialId(),
+  ): Promise<EVMSignatureHex[]> {
+    if (typedDataList.length === 0) return [];
+    const results = await this.signer.signDigest(
+      typedDataList.map((typedData) => ({
+        digestData: digestForTypedData(typedData),
+        scheme: EVM_SIGN_SCHEME,
+      })),
+      {
+        credentialId: options?.credentialId ?? this.signer.getCredentialId(),
+        explanationHeader: options?.explanationHeader,
+        explanationText: options?.explanationText,
+        confirmButtonText: options?.confirmButtonText,
+        denyButtonText: options?.denyButtonText,
+      },
     );
-    return toEvmRecoverableSignature(result.signature);
+    return results.map((r) => toEvmRecoverableSignature(r.signature));
   }
 
   async signTransaction(
-    transaction: TransactionSerializable,
+    transactions: TransactionSerializable[],
     options?: EvmCallOptions,
-  ): Promise<Hex> {
-    const digest = digestForTransaction(transaction);
-    const result = await this.signer.signDigest(
-      digest,
-      EVM_SIGN_SCHEME,
-      options?.credentialId ?? this.signer.getCredentialId(),
+  ): Promise<HexString[]> {
+    if (transactions.length === 0) return [];
+    const results = await this.signer.signDigest(
+      transactions.map((transaction) => ({
+        digestData: digestForTransaction(transaction),
+        scheme: EVM_SIGN_SCHEME,
+      })),
+      {
+        credentialId: options?.credentialId ?? this.signer.getCredentialId(),
+        explanationHeader: options?.explanationHeader,
+        explanationText: options?.explanationText,
+        confirmButtonText: options?.confirmButtonText,
+        denyButtonText: options?.denyButtonText,
+      },
     );
-    return serializeSignedTransaction(transaction, result.signature);
+    return results.map((r, i) =>
+      HexString(serializeSignedTransaction(transactions[i]!, r.signature)),
+    );
   }
 
   async signAuthorization(
-    authorization: AuthorizationRequest,
+    authorizations: AuthorizationRequest[],
     options?: EvmCallOptions,
-  ): Promise<SignedAuthorization> {
-    const digest = digestForAuthorization(authorization);
-    const result = await this.signer.signDigest(
-      digest,
-      EVM_SIGN_SCHEME,
-      options?.credentialId ?? this.signer.getCredentialId(),
+  ): Promise<SignedAuthorization[]> {
+    if (authorizations.length === 0) return [];
+    const results = await this.signer.signDigest(
+      authorizations.map((authorization) => ({
+        digestData: digestForAuthorization(authorization),
+        scheme: EVM_SIGN_SCHEME,
+      })),
+      {
+        credentialId: options?.credentialId ?? this.signer.getCredentialId(),
+        explanationHeader: options?.explanationHeader,
+        explanationText: options?.explanationText,
+        confirmButtonText: options?.confirmButtonText,
+        denyButtonText: options?.denyButtonText,
+      },
     );
-    return signedAuthorizationFromSignature(authorization, result.signature);
+    return results.map((r, i) =>
+      signedAuthorizationFromSignature(authorizations[i]!, r.signature),
+    );
   }
 }

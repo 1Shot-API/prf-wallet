@@ -3,11 +3,15 @@ import type { EVMAccountAddress } from "../primitives/EVMAccountAddress.js";
 import type { HexString } from "../primitives/HexString.js";
 import type { SolanaAccountAddress } from "../primitives/SolanaAccountAddress.js";
 import type {
+  CeremonyUiParams,
   CreateCredentialOptions,
   CredentialCreatedData,
   DigestSignedData,
+  ExecuteBatchParams,
+  ExecuteBatchResult,
   GetPublicKeyParams,
   PublicKeyData,
+  RecoveryCeremonyOptions,
   RecoveryDataCreatedData,
   SignScheme,
   VersionData,
@@ -33,11 +37,19 @@ export interface IOWSSigner {
     name: string,
     options?: CreateCredentialOptions,
   ): Promise<CredentialCreatedData>;
+  /**
+   * Sign digests under one passkey ceremony.
+   * Default scheme per item (when omitted on the call site) is
+   * `secp256k1-ecdsa-recoverable`.
+   */
   signDigest(
-    digestData: HexString | `0x${string}`,
-    scheme?: SignScheme,
-    credentialId?: string,
-  ): Promise<DigestSignedData>;
+    digests: Array<{
+      digestData: HexString | `0x${string}`;
+      scheme?: SignScheme;
+    }>,
+    options?: CeremonyUiParams & { credentialId?: string },
+  ): Promise<DigestSignedData[]>;
+  executeBatch(params: ExecuteBatchParams): Promise<ExecuteBatchResult>;
   getPublicKey(
     params?: GetPublicKeyParams,
   ): Promise<PublicKeyData & { challengeSignature?: string }>;
@@ -45,23 +57,23 @@ export interface IOWSSigner {
     passwordText: string,
     buttonText: string,
     minPasswordLength: number,
-    credentialId?: string,
+    options?: RecoveryCeremonyOptions,
   ): Promise<RecoveryDataCreatedData>;
   recoverKey(
     aes256EncryptedPrivateKey: string,
     passwordText: string,
     buttonText: string,
-    credentialId?: string,
+    options?: RecoveryCeremonyOptions,
   ): Promise<void>;
-  revealPrivateKey(credentialId?: string): Promise<void>;
+  revealPrivateKey(options?: RecoveryCeremonyOptions): Promise<void>;
   clearRecoverySession(): Promise<void>;
   encryptAES256(
     plaintexts: string[],
-    credentialId?: string,
+    options?: CeremonyUiParams & { credentialId?: string },
   ): Promise<AES256CipherText[]>;
   decryptAES256(
     ciphertexts: AES256CipherText[],
-    credentialId?: string,
+    options?: CeremonyUiParams & { credentialId?: string },
   ): Promise<string[]>;
   destroy(): void;
 }

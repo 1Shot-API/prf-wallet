@@ -84,7 +84,26 @@ export async function withCeremony(fn) {
   try {
     return await promise;
   } finally {
-    ceremonyPromise = null;
+    if (ceremonyPromise === promise) {
+      ceremonyPromise = null;
+    }
+  }
+}
+
+/**
+ * Cancel an open Confirm UI and wait for any in-flight ceremony lock to clear.
+ * Used when the parent times out or starts a new RPC.
+ *
+ * @param {() => void} cancelPendingConfirm
+ */
+export async function abandonCeremony(cancelPendingConfirm) {
+  cancelPendingConfirm();
+  const pending = ceremonyPromise;
+  if (!pending) return;
+  try {
+    await pending;
+  } catch {
+    // Prior ceremony was cancelled or failed — lock clears in withCeremony finally.
   }
 }
 

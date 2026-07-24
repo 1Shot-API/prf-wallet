@@ -75,13 +75,11 @@ function focusIframe(iframe: HTMLIFrameElement): void {
 }
 
 /**
- * Make the nested custody signer iframe visible/focusable for WebAuthn.
- * Uses a 1×1 invisible fixed layer — distinct from {@link overlaySignerIframe},
- * which shows the signer UI (e.g. passphrase) over a dialog slot.
- *
- * Call synchronously immediately before a signer RPC that triggers passkey UI.
+ * Make the nested custody signer iframe a visible centered panel for ceremonies
+ * (passkey Confirm UI, passphrase, reveal key). Call synchronously immediately
+ * before a signer RPC that needs signer DOM or WebAuthn.
  */
-export function prepareSignerIframeForWebAuthn(
+export function showSignerCeremonyPanel(
   iframe: HTMLIFrameElement,
 ): () => void {
   const container = iframe.parentElement;
@@ -90,32 +88,46 @@ export function prepareSignerIframeForWebAuthn(
     containerStyle: container ? captureInlineStyles(container) : null,
   };
 
+  const panelWidth = "min(22rem, 92vw)";
+  /** Tall enough for default Confirm copy + buttons without an outer scrollbar. */
+  const panelMinHeight = "18rem";
+  const zIndex = "10001";
+
   if (container) {
     setImportantStyle(container, "display", "block");
     setImportantStyle(container, "position", "fixed");
-    setImportantStyle(container, "top", "0");
-    setImportantStyle(container, "left", "0");
-    setImportantStyle(container, "width", "1px");
-    setImportantStyle(container, "height", "1px");
+    setImportantStyle(container, "top", "50%");
+    setImportantStyle(container, "left", "50%");
+    setImportantStyle(container, "transform", "translate(-50%, -50%)");
+    setImportantStyle(container, "width", panelWidth);
+    setImportantStyle(container, "height", panelMinHeight);
+    setImportantStyle(container, "min-height", panelMinHeight);
+    setImportantStyle(container, "max-height", "90vh");
     setImportantStyle(container, "clip-path", "none");
-    setImportantStyle(container, "overflow", "visible");
-    setImportantStyle(container, "opacity", "0");
-    setImportantStyle(container, "pointer-events", "none");
-    setImportantStyle(container, "z-index", "9999");
+    setImportantStyle(container, "overflow", "hidden");
+    setImportantStyle(container, "opacity", "1");
+    setImportantStyle(container, "pointer-events", "auto");
+    setImportantStyle(container, "z-index", zIndex);
+    setImportantStyle(container, "margin", "0");
+    setImportantStyle(container, "padding", "0");
+    setImportantStyle(container, "background", "Canvas");
+    setImportantStyle(container, "border-radius", "8px");
+    setImportantStyle(container, "box-shadow", "0 8px 32px #0006");
   }
 
   setImportantStyle(iframe, "display", "block");
-  setImportantStyle(iframe, "position", "fixed");
-  setImportantStyle(iframe, "top", "0");
-  setImportantStyle(iframe, "left", "0");
-  setImportantStyle(iframe, "width", "1px");
-  setImportantStyle(iframe, "height", "1px");
+  setImportantStyle(iframe, "position", "relative");
+  setImportantStyle(iframe, "top", "auto");
+  setImportantStyle(iframe, "left", "auto");
+  setImportantStyle(iframe, "width", "100%");
+  setImportantStyle(iframe, "height", "100%");
+  setImportantStyle(iframe, "min-height", panelMinHeight);
   setImportantStyle(iframe, "clip-path", "none");
-  setImportantStyle(iframe, "overflow", "visible");
-  setImportantStyle(iframe, "opacity", "0");
+  setImportantStyle(iframe, "overflow", "hidden");
+  setImportantStyle(iframe, "opacity", "1");
   setImportantStyle(iframe, "pointer-events", "auto");
   setImportantStyle(iframe, "border", "0");
-  setImportantStyle(iframe, "z-index", "9999");
+  setImportantStyle(iframe, "z-index", zIndex);
 
   focusIframe(iframe);
 
