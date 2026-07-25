@@ -1,5 +1,13 @@
 # @1shotapi/ows-signer-utils
 
+## 0.3.1
+
+### Patch Changes
+
+- 08133a8: revealPrivateKey keeps the ceremony panel open until the user dismisses the key UI (PrivateKeyRevealed).
+- Updated dependencies [08133a8]
+  - @1shotapi/ows-types@0.2.1
+
 ## 0.3.0
 
 ### Minor Changes

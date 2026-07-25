@@ -1,5 +1,11 @@
 # @1shotapi/ows-types
 
+## 0.2.1
+
+### Patch Changes
+
+- 08133a8: revealPrivateKey keeps the ceremony panel open until the user dismisses the key UI (PrivateKeyRevealed).
+
 ## 0.2.0
 
 ### Minor Changes
