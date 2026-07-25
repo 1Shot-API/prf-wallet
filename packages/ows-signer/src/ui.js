@@ -225,23 +225,43 @@ export function promptCeremonyConfirm(fields, runOnConfirm) {
 }
 
 /**
+ * Show the private key hex with Copy + Done. Resolves when the user clicks Done
+ * (or the UI is cleared), so Branding can keep the ceremony panel open.
+ *
  * @param {Uint8Array} privateKey
+ * @returns {Promise<void>}
  */
 export function showPrivateKey(privateKey) {
-  if (!root) return;
+  if (!root) {
+    return Promise.reject(new Error("uiNotInitialized"));
+  }
   cancelPendingCeremonyConfirm();
   clearUi();
-  const pre = document.createElement("pre");
-  pre.className = "ows-key";
-  pre.textContent = to0xHex(privateKey);
-  const copyBtn = document.createElement("button");
-  copyBtn.type = "button";
-  copyBtn.className = "ows-copy";
-  copyBtn.textContent = "Copy";
-  copyBtn.addEventListener("click", async () => {
-    await navigator.clipboard.writeText(pre.textContent ?? "");
+  const hex = to0xHex(privateKey);
+  return new Promise((resolve) => {
+    const pre = document.createElement("pre");
+    pre.className = "ows-key";
+    pre.textContent = hex;
+    const copyBtn = document.createElement("button");
+    copyBtn.type = "button";
+    copyBtn.className = "ows-copy";
+    copyBtn.textContent = "Copy";
+    copyBtn.addEventListener("click", async () => {
+      await navigator.clipboard.writeText(pre.textContent ?? "");
+    });
+    const doneBtn = document.createElement("button");
+    doneBtn.type = "button";
+    doneBtn.className = "ows-confirm";
+    doneBtn.textContent = "Done";
+    doneBtn.addEventListener("click", () => {
+      clearUi();
+      resolve();
+    });
+    const actions = document.createElement("div");
+    actions.className = "ows-actions";
+    actions.append(copyBtn, doneBtn);
+    root.append(pre, actions);
   });
-  root.append(pre, copyBtn);
 }
 
 /**

@@ -445,9 +445,21 @@ async function handleRevealPrivateKey(params, correlationId, targetOrigin) {
       keys.secp256k1PublicKey,
       keys.ed25519PublicKey,
     );
-    showPrivateKey(keys.secp256k1PrivateKey);
-    zeroize(keys.secp256k1PrivateKey);
+    try {
+      const dismiss = showPrivateKey(keys.secp256k1PrivateKey);
+      zeroize(keys.secp256k1PrivateKey);
+      await dismiss;
+    } finally {
+      zeroize(keys.secp256k1PrivateKey);
+    }
   });
+  emitEvent(
+    window.parent,
+    targetOrigin,
+    "PrivateKeyRevealed",
+    correlationId,
+    {},
+  );
 }
 
 /**

@@ -31,6 +31,7 @@ export type SignerEvent =
   | "RecoveryDataCreated"
   | "RecoverySessionStarted"
   | "RecoverySessionCleared"
+  | "PrivateKeyRevealed"
   | "PublicKey"
   | "ChallengeSigned"
   | "AES256Encrypted"

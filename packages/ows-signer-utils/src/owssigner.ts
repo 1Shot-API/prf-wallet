@@ -386,7 +386,9 @@ export class OWSSigner implements IOWSSigner {
           ...ceremony,
         },
         {
-          terminalEvent: "KeyDerived",
+          // KeyDerived is intermediate (cache addresses); panel stays open until
+          // the user dismisses the key UI (PrivateKeyRevealed).
+          terminalEvent: "PrivateKeyRevealed",
           onIntermediate: (_event, data) => this.onKeyDerived(data),
         },
       );

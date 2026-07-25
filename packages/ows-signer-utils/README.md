@@ -113,7 +113,7 @@ Export `prepareEvmTransaction(chainRpc, account, tx)` for branding / relayer sub
 | `getPublicKey(params?)` | Derive keys; optional `challenge` / ceremony UI |
 | `createRecoveryData(..., options?)` | Encrypt recovery blob (ceremony UI + `credentialId`) |
 | `recoverKey(..., options?)` | Decrypt recovery blob into session |
-| `revealPrivateKey(options?)` | Signer UI to reveal key |
+| `revealPrivateKey(options?)` | Signer UI to reveal key (stays open until Done) |
 | `clearRecoverySession()` | End recovery session |
 | `encryptAES256(plaintexts, options?)` | Batch AES-256-GCM seal (`ows-aes1:`) |
 | `decryptAES256(ciphertexts, options?)` | Batch AES-256-GCM unseal |
