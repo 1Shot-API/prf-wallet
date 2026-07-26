@@ -1,5 +1,13 @@
 # @1shotapi/ows-signer-utils
 
+## 0.3.2
+
+### Patch Changes
+
+- 09d93bb: Add `importPrivateKey` — paste a hex secp256k1 key in the Signing Layer to start a recovery session.
+- Updated dependencies [09d93bb]
+  - @1shotapi/ows-types@0.2.2
+
 ## 0.3.1
 
 ### Patch Changes
