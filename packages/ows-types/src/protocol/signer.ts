@@ -15,6 +15,7 @@ export type SignerMethod =
   | "createCredential"
   | "signDigest"
   | "revealPrivateKey"
+  | "importPrivateKey"
   | "createRecoveryData"
   | "recoverKey"
   | "getPublicKey"

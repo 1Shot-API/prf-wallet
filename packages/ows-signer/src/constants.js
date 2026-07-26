@@ -21,6 +21,7 @@ export const METHODS = [
   "createCredential",
   "signDigest",
   "revealPrivateKey",
+  "importPrivateKey",
   "createRecoveryData",
   "recoverKey",
   "getPublicKey",

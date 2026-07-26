@@ -395,6 +395,23 @@ export class OWSSigner implements IOWSSigner {
     });
   }
 
+  /**
+   * Prompt for a hex private key in the Signing Layer and start a recovery
+   * session (same terminal events as `recoverKey` without a backup envelope).
+   */
+  async importPrivateKey(): Promise<void> {
+    await this.withCeremonyPanel(async () => {
+      await this.rpc.request<{ recoverySessionActive?: true }>(
+        "importPrivateKey",
+        undefined,
+        {
+          terminalEvent: "RecoverySessionStarted",
+          onIntermediate: (_event, data) => this.onKeyDerived(data),
+        },
+      );
+    });
+  }
+
   async clearRecoverySession(): Promise<void> {
     await this.rpc.request<Record<string, never>>(
       "clearRecoverySession",

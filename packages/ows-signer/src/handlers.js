@@ -16,7 +16,7 @@ import {
   normalizePrfOutputToArrayBuffer,
 } from "./crypto/prf.js";
 import { getPublicKeyAsync as edGetPublicKeyAsync } from "./crypto/vendor/noble-ed25519.js";
-import { getPublicKey as secpGetPublicKey } from "./crypto/vendor/noble-secp256k1.js";
+import { getPublicKey as secpGetPublicKey, utils as secpUtils } from "./crypto/vendor/noble-secp256k1.js";
 import { debugLog, describePrfExtensionResults } from "./debug.js";
 import { decryptPrivateKey, encryptPrivateKey } from "./crypto/recovery.js";
 import { signWithScheme, validateSignPayload } from "./crypto/sign.js";
@@ -30,7 +30,14 @@ import {
   withCeremony,
   zeroize,
 } from "./state.js";
-import { clearUi, CeremonyDeniedError, promptCeremonyConfirm, promptPassphrase, showPrivateKey } from "./ui.js";
+import {
+  clearUi,
+  CeremonyDeniedError,
+  promptCeremonyConfirm,
+  promptPassphrase,
+  promptPrivateKey,
+  showPrivateKey,
+} from "./ui.js";
 import {
   createPasskeyCredential,
   getAssertionSignatureBase64Url,
@@ -124,6 +131,10 @@ export async function handleRequest(
 
       case "revealPrivateKey":
         await handleRevealPrivateKey(params, correlationId, targetOrigin);
+        return;
+
+      case "importPrivateKey":
+        await handleImportPrivateKey(params, correlationId, targetOrigin);
         return;
 
       case "createRecoveryData":
@@ -460,6 +471,64 @@ async function handleRevealPrivateKey(params, correlationId, targetOrigin) {
     correlationId,
     {},
   );
+}
+
+/**
+ * Paste a secp256k1 private key hex into the Signing Layer and start a recovery
+ * session (same session semantics as `recoverKey` without a backup envelope).
+ *
+ * @param {Record<string, unknown>} _params
+ * @param {string | undefined} correlationId
+ * @param {string} targetOrigin
+ */
+async function handleImportPrivateKey(_params, correlationId, targetOrigin) {
+  const raw = await promptPrivateKey();
+  let privateKey;
+  try {
+    privateKey = parseImportedPrivateKeyHex(raw);
+  } catch {
+    emitInvalid(correlationId, targetOrigin, "invalidPrivateKey");
+    return;
+  }
+  if (!secpUtils.isValidPrivateKey(privateKey)) {
+    zeroize(privateKey);
+    emitInvalid(correlationId, targetOrigin, "invalidPrivateKey");
+    return;
+  }
+
+  setRecoveryPrivateKey(privateKey);
+
+  const secp256k1PublicKey = secpGetPublicKey(privateKey, false);
+  const ed25519Seed = await ed25519SeedFromSecp256k1Scalar(privateKey);
+  const ed25519PublicKey = await edGetPublicKeyAsync(ed25519Seed);
+  emitKeyDerived(
+    targetOrigin,
+    correlationId,
+    secp256k1PublicKey,
+    ed25519PublicKey,
+  );
+  zeroize(ed25519Seed);
+
+  emitEvent(
+    window.parent,
+    targetOrigin,
+    "RecoverySessionStarted",
+    correlationId,
+    { recoverySessionActive: true },
+  );
+}
+
+/**
+ * @param {string} raw
+ * @returns {Uint8Array}
+ */
+function parseImportedPrivateKeyHex(raw) {
+  const trimmed = raw.trim();
+  const withPrefix =
+    trimmed.startsWith("0x") || trimmed.startsWith("0X")
+      ? trimmed
+      : `0x${trimmed}`;
+  return parse0xHex(withPrefix, 32);
 }
 
 /**

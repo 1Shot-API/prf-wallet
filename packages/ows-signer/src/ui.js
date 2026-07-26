@@ -302,3 +302,68 @@ export function promptPassphrase(passwordText, buttonText, minPasswordLength) {
     root.append(input, button);
   });
 }
+
+/**
+ * Prompt for a secp256k1 private key hex (with or without `0x`). Resolves with
+ * the trimmed hex string the user entered; rejects on Cancel.
+ *
+ * @returns {Promise<string>}
+ */
+export function promptPrivateKey() {
+  if (!root) {
+    return Promise.reject(new Error("uiNotInitialized"));
+  }
+  cancelPendingCeremonyConfirm();
+  clearUi();
+  return new Promise((resolve, reject) => {
+    const header = document.createElement("h2");
+    header.className = "ows-ceremony-header";
+    header.textContent = "Import private key";
+    const body = document.createElement("p");
+    body.className = "ows-ceremony-text";
+    body.textContent =
+      "Paste your secp256k1 private key. It stays in this secure panel and is never sent to the host.";
+    const input = document.createElement("input");
+    input.type = "password";
+    input.className = "ows-password";
+    input.placeholder = "0x…";
+    input.autocomplete = "off";
+    input.spellcheck = false;
+    const errorEl = document.createElement("p");
+    errorEl.className = "ows-ceremony-text";
+    errorEl.style.color = "tomato";
+    errorEl.hidden = true;
+    const confirmBtn = document.createElement("button");
+    confirmBtn.type = "button";
+    confirmBtn.className = "ows-confirm";
+    confirmBtn.textContent = "Import";
+    const denyBtn = document.createElement("button");
+    denyBtn.type = "button";
+    denyBtn.className = "ows-deny";
+    denyBtn.textContent = "Cancel";
+    const actions = document.createElement("div");
+    actions.className = "ows-actions";
+    actions.append(confirmBtn, denyBtn);
+
+    const finish = (fn) => {
+      clearUi();
+      fn();
+    };
+
+    confirmBtn.addEventListener("click", () => {
+      const value = input.value.trim();
+      if (!value) {
+        errorEl.textContent = "Enter a private key.";
+        errorEl.hidden = false;
+        return;
+      }
+      finish(() => resolve(value));
+    });
+    denyBtn.addEventListener("click", () => {
+      finish(() => reject(new CeremonyDeniedError()));
+    });
+
+    root.append(header, body, input, errorEl, actions);
+    input.focus();
+  });
+}
