@@ -102,6 +102,17 @@ export class OWSSigner implements IOWSSigner {
     return this.credentialId;
   }
 
+  /**
+   * Drop session credential id and address cache (e.g. branding “change account”).
+   * Does not clear Branding Layer localStorage — callers clear that separately.
+   */
+  clearSession(): void {
+    this.credentialId = undefined;
+    this.cachedAddress = undefined;
+    this.cachedSolanaAddress = undefined;
+    this.lastPublicKeyData = undefined;
+  }
+
   getCachedAddress(): EVMAccountAddress | undefined {
     return this.cachedAddress;
   }
