@@ -78,7 +78,6 @@ export type ModalRequest =
       kind: "restoreBackup";
       encryptedPrivateKey: string;
       resolve: (restored: boolean) => void;
-      reject: (error: unknown) => void;
     };
 
 export type ActiveModal = ModalRequest;

@@ -1,5 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import type { RecoveryDataCreatedData } from "@1shotapi/ows-types";
+import {
+  OwsUserRejectedError,
+  type RecoveryDataCreatedData,
+} from "@1shotapi/ows-types";
 import { Modal } from "../Modal";
 import { useWallet } from "../../wallet/WalletProvider";
 
@@ -28,12 +31,15 @@ function formatBackupError(error: unknown): string {
 
 export function CreateBackupModal({
   onResolve,
+  onReject,
 }: {
   onResolve: () => void;
+  onReject: (error: unknown) => void;
 }) {
   const { getSigner, ensureReady, persistBackup } = useWallet();
   const [phase, setPhase] = useState<"prompt" | "result" | "error">("prompt");
   const [error, setError] = useState<string | null>(null);
+  const [failure, setFailure] = useState<unknown>(null);
   const [result, setResult] = useState<RecoveryDataCreatedData | null>(null);
   const [copyLabel, setCopyLabel] = useState("Copy");
   const abortedRef = useRef(false);
@@ -71,6 +77,7 @@ export function CreateBackupModal({
         setPhase("result");
       } catch (err) {
         if (abortedRef.current) return;
+        setFailure(err);
         setError(formatBackupError(err));
         setPhase("error");
       }
@@ -80,6 +87,17 @@ export function CreateBackupModal({
       abortedRef.current = true;
     };
   }, [ensureReady, getSigner, persistBackup]);
+
+  const rejectFailure = () => {
+    onReject(
+      failure ??
+        new OwsUserRejectedError(error ?? "Backup failed."),
+    );
+  };
+
+  const rejectCancelled = () => {
+    onReject(new OwsUserRejectedError("User cancelled backup creation"));
+  };
 
   if (phase === "result" && result) {
     return (
@@ -120,7 +138,7 @@ export function CreateBackupModal({
   return (
     <Modal
       title="Create backup"
-      onBackdropDismiss={phase === "error" ? onResolve : undefined}
+      onBackdropDismiss={phase === "error" ? rejectFailure : undefined}
       actions={
         phase === "error" || phase === "prompt"
           ? [
@@ -128,7 +146,7 @@ export function CreateBackupModal({
                 label: phase === "error" ? "Close" : "Cancel",
                 variant: "secondary",
                 autoFocus: phase === "error",
-                onClick: onResolve,
+                onClick: phase === "error" ? rejectFailure : rejectCancelled,
               },
             ]
           : undefined

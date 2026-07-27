@@ -324,12 +324,11 @@ export function useWalletSession({
     if (!wallet) return;
     const display = await wallet.requestDisplay({ width: 480, height: 420 });
     try {
-      const restored = await pushModal<boolean>(({ id, resolve, reject }) => ({
+      const restored = await pushModal<boolean>(({ id, resolve }) => ({
         id,
         kind: "restoreBackup",
         encryptedPrivateKey: encrypted,
         resolve,
-        reject,
       }));
       if (restored) {
         setUnlocked(true);
