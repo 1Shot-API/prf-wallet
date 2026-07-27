@@ -225,23 +225,43 @@ export function promptCeremonyConfirm(fields, runOnConfirm) {
 }
 
 /**
+ * Show the private key hex with Copy + Done. Resolves when the user clicks Done
+ * (or the UI is cleared), so Branding can keep the ceremony panel open.
+ *
  * @param {Uint8Array} privateKey
+ * @returns {Promise<void>}
  */
 export function showPrivateKey(privateKey) {
-  if (!root) return;
+  if (!root) {
+    return Promise.reject(new Error("uiNotInitialized"));
+  }
   cancelPendingCeremonyConfirm();
   clearUi();
-  const pre = document.createElement("pre");
-  pre.className = "ows-key";
-  pre.textContent = to0xHex(privateKey);
-  const copyBtn = document.createElement("button");
-  copyBtn.type = "button";
-  copyBtn.className = "ows-copy";
-  copyBtn.textContent = "Copy";
-  copyBtn.addEventListener("click", async () => {
-    await navigator.clipboard.writeText(pre.textContent ?? "");
+  const hex = to0xHex(privateKey);
+  return new Promise((resolve) => {
+    const pre = document.createElement("pre");
+    pre.className = "ows-key";
+    pre.textContent = hex;
+    const copyBtn = document.createElement("button");
+    copyBtn.type = "button";
+    copyBtn.className = "ows-copy";
+    copyBtn.textContent = "Copy";
+    copyBtn.addEventListener("click", async () => {
+      await navigator.clipboard.writeText(pre.textContent ?? "");
+    });
+    const doneBtn = document.createElement("button");
+    doneBtn.type = "button";
+    doneBtn.className = "ows-confirm";
+    doneBtn.textContent = "Done";
+    doneBtn.addEventListener("click", () => {
+      clearUi();
+      resolve();
+    });
+    const actions = document.createElement("div");
+    actions.className = "ows-actions";
+    actions.append(copyBtn, doneBtn);
+    root.append(pre, actions);
   });
-  root.append(pre, copyBtn);
 }
 
 /**
@@ -280,5 +300,70 @@ export function promptPassphrase(passwordText, buttonText, minPasswordLength) {
       clearUi();
     });
     root.append(input, button);
+  });
+}
+
+/**
+ * Prompt for a secp256k1 private key hex (with or without `0x`). Resolves with
+ * the trimmed hex string the user entered; rejects on Cancel.
+ *
+ * @returns {Promise<string>}
+ */
+export function promptPrivateKey() {
+  if (!root) {
+    return Promise.reject(new Error("uiNotInitialized"));
+  }
+  cancelPendingCeremonyConfirm();
+  clearUi();
+  return new Promise((resolve, reject) => {
+    const header = document.createElement("h2");
+    header.className = "ows-ceremony-header";
+    header.textContent = "Import private key";
+    const body = document.createElement("p");
+    body.className = "ows-ceremony-text";
+    body.textContent =
+      "Paste your secp256k1 private key. It stays in this secure panel and is never sent to the host.";
+    const input = document.createElement("input");
+    input.type = "password";
+    input.className = "ows-password";
+    input.placeholder = "0x…";
+    input.autocomplete = "off";
+    input.spellcheck = false;
+    const errorEl = document.createElement("p");
+    errorEl.className = "ows-ceremony-text";
+    errorEl.style.color = "tomato";
+    errorEl.hidden = true;
+    const confirmBtn = document.createElement("button");
+    confirmBtn.type = "button";
+    confirmBtn.className = "ows-confirm";
+    confirmBtn.textContent = "Import";
+    const denyBtn = document.createElement("button");
+    denyBtn.type = "button";
+    denyBtn.className = "ows-deny";
+    denyBtn.textContent = "Cancel";
+    const actions = document.createElement("div");
+    actions.className = "ows-actions";
+    actions.append(confirmBtn, denyBtn);
+
+    const finish = (fn) => {
+      clearUi();
+      fn();
+    };
+
+    confirmBtn.addEventListener("click", () => {
+      const value = input.value.trim();
+      if (!value) {
+        errorEl.textContent = "Enter a private key.";
+        errorEl.hidden = false;
+        return;
+      }
+      finish(() => resolve(value));
+    });
+    denyBtn.addEventListener("click", () => {
+      finish(() => reject(new CeremonyDeniedError()));
+    });
+
+    root.append(header, body, input, errorEl, actions);
+    input.focus();
   });
 }

@@ -88,23 +88,21 @@ Call after `prepare()`, before `start()`. Zod EIP-1193 / credential wire schemas
 
 ## 5. Signing consent
 
-Headless wiring in `SignHelper` (`@1shotapi/ows-signer-utils`):
+Thin EIP-1193 adapter in `SignHelper` (`@1shotapi/ows-signer-utils`):
 
 ```
-requestDisplay → consent UI → ensureReady → signer.evm.signMessage | signTypedData → hide
+requestDisplay → branding approveAndSign* (ensureReady + consent + OWSSigner + onAuthenticated) → hide
 ```
 
 Registers: `personal_sign`, `eth_signTypedData`, `eth_signTypedData_v3`, `eth_signTypedData_v4`, `eth_sendTransaction`. Reject with `OwsUserRejectedError`.
 
-Create `RpcHelper` before `SignHelper`. Pass `getChainId` from RpcHelper. Branding implements `approveAndSignTransaction` (consent + prepare + sign + broadcast; use exported `prepareEvmTransaction`). Use a **setup-only** `ensureReady` plus `onAuthenticated` after message/typed-data ceremonies (send auth side effects live in branding's approve callback).
+Create `RpcHelper` before `SignHelper`. Pass `getChainId` from RpcHelper. Branding implements `approveAndSign*` (consent + Signing Layer; use exported `prepareEvmTransaction` for sends). Call **setup-only** `ensureReady` and `onAuthenticated` inside those branding callbacks (or in `registerApprovalSigning` wrappers) — not on `SignHelper` options.
 
 ```typescript
 const signHelper = new SignHelper(signer, wallet, {
-  ensureReady: ensureOnboardedForSigning,
-  onAuthenticated,
   getChainId: () => rpcHelper.getChainId(),
-  requestPersonalSignApproval, // PersonalSignApprovalRequest → boolean
-  requestSignTypedDataApproval, // SignTypedDataApprovalRequest → boolean
+  approveAndSignPersonalMessage, // ensureReady → consent + sign → onAuthenticated → signature
+  approveAndSignTypedData,
   approveAndSignTransaction, // SendTransactionApprovalRequest → EVMTransactionHash
 });
 for (const [method, handler] of Object.entries(signHelper.handlers)) {

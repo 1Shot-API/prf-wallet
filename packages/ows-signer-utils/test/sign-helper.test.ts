@@ -12,6 +12,7 @@ import {
 import {
   SignHelper,
   parseTypedData,
+  type SignHelperOptions,
   type SignHelperSigner,
   type SignHelperWallet,
 } from "../src/eip1193/sign-helper.ts";
@@ -75,6 +76,34 @@ function createMocks(options?: {
   };
 }
 
+function brandingSignOptions(
+  signer: SignHelperSigner,
+  calls: string[],
+  overrides?: Partial<SignHelperOptions>,
+): Pick<
+  SignHelperOptions,
+  | "approveAndSignPersonalMessage"
+  | "approveAndSignTypedData"
+  | "approveAndSignTransaction"
+> {
+  return {
+    approveAndSignPersonalMessage: async (request) => {
+      calls.push(`consent:${request.address}:${request.message}`);
+      const [signature] = await signer.evm.signMessage([request.message]);
+      return signature!;
+    },
+    approveAndSignTypedData: async (request) => {
+      calls.push(`typedConsent:${request.typedData.primaryType}`);
+      const [signature] = await signer.evm.signTypedData([
+        request.typedData as never,
+      ]);
+      return signature!;
+    },
+    approveAndSignTransaction: async () => TX_HASH,
+    ...overrides,
+  };
+}
+
 const sampleTypedData = {
   types: {
     EIP712Domain: [{ name: "name", type: "string" }],
@@ -104,25 +133,12 @@ describe("parseTypedData", () => {
 });
 
 describe("SignHelper", () => {
-  it("personal_sign: display → consent → ensureReady → sign → hide", async () => {
+  it("personal_sign: display → branding consent+sign → hide", async () => {
     const { wallet, signer, chainId, calls, getHideCount } = createMocks();
-    const ensureReadyCalls: string[] = [];
-    const authCalls: string[] = [];
 
     const helper = new SignHelper(signer, wallet, {
       getChainId: () => chainId,
-      ensureReady: async () => {
-        ensureReadyCalls.push("ensureReady");
-      },
-      onAuthenticated: async () => {
-        authCalls.push("onAuthenticated");
-      },
-      requestPersonalSignApproval: async (request) => {
-        calls.push(`consent:${request.address}:${request.message}`);
-        return true;
-      },
-      requestSignTypedDataApproval: async () => true,
-      approveAndSignTransaction: async () => TX_HASH,
+      ...brandingSignOptions(signer, calls),
     });
 
     const result = await helper.handlers.personal_sign(["hello", account]);
@@ -134,19 +150,19 @@ describe("SignHelper", () => {
       "signMessage:hello",
       "hide",
     ]);
-    assert.deepEqual(ensureReadyCalls, ["ensureReady"]);
-    assert.deepEqual(authCalls, ["onAuthenticated"]);
     assert.equal(getHideCount(), 1);
   });
 
-  it("personal_sign: rejects without signing when consent is denied", async () => {
+  it("personal_sign: rejects without signing when branding throws", async () => {
     const { wallet, signer, chainId, calls, getHideCount } = createMocks();
 
     const helper = new SignHelper(signer, wallet, {
       getChainId: () => chainId,
-      requestPersonalSignApproval: async () => false,
-      requestSignTypedDataApproval: async () => true,
-      approveAndSignTransaction: async () => TX_HASH,
+      ...brandingSignOptions(signer, calls, {
+        approveAndSignPersonalMessage: async () => {
+          throw new OwsUserRejectedError("User rejected the signing request");
+        },
+      }),
     });
 
     await assert.rejects(
@@ -163,12 +179,7 @@ describe("SignHelper", () => {
 
     const helper = new SignHelper(signer, wallet, {
       getChainId: () => chainId,
-      requestPersonalSignApproval: async () => true,
-      requestSignTypedDataApproval: async (request) => {
-        calls.push(`typedConsent:${request.typedData.primaryType}`);
-        return true;
-      },
-      approveAndSignTransaction: async () => TX_HASH,
+      ...brandingSignOptions(signer, calls),
     });
 
     const result = await helper.handlers.eth_signTypedData_v4([
@@ -182,17 +193,16 @@ describe("SignHelper", () => {
     assert.ok(calls.includes("hide"));
   });
 
-  it("hides display when ensureReady throws", async () => {
+  it("hides display when branding approve throws", async () => {
     const { wallet, signer, chainId, calls, getHideCount } = createMocks();
 
     const helper = new SignHelper(signer, wallet, {
       getChainId: () => chainId,
-      ensureReady: async () => {
-        throw new Error("unlock failed");
-      },
-      requestPersonalSignApproval: async () => true,
-      requestSignTypedDataApproval: async () => true,
-      approveAndSignTransaction: async () => TX_HASH,
+      ...brandingSignOptions(signer, calls, {
+        approveAndSignPersonalMessage: async () => {
+          throw new Error("unlock failed");
+        },
+      }),
     });
 
     await assert.rejects(
@@ -204,30 +214,23 @@ describe("SignHelper", () => {
     assert.equal(getHideCount(), 1);
   });
 
-  it("eth_sendTransaction: ensureReady → approveAndSignTransaction", async () => {
+  it("eth_sendTransaction: branding approveAndSignTransaction", async () => {
     const { wallet, signer, chainId, calls } = createMocks({
       cachedAddress: account,
     });
-    const ensureReadyCalls: string[] = [];
 
     const helper = new SignHelper(signer, wallet, {
       getChainId: () => chainId,
-      ensureReady: async () => {
-        ensureReadyCalls.push("ensureReady");
-      },
-      onAuthenticated: async () => {
-        calls.push("onAuthenticated");
-      },
-      requestPersonalSignApproval: async () => true,
-      requestSignTypedDataApproval: async () => true,
-      approveAndSignTransaction: async (request) => {
-        calls.push(
-          `approveAndSign:${request.to}:${request.data}:${request.chainId}`,
-        );
-        assert.equal(request.address, account);
-        assert.ok(request.transaction.from);
-        return TX_HASH;
-      },
+      ...brandingSignOptions(signer, calls, {
+        approveAndSignTransaction: async (request) => {
+          calls.push(
+            `approveAndSign:${request.to}:${request.data}:${request.chainId}`,
+          );
+          assert.equal(request.address, account);
+          assert.ok(request.transaction.from);
+          return TX_HASH;
+        },
+      }),
     });
 
     const to = EVMAccountAddress(
@@ -239,9 +242,7 @@ describe("SignHelper", () => {
     ]);
 
     assert.equal(result, TX_HASH);
-    assert.deepEqual(ensureReadyCalls, ["ensureReady"]);
     assert.ok(calls.includes(`approveAndSign:${to}:${data}:0xaa36a7`));
-    assert.ok(!calls.includes("onAuthenticated"));
     assert.ok(!calls.includes("signTransaction:11155111"));
     assert.ok(calls.includes("hide"));
   });
@@ -253,11 +254,13 @@ describe("SignHelper", () => {
 
     const helper = new SignHelper(signer, wallet, {
       getChainId: () => chainId,
-      requestPersonalSignApproval: async () => true,
-      requestSignTypedDataApproval: async () => true,
-      approveAndSignTransaction: async () => {
-        throw new OwsUserRejectedError("User rejected the transaction request");
-      },
+      ...brandingSignOptions(signer, calls, {
+        approveAndSignTransaction: async () => {
+          throw new OwsUserRejectedError(
+            "User rejected the transaction request",
+          );
+        },
+      }),
     });
 
     await assert.rejects(
@@ -277,15 +280,13 @@ describe("SignHelper", () => {
   });
 
   it("eth_sendTransaction: rejects wrong from account", async () => {
-    const { wallet, signer, chainId } = createMocks({
+    const { wallet, signer, chainId, calls } = createMocks({
       cachedAddress: account,
     });
 
     const helper = new SignHelper(signer, wallet, {
       getChainId: () => chainId,
-      requestPersonalSignApproval: async () => true,
-      requestSignTypedDataApproval: async () => true,
-      approveAndSignTransaction: async () => TX_HASH,
+      ...brandingSignOptions(signer, calls),
     });
 
     await assert.rejects(
@@ -302,15 +303,13 @@ describe("SignHelper", () => {
   });
 
   it("eth_sendTransaction: rejects mismatched chainId", async () => {
-    const { wallet, signer, chainId } = createMocks({
+    const { wallet, signer, chainId, calls } = createMocks({
       cachedAddress: account,
     });
 
     const helper = new SignHelper(signer, wallet, {
       getChainId: () => chainId,
-      requestPersonalSignApproval: async () => true,
-      requestSignTypedDataApproval: async () => true,
-      approveAndSignTransaction: async () => TX_HASH,
+      ...brandingSignOptions(signer, calls),
     });
 
     await assert.rejects(
@@ -328,15 +327,15 @@ describe("SignHelper", () => {
   });
 
   it("eth_sendTransaction: rejects invalid hash from branding", async () => {
-    const { wallet, signer, chainId } = createMocks({
+    const { wallet, signer, chainId, calls } = createMocks({
       cachedAddress: account,
     });
 
     const helper = new SignHelper(signer, wallet, {
       getChainId: () => chainId,
-      requestPersonalSignApproval: async () => true,
-      requestSignTypedDataApproval: async () => true,
-      approveAndSignTransaction: async () => "not-a-hash" as never,
+      ...brandingSignOptions(signer, calls, {
+        approveAndSignTransaction: async () => "not-a-hash" as never,
+      }),
     });
 
     await assert.rejects(

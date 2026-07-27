@@ -72,25 +72,24 @@ Pass optional `explanationHeader` / `explanationText` / `confirmButtonText` / `d
 
 ### EIP-1193 signing (`SignHelper`)
 
-Headless `personal_sign` / `eth_signTypedData*` / `eth_sendTransaction` orchestration (display → consent → sign for messages; send delegates to branding `approveAndSignTransaction`). Does not register handlers — the branding app owns order:
+Thin EIP-1193 adapter: parse params, request display, call branding `approveAndSign*` handlers. Does **not** talk to `OWSSigner` for ceremonies — branding owns consent, setup/unlock, and Signing Layer calls. Does not register handlers — the branding app owns order:
 
 ```typescript
 import { SignHelper, prepareEvmTransaction } from "@1shotapi/ows-signer-utils";
 
 const signHelper = new SignHelper(signer, wallet, {
-  ensureReady: ensureOnboardedForSigning, // setup only if no credential
-  onAuthenticated, // mark unlocked after message/typed-data ceremonies
   getChainId: () => rpcHelper.getChainId(),
-  requestPersonalSignApproval,
-  requestSignTypedDataApproval,
-  approveAndSignTransaction, // consent + prepare + sign + broadcast → hash
+  // Branding: ensureReady → consent UI + OWSSigner → onAuthenticated → value
+  approveAndSignPersonalMessage,
+  approveAndSignTypedData,
+  approveAndSignTransaction,
 });
 for (const [method, handler] of Object.entries(signHelper.handlers)) {
   wallet.registerEip1193(method, handler);
 }
 ```
 
-Export `prepareEvmTransaction(chainRpc, account, tx)` for branding / relayer submit paths. Consent UI stays app-owned (see `examples/general-wallet` approval dialog).
+Keep branding consent views mounted until the signer ceremony finishes. Export `prepareEvmTransaction(chainRpc, account, tx)` for branding / relayer submit paths.
 
 ## API
 
@@ -113,7 +112,8 @@ Export `prepareEvmTransaction(chainRpc, account, tx)` for branding / relayer sub
 | `getPublicKey(params?)` | Derive keys; optional `challenge` / ceremony UI |
 | `createRecoveryData(..., options?)` | Encrypt recovery blob (ceremony UI + `credentialId`) |
 | `recoverKey(..., options?)` | Decrypt recovery blob into session |
-| `revealPrivateKey(options?)` | Signer UI to reveal key |
+| `revealPrivateKey(options?)` | Signer UI to reveal key (stays open until Done) |
+| `importPrivateKey()` | Signer UI to paste hex key → recovery session |
 | `clearRecoverySession()` | End recovery session |
 | `encryptAES256(plaintexts, options?)` | Batch AES-256-GCM seal (`ows-aes1:`) |
 | `decryptAES256(ciphertexts, options?)` | Batch AES-256-GCM unseal |

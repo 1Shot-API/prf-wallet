@@ -386,7 +386,26 @@ export class OWSSigner implements IOWSSigner {
           ...ceremony,
         },
         {
-          terminalEvent: "KeyDerived",
+          // KeyDerived is intermediate (cache addresses); panel stays open until
+          // the user dismisses the key UI (PrivateKeyRevealed).
+          terminalEvent: "PrivateKeyRevealed",
+          onIntermediate: (_event, data) => this.onKeyDerived(data),
+        },
+      );
+    });
+  }
+
+  /**
+   * Prompt for a hex private key in the Signing Layer and start a recovery
+   * session (same terminal events as `recoverKey` without a backup envelope).
+   */
+  async importPrivateKey(): Promise<void> {
+    await this.withCeremonyPanel(async () => {
+      await this.rpc.request<{ recoverySessionActive?: true }>(
+        "importPrivateKey",
+        undefined,
+        {
+          terminalEvent: "RecoverySessionStarted",
           onIntermediate: (_event, data) => this.onKeyDerived(data),
         },
       );

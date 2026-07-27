@@ -7,6 +7,7 @@ import type {
   CredentialOfferApprovalRequest,
   CredentialPresentationApprovalRequest,
   CredentialSummary,
+  EVMSignatureHex,
   RecoveryDataCreatedData,
 } from "@1shotapi/ows-types";
 
@@ -32,13 +33,15 @@ export type ModalRequest =
       id: string;
       kind: "personalSign";
       request: PersonalSignApprovalRequest;
-      resolve: (approved: boolean) => void;
+      resolve: (signature: EVMSignatureHex) => void;
+      reject: (error: unknown) => void;
     }
   | {
       id: string;
       kind: "typedData";
       request: SignTypedDataApprovalRequest;
-      resolve: (approved: boolean) => void;
+      resolve: (signature: EVMSignatureHex) => void;
+      reject: (error: unknown) => void;
     }
   | {
       id: string;
@@ -75,7 +78,6 @@ export type ModalRequest =
       kind: "restoreBackup";
       encryptedPrivateKey: string;
       resolve: (restored: boolean) => void;
-      reject: (error: unknown) => void;
     };
 
 export type ActiveModal = ModalRequest;

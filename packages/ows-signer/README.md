@@ -40,7 +40,8 @@ Only accepts messages when `event.source === window.parent`. Replies use the par
 | `createCredential` | `name`, `options?` (incl. ceremony UI) | `KeyDerived`, `CredentialCreated` |
 | `signDigest` | `digests[]`, `credentialId?`, ceremony UI? | `KeyDerived` (PRF path), `DigestSigned` (`results[]`) |
 | `executeBatch` | batch fields + ceremony UI? | `KeyDerived` (when keys derived), `BatchExecuted` |
-| `revealPrivateKey` | `credentialId?`, ceremony UI? | `KeyDerived` (+ DOM display) |
+| `revealPrivateKey` | `credentialId?`, ceremony UI? | `KeyDerived`, then `PrivateKeyRevealed` (after user dismisses DOM key UI) |
+| `importPrivateKey` | — | DOM hex input; `KeyDerived`, `RecoverySessionStarted` |
 | `createRecoveryData` | passphrase fields + ceremony UI? | `KeyDerived`, `RecoveryDataCreated` |
 | `recoverKey` | envelope + passphrase fields + ceremony UI? | DOM display; `RecoverySessionStarted` or re-bind → `RecoverySessionCleared` |
 | `getPublicKey` | `credentialId?`, `challenge?`, ceremony UI? | `KeyDerived`, `PublicKey`, `ChallengeSigned?` |

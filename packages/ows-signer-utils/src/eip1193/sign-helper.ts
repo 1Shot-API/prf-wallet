@@ -6,7 +6,6 @@ import {
   EVMTransactionHash,
   HexString,
   OwsInvalidParamsError,
-  OwsUserRejectedError,
   type IEVMTransactionRequest,
   type RequestDisplayParams,
 } from "@1shotapi/ows-types";
@@ -81,27 +80,26 @@ export type SignHelperDisplaySize = {
 
 export type SignHelperOptions = {
   /**
-   * Run before signing / send consent when the branding app needs onboarding.
-   * Prefer setup-only when a credential id already exists — the signing
-   * ceremony itself unlocks the wallet.
+   * Branding owns consent UI + Signing Layer `signMessage` for EIP-191
+   * `personal_sign` (including setup/auth side effects). Keep the consent
+   * view mounted until the ceremony finishes.
    */
-  ensureReady?: () => Promise<void>;
-  /**
-   * Called after a successful WebAuthn signing ceremony so the branding app
-   * can mark the wallet unlocked and refresh addresses.
-   */
-  onAuthenticated?: () => void | Promise<void>;
-  /** Consent UI for EIP-191 personal_sign. */
-  requestPersonalSignApproval: (
+  approveAndSignPersonalMessage: (
     request: PersonalSignApprovalRequest,
-  ) => Promise<boolean>;
-  /** Consent UI for EIP-712 typed data. */
-  requestSignTypedDataApproval: (
+  ) => Promise<EVMSignatureHex>;
+  /**
+   * Branding owns consent UI + Signing Layer `signTypedData` for EIP-712
+   * (including setup/auth side effects). Keep the consent view mounted until
+   * the ceremony finishes.
+   */
+  approveAndSignTypedData: (
     request: SignTypedDataApprovalRequest,
-  ) => Promise<boolean>;
+  ) => Promise<EVMSignatureHex>;
   /**
    * Branding owns consent + prepare + passkey sign + broadcast for
-   * `eth_sendTransaction`. Return the mined/submitted tx hash.
+   * `eth_sendTransaction` (including setup/auth side effects). Return the
+   * mined/submitted tx hash. Keep the consent view mounted until the
+   * ceremony finishes.
    */
   approveAndSignTransaction: (
     request: SendTransactionApprovalRequest,
@@ -141,12 +139,12 @@ const ZERO_VALUE = HexString("0x0");
 const EMPTY_DATA = HexString("0x");
 
 /**
- * Headless EIP-1193 signing wiring: display → consent → ensureReady → sign.
- * Does **not** register handlers — the branding app calls
- * `wallet.registerEip1193` in the order it wants.
+ * Thin EIP-1193 adapter: parse params, request display, call branding
+ * `approveAndSign*` handlers. Does **not** register handlers — the branding
+ * app calls `wallet.registerEip1193` in the order it wants.
  *
- * `eth_sendTransaction` flow: ensureReady → branding `approveAndSignTransaction`
- * (consent + prepare + sign + broadcast).
+ * Setup (`ensureReady`) and post-ceremony unlock (`onAuthenticated`) belong
+ * inside branding's approve callbacks, next to the `OWSSigner` work.
  */
 export class SignHelper {
   readonly handlers: Eip1193SignHandlers;
@@ -172,21 +170,12 @@ export class SignHelper {
     const size =
       this.options.personalSignDisplaySize ?? DEFAULT_PERSONAL_SIGN_SIZE;
 
-    return this.withDisplay(size, async () => {
-      const approved = await this.options.requestPersonalSignApproval({
+    return this.withDisplay(size, () =>
+      this.options.approveAndSignPersonalMessage({
         message,
         address,
-      });
-      if (!approved) {
-        throw new OwsUserRejectedError("User rejected the signing request");
-      }
-      if (this.options.ensureReady) {
-        await this.options.ensureReady();
-      }
-      const [signature] = await this.signer.evm.signMessage([message]);
-      await this.notifyAuthenticated();
-      return signature!;
-    });
+      }),
+    );
   }
 
   private async handleTypedData(params: unknown[]): Promise<EVMSignatureHex> {
@@ -199,23 +188,12 @@ export class SignHelper {
     const size =
       this.options.typedDataDisplaySize ?? DEFAULT_TYPED_DATA_SIZE;
 
-    return this.withDisplay(size, async () => {
-      const approved = await this.options.requestSignTypedDataApproval({
+    return this.withDisplay(size, () =>
+      this.options.approveAndSignTypedData({
         address,
         typedData,
-      });
-      if (!approved) {
-        throw new OwsUserRejectedError("User rejected the signing request");
-      }
-      if (this.options.ensureReady) {
-        await this.options.ensureReady();
-      }
-      const [signature] = await this.signer.evm.signTypedData([
-        typedData as unknown as TypedDataDefinition,
-      ]);
-      await this.notifyAuthenticated();
-      return signature!;
-    });
+      }),
+    );
   }
 
   private async handleSendTransaction(
@@ -236,10 +214,6 @@ export class SignHelper {
       this.options.sendTransactionDisplaySize ?? DEFAULT_SEND_TRANSACTION_SIZE;
 
     return this.withDisplay(size, async () => {
-      if (this.options.ensureReady) {
-        await this.options.ensureReady();
-      }
-
       const address = await this.resolveAccount(tx.from);
       if (tx.from && !sameAddress(tx.from, address)) {
         throw new OwsInvalidParamsError(
@@ -292,12 +266,6 @@ export class SignHelper {
       return cached;
     }
     return this.signer.evm.getAccountAddress();
-  }
-
-  private async notifyAuthenticated(): Promise<void> {
-    if (this.options.onAuthenticated) {
-      await this.options.onAuthenticated();
-    }
   }
 
   private async withDisplay<T>(

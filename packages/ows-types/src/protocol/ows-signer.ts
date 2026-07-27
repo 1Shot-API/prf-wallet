@@ -66,6 +66,8 @@ export interface IOWSSigner {
     options?: RecoveryCeremonyOptions,
   ): Promise<void>;
   revealPrivateKey(options?: RecoveryCeremonyOptions): Promise<void>;
+  /** Paste a hex private key into the Signing Layer; starts a tab recovery session. */
+  importPrivateKey(): Promise<void>;
   clearRecoverySession(): Promise<void>;
   encryptAES256(
     plaintexts: string[],

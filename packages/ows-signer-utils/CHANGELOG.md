@@ -1,5 +1,27 @@
 # @1shotapi/ows-signer-utils
 
+## 0.3.3
+
+### Patch Changes
+
+- 9d0836e: Branding owns personal_sign / typed-data consent **and** the Signing Layer ceremony (`approveAndSignPersonalMessage` / `approveAndSignTypedData`) so the consent view stays mounted under the signer panel. `SignHelper` is a thin EIP-1193 adapter only — `ensureReady` / `onAuthenticated` live in branding `approveAndSign*` wrappers, not on `SignHelperOptions`.
+
+## 0.3.2
+
+### Patch Changes
+
+- 09d93bb: Add `importPrivateKey` — paste a hex secp256k1 key in the Signing Layer to start a recovery session.
+- Updated dependencies [09d93bb]
+  - @1shotapi/ows-types@0.2.2
+
+## 0.3.1
+
+### Patch Changes
+
+- 08133a8: revealPrivateKey keeps the ceremony panel open until the user dismisses the key UI (PrivateKeyRevealed).
+- Updated dependencies [08133a8]
+  - @1shotapi/ows-types@0.2.1
+
 ## 0.3.0
 
 ### Minor Changes

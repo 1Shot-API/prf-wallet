@@ -1,5 +1,17 @@
 # @1shotapi/ows-signer
 
+## 0.3.2
+
+### Patch Changes
+
+- 09d93bb: Add `importPrivateKey` — paste a hex secp256k1 key in the Signing Layer to start a recovery session.
+
+## 0.3.1
+
+### Patch Changes
+
+- 08133a8: revealPrivateKey keeps the ceremony panel open until the user dismisses the key UI (PrivateKeyRevealed).
+
 ## 0.3.0
 
 ### Minor Changes

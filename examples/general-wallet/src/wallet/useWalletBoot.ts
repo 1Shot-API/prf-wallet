@@ -174,21 +174,21 @@ export function useWalletBoot({
         ensureReady: () => runEnsureOnboarded(),
         onAuthenticated: () => runOnAuthenticated(),
         chainRpc: rpcHelper,
-        requestPersonalSignApproval: (request: PersonalSignApprovalRequest) =>
-          ask<boolean>(({ id, resolve }) => ({
+        approveAndSignPersonalMessage: (request: PersonalSignApprovalRequest) =>
+          ask(({ id, resolve, reject }) => ({
             id,
             kind: "personalSign",
             request,
             resolve,
+            reject,
           })),
-        requestSignTypedDataApproval: (
-          request: SignTypedDataApprovalRequest,
-        ) =>
-          ask<boolean>(({ id, resolve }) => ({
+        approveAndSignTypedData: (request: SignTypedDataApprovalRequest) =>
+          ask(({ id, resolve, reject }) => ({
             id,
             kind: "typedData",
             request,
             resolve,
+            reject,
           })),
         requestSendTransactionApproval: (
           request: SendTransactionApprovalRequest,
