@@ -14,12 +14,13 @@ import {
   EVMTransactionHash,
   OwsInvalidParamsError,
   OwsUserRejectedError,
+  type EVMSignatureHex,
   type EVMTransactionHash as EVMTransactionHashType,
 } from "@1shotapi/ows-types";
 
 export type RegisterApprovalSigningOptions = {
   /**
-   * Setup-only gate for signed actions: run onboarding when no credential
+   * Setup-only gate before signed actions: run onboarding when no credential
    * exists. With a known credential, skip unlock — the signing ceremony
    * authenticates. Pair with {@link onAuthenticated}.
    */
@@ -27,22 +28,29 @@ export type RegisterApprovalSigningOptions = {
   /** Mark unlocked + refresh addresses after a successful signing ceremony. */
   onAuthenticated?: () => void | Promise<void>;
   chainRpc: SignHelperChainRpc;
-  requestPersonalSignApproval: (
-    request: PersonalSignApprovalRequest,
-  ) => Promise<boolean>;
-  requestSignTypedDataApproval: (
-    request: SignTypedDataApprovalRequest,
-  ) => Promise<boolean>;
   /**
-   * Consent UI for eth_sendTransaction. When approved, branding continues with
-   * prepare + sign + broadcast (default implementation below if omitted).
+   * Branding owns consent UI + `signMessage`. Keep the view open until the
+   * Signing Layer ceremony finishes.
    */
-  requestSendTransactionApproval: (
+  approveAndSignPersonalMessage: (
+    request: PersonalSignApprovalRequest,
+  ) => Promise<EVMSignatureHex>;
+  /**
+   * Branding owns consent UI + `signTypedData`. Keep the view open until the
+   * Signing Layer ceremony finishes.
+   */
+  approveAndSignTypedData: (
+    request: SignTypedDataApprovalRequest,
+  ) => Promise<EVMSignatureHex>;
+  /**
+   * Full send path (consent + prepare + sign + broadcast). Defaults to
+   * {@link requestSendTransactionApproval} + prepare/sign/broadcast when
+   * omitted — prefer an implementation that keeps consent UI mounted during
+   * the ceremony.
+   */
+  requestSendTransactionApproval?: (
     request: SendTransactionApprovalRequest,
   ) => Promise<boolean>;
-  /**
-   * Full send path. Defaults to modal consent + prepare + sign + eth_sendRawTransaction.
-   */
   approveAndSignTransaction?: (
     request: SendTransactionApprovalRequest,
   ) => Promise<EVMTransactionHashType>;
@@ -50,6 +58,9 @@ export type RegisterApprovalSigningOptions = {
 
 /**
  * Build SignHelper handlers and register them on the wallet (pre-`start()`).
+ *
+ * SignHelper only adapts EIP-1193 ↔ `approveAndSign*`. Setup / unlock live here
+ * so branding owns the link to `OWSSigner`.
  */
 export function registerApprovalSigning(
   wallet: OWSWallet,
@@ -59,7 +70,13 @@ export function registerApprovalSigning(
   const approveAndSignTransaction =
     options.approveAndSignTransaction ??
     (async (request: SendTransactionApprovalRequest) => {
-      const approved = await options.requestSendTransactionApproval(request);
+      const requestApproval = options.requestSendTransactionApproval;
+      if (!requestApproval) {
+        throw new OwsInvalidParamsError(
+          "approveAndSignTransaction or requestSendTransactionApproval is required",
+        );
+      }
+      const approved = await requestApproval(request);
       if (!approved) {
         throw new OwsUserRejectedError("User rejected the transaction request");
       }
@@ -84,12 +101,23 @@ export function registerApprovalSigning(
     });
 
   const helper = new SignHelper(signer, wallet, {
-    ensureReady: options.ensureReady,
-    onAuthenticated: options.onAuthenticated,
     getChainId: () => options.chainRpc.getChainId(),
-    requestPersonalSignApproval: options.requestPersonalSignApproval,
-    requestSignTypedDataApproval: options.requestSignTypedDataApproval,
-    approveAndSignTransaction,
+    approveAndSignPersonalMessage: async (request) => {
+      await options.ensureReady?.();
+      const signature = await options.approveAndSignPersonalMessage(request);
+      await options.onAuthenticated?.();
+      return signature;
+    },
+    approveAndSignTypedData: async (request) => {
+      await options.ensureReady?.();
+      const signature = await options.approveAndSignTypedData(request);
+      await options.onAuthenticated?.();
+      return signature;
+    },
+    approveAndSignTransaction: async (request) => {
+      await options.ensureReady?.();
+      return approveAndSignTransaction(request);
+    },
   });
 
   for (const [method, handler] of Object.entries(helper.handlers)) {

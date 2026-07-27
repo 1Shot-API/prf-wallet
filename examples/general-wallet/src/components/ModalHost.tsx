@@ -32,6 +32,7 @@ export function ModalHost() {
         <PersonalSignModal
           request={activeModal.request}
           onResolve={activeModal.resolve}
+          onReject={activeModal.reject}
         />
       );
     case "typedData":
@@ -39,6 +40,7 @@ export function ModalHost() {
         <TypedDataModal
           request={activeModal.request}
           onResolve={activeModal.resolve}
+          onReject={activeModal.reject}
         />
       );
     case "sendTransaction":
