@@ -1,5 +1,11 @@
 # @1shotapi/ows-signer-utils
 
+## 0.3.3
+
+### Patch Changes
+
+- 9d0836e: Branding owns personal_sign / typed-data consent **and** the Signing Layer ceremony (`approveAndSignPersonalMessage` / `approveAndSignTypedData`) so the consent view stays mounted under the signer panel. `SignHelper` is a thin EIP-1193 adapter only — `ensureReady` / `onAuthenticated` live in branding `approveAndSign*` wrappers, not on `SignHelperOptions`.
+
 ## 0.3.2
 
 ### Patch Changes
