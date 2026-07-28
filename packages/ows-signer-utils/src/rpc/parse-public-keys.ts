@@ -70,12 +70,9 @@ export function credentialCreatedDataFromEvent(
     return null;
   }
   const secp256k1PublicKey = parseSecp256k1PublicKey(data.secp256k1PublicKey);
-  if (!secp256k1PublicKey) {
-    return null;
-  }
   return {
     credentialId: data.credentialId,
     cosePublicKey: parseCosePublicKey(data.cosePublicKey),
-    secp256k1PublicKey,
+    ...(secp256k1PublicKey ? { secp256k1PublicKey } : {}),
   };
 }

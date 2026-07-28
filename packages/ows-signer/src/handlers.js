@@ -249,16 +249,33 @@ async function handleCreateCredential(params, correlationId, targetOrigin) {
   }
   const options =
     params.options && typeof params.options === "object"
-      ? /** @type {{ rpName?: string, userDisplayName?: string, userId?: string, explanationHeader?: string, explanationText?: string, confirmButtonText?: string, denyButtonText?: string }} */ (
+      ? /** @type {{ rpName?: string, userDisplayName?: string, userId?: string, deferKeyDerivation?: boolean, explanationHeader?: string, explanationText?: string, confirmButtonText?: string, denyButtonText?: string }} */ (
           params.options
         )
       : {};
+  const deferKeyDerivation = options.deferKeyDerivation === true;
 
   await withCeremony(async () => {
-    // Create + optional PRF follow-up get stay under one Confirm panel so the
-    // explanation remains visible for every WebAuthn prompt in this RPC.
     /** @type {PublicKeyCredential | undefined} */
     let registrationCredential;
+
+    if (deferKeyDerivation) {
+      // Registration only — opener (or another signer session) will unlock later.
+      await promptCeremonyConfirm(options, async () => {
+        registrationCredential = await createPasskeyCredential(name, options);
+      });
+      if (!registrationCredential) {
+        throw new Error("createCredential: registration credential missing");
+      }
+      emitEvent(window.parent, targetOrigin, "CredentialCreated", correlationId, {
+        credentialId: getCredentialId(registrationCredential),
+        cosePublicKey: getCosePublicKeyBase64Url(registrationCredential),
+      });
+      return;
+    }
+
+    // Create + optional PRF follow-up get stay under one Confirm panel so the
+    // explanation remains visible for every WebAuthn prompt in this RPC.
     const prfCredential = await promptCeremonyConfirm(options, async () => {
       registrationCredential = await createPasskeyCredential(name, options);
       const credentialId = getCredentialId(registrationCredential);

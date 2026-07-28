@@ -84,7 +84,11 @@ export type CredentialCreatedData = {
   credentialId: string;
   /** Authenticator COSE public key; only available on create (attestation). */
   cosePublicKey: COSEPublicKey | null;
-  secp256k1PublicKey: SECP256K1PublicKey;
+  /**
+   * PRF-derived wallet secp256k1 public key.
+   * Absent when `deferKeyDerivation` was set on create (registration only).
+   */
+  secp256k1PublicKey?: SECP256K1PublicKey;
 };
 
 export type DigestSignItem = {
@@ -170,6 +174,12 @@ export type CreateCredentialOptions = CeremonyUiParams & {
   rpName?: string;
   userDisplayName?: string;
   userId?: string;
+  /**
+   * When true, only run WebAuthn registration — skip the PRF follow-up get and
+   * omit `secp256k1PublicKey` from `CredentialCreated`. Use when a different
+   * signer session (e.g. opener after Safari `/create`) will unlock later.
+   */
+  deferKeyDerivation?: boolean;
 };
 
 export type GetPublicKeyParams = CeremonyUiParams & {

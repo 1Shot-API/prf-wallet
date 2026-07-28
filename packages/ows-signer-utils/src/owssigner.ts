@@ -215,7 +215,9 @@ export class OWSSigner implements IOWSSigner {
         throw new Error("createCredential: invalid CredentialCreated payload");
       }
       this.credentialId = created.credentialId;
-      this.cacheAddressFromPublicKey(created.secp256k1PublicKey);
+      if (created.secp256k1PublicKey) {
+        this.cacheAddressFromPublicKey(created.secp256k1PublicKey);
+      }
       return created;
     });
   }
