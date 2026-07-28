@@ -25,17 +25,13 @@ describe("DisplayChildClient", () => {
 
   it("emits requestDisplay and resolves on display ready", async () => {
     const client = new DisplayChildClient(childApi as never);
-    const pending = client.requestDisplay({ width: 1, height: 1 });
+    const pending = client.requestDisplay();
 
     assert.equal(emitted.length, 1);
     assert.equal(emitted[0]?.name, OWS_REQUEST_DISPLAY_EVENT);
     const request = JSON.parse(emitted[0]!.data) as {
       displayId: string;
-      width: number;
-      height: number;
     };
-    assert.equal(request.width, 1);
-    assert.equal(request.height, 1);
 
     client.handleDisplayReady(serializeRpc({ displayId: request.displayId }));
     const session = await pending;
@@ -44,13 +40,13 @@ describe("DisplayChildClient", () => {
 
   it("reuses an active session until release", async () => {
     const client = new DisplayChildClient(childApi as never);
-    const first = client.requestDisplay({ width: 448, height: 360 });
+    const first = client.requestDisplay();
     const request = JSON.parse(emitted[0]!.data) as { displayId: string };
     client.handleDisplayReady(serializeRpc({ displayId: request.displayId }));
     const session = await first;
 
     emitted.length = 0;
-    const second = await client.requestDisplay({ width: 1, height: 1 });
+    const second = await client.requestDisplay();
     assert.equal(emitted.length, 0);
     assert.equal(second.displayId, session.displayId);
 

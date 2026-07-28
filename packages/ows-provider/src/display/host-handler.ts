@@ -16,6 +16,9 @@ import {
 const POPOVER_MARGIN_PX = 16;
 const POPOVER_SHADOW =
   "0 8px 32px color-mix(in srgb, CanvasText 22%, transparent)";
+/** Wipe duration for drawer open/close (ms). */
+const DRAWER_ANIMATION_MS = 280;
+const DRAWER_EASING = "cubic-bezier(0.32, 0.72, 0, 1)";
 
 /**
  * How the host presents the Branding Layer iframe.
@@ -27,7 +30,8 @@ const POPOVER_SHADOW =
  */
 export enum EWalletPresentationMode {
   /**
-   * Host-controlled flyout: collapsed when hidden, fixed lower-right when shown.
+   * Host-controlled panel: flyout (lower-right) when the viewport fits
+   * `walletSize + 32px` margin; full-screen drawer with bottom wipe when not.
    * Responds to show/hide and branding display requests.
    */
   Flyout = "flyout",
@@ -62,6 +66,8 @@ type StoredLayout = {
   containerAriaHidden: string | null;
 };
 
+type EVisibleLayoutKind = "flyout" | "drawer";
+
 function captureInlineStyles(element: HTMLElement): Record<string, string> {
   const styles: Record<string, string> = {};
   for (let i = 0; i < element.style.length; i++) {
@@ -83,10 +89,6 @@ function restoreInlineStyles(
   }
 }
 
-function isPassthroughDisplay(width: number, height: number): boolean {
-  return width <= 1 && height <= 1;
-}
-
 export class DisplayHostHandler {
   private originalLayout: StoredLayout | null = null;
   private childDisplayId: DisplayRequestId | null = null;
@@ -95,9 +97,13 @@ export class DisplayHostHandler {
   private hostDisplayActive = false;
   /** True while the last applied layout was 1×1 WebAuthn passthrough. */
   private usePassthroughLayout = false;
+  /** Last non-passthrough visible layout (for close animation). */
+  private visibleLayoutKind: EVisibleLayoutKind | null = null;
+  private hideAnimation: Animation | null = null;
   private readonly walletSizeX: number;
   private readonly walletSizeY: number;
   private readonly presentationMode: EWalletPresentationMode;
+  private readonly onViewportChange: () => void;
 
   constructor(
     private readonly parent: Postmate.ParentAPI,
@@ -108,6 +114,20 @@ export class DisplayHostHandler {
     this.presentationMode =
       options?.presentationMode ?? EWalletPresentationMode.Flyout;
 
+    this.onViewportChange = () => {
+      if (this.isInline || this.usePassthroughLayout) {
+        return;
+      }
+      if (!this.hostDisplayActive && this.childDisplayId === null) {
+        return;
+      }
+      this.showVisiblePanel({ animate: false });
+    };
+
+    if (typeof window !== "undefined") {
+      window.addEventListener("resize", this.onViewportChange);
+    }
+
     parent.on(OWS_REQUEST_DISPLAY_EVENT, (data: unknown) => {
       this.handleRequestDisplay(data);
     });
@@ -115,7 +135,7 @@ export class DisplayHostHandler {
       this.handleReleaseDisplay(data);
     });
     parent.on(OWS_REQUEST_HIDE_EVENT, (data: unknown) => {
-      this.handleRequestHide(data);
+      void this.handleRequestHide(data);
     });
   }
 
@@ -123,10 +143,30 @@ export class DisplayHostHandler {
     return this.presentationMode === EWalletPresentationMode.Inline;
   }
 
+  /**
+   * True when the host viewport cannot fit the configured wallet size plus a
+   * 16px margin on each side — use a full-screen drawer instead of a flyout.
+   */
+  shouldUseDrawer(): boolean {
+    if (typeof window === "undefined") {
+      return false;
+    }
+    const margin = POPOVER_MARGIN_PX * 2;
+    return (
+      window.innerWidth < this.walletSizeX + margin ||
+      window.innerHeight < this.walletSizeY + margin
+    );
+  }
+
   destroy(): void {
+    if (typeof window !== "undefined") {
+      window.removeEventListener("resize", this.onViewportChange);
+    }
+    this.hideAnimation?.cancel();
+    this.hideAnimation = null;
     this.hostDisplayActive = false;
     if (!this.isInline) {
-      this.hideLayout();
+      this.hideLayoutSync();
     }
   }
 
@@ -156,20 +196,20 @@ export class DisplayHostHandler {
       return;
     }
     this.hostDisplayActive = true;
-    this.showVisiblePanel();
+    this.showVisiblePanel({ animate: false });
   }
 
   /**
-   * Host-initiated show. Flyout: lower-right panel. Inline: ensure filled/visible.
+   * Host-initiated show. Flyout or drawer depending on viewport; inline fills.
    */
   show(): void {
     this.hostDisplayActive = true;
-    this.showVisiblePanel();
+    this.showVisiblePanel({ animate: true });
     this.focusFrame();
   }
 
   /**
-   * Host-initiated hide. Flyout: collapse unless branding holds a session.
+   * Host-initiated hide. Flyout/drawer: collapse unless branding holds a session.
    * Inline: no-op (panel stays in the page slot).
    */
   hide(): void {
@@ -178,7 +218,7 @@ export class DisplayHostHandler {
     }
     this.hostDisplayActive = false;
     if (this.rpcAccessCount === 0 && !this.childDisplayId) {
-      this.hideLayout();
+      void this.hideLayoutAnimated();
     }
   }
 
@@ -199,7 +239,7 @@ export class DisplayHostHandler {
       this.focusFrame();
       return;
     }
-    this.showLayout(1, 1);
+    this.showPassthroughLayout();
     this.focusFrame();
   }
 
@@ -215,14 +255,14 @@ export class DisplayHostHandler {
         return;
       }
       if (this.isInline) {
-        this.showVisiblePanel();
+        this.showVisiblePanel({ animate: false });
         return;
       }
       if (this.childDisplayId || this.hostDisplayActive) {
-        this.showVisiblePanel();
+        this.showVisiblePanel({ animate: false });
         return;
       }
-      this.hideLayout();
+      void this.hideLayoutAnimated();
     };
 
     if (typeof globalThis.setTimeout === "function") {
@@ -243,29 +283,28 @@ export class DisplayHostHandler {
     this.childDisplayId = envelope.displayId;
 
     if (this.isInline) {
-      // Stay filled; still ack so branding display handshake completes.
-      if (isPassthroughDisplay(envelope.width, envelope.height)) {
-        // Prefer keeping the visible panel — WebAuthn works in a full-size frame.
-        this.showVisiblePanel();
-      } else {
-        this.showVisiblePanel();
-      }
+      this.showVisiblePanel({ animate: false });
       this.focusFrame();
       this.notifyDisplayReady(envelope.displayId);
       return;
     }
 
-    if (isPassthroughDisplay(envelope.width, envelope.height)) {
-      this.showLayout(1, 1);
-    } else {
-      this.showVisiblePanel();
-    }
+    this.showVisiblePanel({ animate: true });
     this.focusFrame();
     this.notifyDisplayReady(envelope.displayId);
   }
 
-  private showVisiblePanel(): void {
-    this.showLayout(this.walletSizeX, this.walletSizeY);
+  private showVisiblePanel(options?: { animate?: boolean }): void {
+    const animate = options?.animate !== false;
+    if (this.isInline) {
+      this.showInlineLayout();
+      return;
+    }
+    if (this.shouldUseDrawer()) {
+      this.showDrawerLayout({ animate });
+    } else {
+      this.showFlyoutLayout();
+    }
   }
 
   private handleReleaseDisplay(data: unknown): void {
@@ -282,15 +321,15 @@ export class DisplayHostHandler {
 
     this.childDisplayId = null;
     if (this.isInline) {
-      this.showVisiblePanel();
+      this.showVisiblePanel({ animate: false });
       return;
     }
     if (this.rpcAccessCount === 0 && !this.hostDisplayActive) {
-      this.hideLayout();
+      void this.hideLayoutAnimated();
     }
   }
 
-  private handleRequestHide(data: unknown): void {
+  private async handleRequestHide(data: unknown): Promise<void> {
     let envelope;
     try {
       envelope = deserializeRequestHide(data);
@@ -309,14 +348,13 @@ export class DisplayHostHandler {
     this.childDisplayId = null;
 
     if (this.isInline) {
-      // Ack hide to branding, but keep the page-embedded panel visible.
       this.notifyHideReady(envelope.displayId);
-      this.showVisiblePanel();
+      this.showVisiblePanel({ animate: false });
       return;
     }
 
     this.hostDisplayActive = false;
-    this.hideLayout();
+    await this.hideLayoutAnimated();
     this.notifyHideReady(envelope.displayId);
   }
 
@@ -349,27 +387,13 @@ export class DisplayHostHandler {
     };
   }
 
-  private showLayout(width: number, height: number): void {
-    const frame = this.parent.frame;
-    if (!(frame instanceof HTMLIFrameElement)) {
-      return;
-    }
-
-    this.captureOriginalLayout(frame);
-    this.applyDisplayLayout(frame, width, height);
-  }
-
-  private applyDisplayLayout(
-    frame: HTMLIFrameElement,
-    width: number,
-    height: number,
-  ): void {
+  private prepareFrameFill(frame: HTMLIFrameElement): HTMLElement | null {
     const container = frame.parentElement;
-    const passthrough = isPassthroughDisplay(width, height);
-    this.usePassthroughLayout = passthrough;
+    this.captureOriginalLayout(frame);
+    this.usePassthroughLayout = false;
+    this.hideAnimation?.cancel();
+    this.hideAnimation = null;
 
-    // Container owns placement; iframe only fills the container (no position:fixed
-    // on the iframe — fixed + width/height 100% resolves against the viewport).
     if (container) {
       container.style.setProperty("display", "block", "important");
       container.style.setProperty("clip-path", "none", "important");
@@ -391,55 +415,57 @@ export class DisplayHostHandler {
     frame.style.removeProperty("bottom");
     frame.style.removeProperty("z-index");
     frame.removeAttribute("aria-hidden");
-
-    if (passthrough) {
-      if (container) {
-        container.style.setProperty("position", "fixed", "important");
-        container.style.setProperty("inset", "auto", "important");
-        container.style.setProperty("top", "0", "important");
-        container.style.setProperty("left", "0", "important");
-        container.style.setProperty("bottom", "auto", "important");
-        container.style.setProperty("right", "auto", "important");
-        container.style.setProperty("width", "1px", "important");
-        container.style.setProperty("height", "1px", "important");
-        container.style.setProperty("pointer-events", "auto", "important");
-        container.style.setProperty("z-index", "9999", "important");
-        container.style.setProperty("opacity", "0", "important");
-        container.style.setProperty("background", "transparent", "important");
-        container.style.removeProperty("border-radius");
-        container.style.removeProperty("box-shadow");
-      }
-
-      frame.style.setProperty("opacity", "0", "important");
-      frame.style.setProperty("pointer-events", "auto", "important");
-      frame.style.removeProperty("border-radius");
-      frame.style.removeProperty("box-shadow");
-      frame.style.removeProperty("background");
-      frame.style.removeProperty("color-scheme");
-      return;
-    }
-
-    if (this.isInline) {
-      this.applyInlineVisibleLayout(container, width, height);
-    } else {
-      this.applyFlyoutVisibleLayout(container, width, height);
-    }
-
     frame.style.setProperty("opacity", "1", "important");
     frame.style.setProperty("pointer-events", "auto", "important");
     frame.style.setProperty("background", "Canvas", "important");
     frame.style.setProperty("color-scheme", "light dark", "important");
     frame.style.removeProperty("border-radius");
     frame.style.removeProperty("box-shadow");
+
+    return container;
   }
 
-  private applyFlyoutVisibleLayout(
-    container: HTMLElement | null,
-    width: number,
-    height: number,
-  ): void {
+  private showPassthroughLayout(): void {
+    const frame = this.parent.frame;
+    if (!(frame instanceof HTMLIFrameElement)) {
+      return;
+    }
+    const container = this.prepareFrameFill(frame);
+    this.usePassthroughLayout = true;
+    this.visibleLayoutKind = null;
+
+    if (container) {
+      container.style.setProperty("position", "fixed", "important");
+      container.style.setProperty("inset", "auto", "important");
+      container.style.setProperty("top", "0", "important");
+      container.style.setProperty("left", "0", "important");
+      container.style.setProperty("bottom", "auto", "important");
+      container.style.setProperty("right", "auto", "important");
+      container.style.setProperty("width", "1px", "important");
+      container.style.setProperty("height", "1px", "important");
+      container.style.setProperty("pointer-events", "auto", "important");
+      container.style.setProperty("z-index", "9999", "important");
+      container.style.setProperty("opacity", "0", "important");
+      container.style.setProperty("background", "transparent", "important");
+      container.style.setProperty("transform", "none", "important");
+      container.style.removeProperty("border-radius");
+      container.style.removeProperty("box-shadow");
+      container.style.removeProperty("transition");
+    }
+
+    frame.style.setProperty("opacity", "0", "important");
+    frame.style.setProperty("pointer-events", "auto", "important");
+  }
+
+  private showFlyoutLayout(): void {
+    const frame = this.parent.frame;
+    if (!(frame instanceof HTMLIFrameElement)) {
+      return;
+    }
+    const container = this.prepareFrameFill(frame);
     if (!container) return;
 
+    this.visibleLayoutKind = "flyout";
     container.style.setProperty("position", "fixed", "important");
     container.style.setProperty("inset", "auto", "important");
     container.style.setProperty("top", "auto", "important");
@@ -454,24 +480,81 @@ export class DisplayHostHandler {
       `${POPOVER_MARGIN_PX}px`,
       "important",
     );
-    container.style.setProperty("width", `${width}px`, "important");
-    container.style.setProperty("height", `${height}px`, "important");
+    container.style.setProperty("width", `${this.walletSizeX}px`, "important");
+    container.style.setProperty("height", `${this.walletSizeY}px`, "important");
     container.style.setProperty("pointer-events", "auto", "important");
     container.style.setProperty("z-index", "9999", "important");
     container.style.setProperty("opacity", "1", "important");
     container.style.setProperty("background", "Canvas", "important");
     container.style.setProperty("border-radius", "12px", "important");
     container.style.setProperty("box-shadow", POPOVER_SHADOW, "important");
+    container.style.setProperty("transform", "none", "important");
+    container.style.removeProperty("transition");
   }
 
-  private applyInlineVisibleLayout(
-    container: HTMLElement | null,
-    width: number,
-    height: number,
-  ): void {
+  private showDrawerLayout(options?: { animate?: boolean }): void {
+    const frame = this.parent.frame;
+    if (!(frame instanceof HTMLIFrameElement)) {
+      return;
+    }
+    const container = this.prepareFrameFill(frame);
     if (!container) return;
 
-    // Fill the create() container in-place (no reparent). Host sizes the mount.
+    const animate = options?.animate !== false;
+    this.visibleLayoutKind = "drawer";
+
+    container.style.setProperty("position", "fixed", "important");
+    container.style.setProperty("inset", "0", "important");
+    container.style.setProperty("top", "0", "important");
+    container.style.setProperty("left", "0", "important");
+    container.style.setProperty("right", "0", "important");
+    container.style.setProperty("bottom", "0", "important");
+    container.style.setProperty("width", "100%", "important");
+    container.style.setProperty("height", "100%", "important");
+    container.style.setProperty("margin", "0", "important");
+    container.style.setProperty("pointer-events", "auto", "important");
+    container.style.setProperty("z-index", "9999", "important");
+    container.style.setProperty("opacity", "1", "important");
+    container.style.setProperty("background", "Canvas", "important");
+    container.style.setProperty("border-radius", "0", "important");
+    container.style.removeProperty("box-shadow");
+    container.style.removeProperty("transition");
+
+    if (animate && typeof container.animate === "function") {
+      container.style.removeProperty("transform");
+      const animation = container.animate(
+        [
+          { transform: "translateY(100%)" },
+          { transform: "translateY(0)" },
+        ],
+        {
+          duration: DRAWER_ANIMATION_MS,
+          easing: DRAWER_EASING,
+          fill: "forwards",
+        },
+      );
+      void animation.finished
+        .then(() => {
+          container.style.setProperty("transform", "none", "important");
+          animation.cancel();
+        })
+        .catch(() => {
+          container.style.setProperty("transform", "none", "important");
+        });
+    } else {
+      container.style.setProperty("transform", "none", "important");
+    }
+  }
+
+  private showInlineLayout(): void {
+    const frame = this.parent.frame;
+    if (!(frame instanceof HTMLIFrameElement)) {
+      return;
+    }
+    const container = this.prepareFrameFill(frame);
+    if (!container) return;
+
+    this.visibleLayoutKind = null;
     container.style.setProperty("position", "absolute", "important");
     container.style.setProperty("inset", "0", "important");
     container.style.setProperty("top", "0", "important");
@@ -486,9 +569,17 @@ export class DisplayHostHandler {
     container.style.setProperty("opacity", "1", "important");
     container.style.setProperty("background", "Canvas", "important");
     container.style.setProperty("border-radius", "12px", "important");
+    container.style.setProperty("transform", "none", "important");
     container.style.removeProperty("box-shadow");
-    container.style.setProperty("--ows-wallet-size-x", `${width}px`);
-    container.style.setProperty("--ows-wallet-size-y", `${height}px`);
+    container.style.removeProperty("transition");
+    container.style.setProperty(
+      "--ows-wallet-size-x",
+      `${this.walletSizeX}px`,
+    );
+    container.style.setProperty(
+      "--ows-wallet-size-y",
+      `${this.walletSizeY}px`,
+    );
   }
 
   private applyHiddenLayout(frame: HTMLIFrameElement): void {
@@ -498,6 +589,7 @@ export class DisplayHostHandler {
     }
     applyHiddenWalletFrameStyles(frame);
     this.usePassthroughLayout = false;
+    this.visibleLayoutKind = null;
   }
 
   private focusFrame(): void {
@@ -514,8 +606,46 @@ export class DisplayHostHandler {
     }
   }
 
-  private hideLayout(): void {
+  private async hideLayoutAnimated(): Promise<void> {
+    const wasDrawer = this.visibleLayoutKind === "drawer";
+    const frame = this.parent.frame;
+    const container =
+      frame instanceof HTMLIFrameElement ? frame.parentElement : null;
+
+    if (
+      wasDrawer &&
+      container &&
+      typeof container.animate === "function" &&
+      !this.usePassthroughLayout
+    ) {
+      this.hideAnimation?.cancel();
+      container.style.removeProperty("transform");
+      try {
+        const animation = container.animate(
+          [
+            { transform: "translateY(0)" },
+            { transform: "translateY(100%)" },
+          ],
+          {
+            duration: DRAWER_ANIMATION_MS,
+            easing: DRAWER_EASING,
+            fill: "forwards",
+          },
+        );
+        this.hideAnimation = animation;
+        await animation.finished;
+      } catch {
+        // Interrupted / unsupported — fall through to sync hide.
+      }
+      this.hideAnimation = null;
+    }
+
+    this.hideLayoutSync();
+  }
+
+  private hideLayoutSync(): void {
     this.usePassthroughLayout = false;
+    this.visibleLayoutKind = null;
 
     if (!this.originalLayout) {
       const frame = this.parent.frame;
@@ -581,9 +711,11 @@ export function applyHiddenWalletContainerStyles(container: HTMLElement): void {
   container.style.setProperty("pointer-events", "none", "important");
   container.style.setProperty("opacity", "0", "important");
   container.style.setProperty("z-index", "-1", "important");
+  container.style.setProperty("transform", "none", "important");
   container.style.removeProperty("border-radius");
   container.style.removeProperty("box-shadow");
   container.style.removeProperty("background");
+  container.style.removeProperty("transition");
   container.setAttribute("aria-hidden", "true");
 }
 

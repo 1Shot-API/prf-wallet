@@ -19,13 +19,17 @@ export type OWSProxyOptions = {
   classList?: string[];
   rpcTimeoutMs?: number;
   /**
-   * Visible wallet panel width in CSS pixels.
+   * Preferred wallet panel width in CSS pixels (flyout mode).
    * Default: {@link DEFAULT_WALLET_SIZE_X} (360).
+   * When the viewport is smaller than this size + 32px margin, the panel
+   * opens as a full-screen drawer instead. Branding scales to the iframe;
+   * it does not request its own size.
    */
   walletSizeX?: number;
   /**
-   * Visible wallet panel height in CSS pixels.
+   * Preferred wallet panel height in CSS pixels (flyout mode).
    * Default: {@link DEFAULT_WALLET_SIZE_Y} (600).
+   * See {@link OWSProxyOptions.walletSizeX}.
    */
   walletSizeY?: number;
   /**
@@ -163,15 +167,18 @@ export class OWSProxy {
 
   /**
    * Show the branding iframe (host-initiated).
-   * Flyout: lower-right panel. Inline: ensure the create() container is filled.
-   * Uses {@link OWSProxyOptions.walletSizeX} / {@link OWSProxyOptions.walletSizeY}.
+   * Flyout mode: lower-right panel, or full-screen drawer with bottom wipe when
+   * the viewport is smaller than {@link OWSProxyOptions.walletSizeX} /
+   * {@link OWSProxyOptions.walletSizeY} + 32px.
+   * Inline: ensure the create() container is filled.
    */
   showWallet(): void {
     this.displayHandler.show();
   }
 
   /**
-   * Hide a host-initiated flyout from {@link showWallet}.
+   * Hide a host-initiated panel from {@link showWallet}.
+   * Drawer mode animates a wipe-down before collapse.
    * No-op in inline presentation (embedded panel stays visible).
    */
   hideWallet(): void {

@@ -48,7 +48,7 @@ No published SDK for setup dialogs; keep UI local.
 Before WebAuthn or consent UI in a cross-origin host embed:
 
 ```typescript
-const display = await wallet.requestDisplay({ width, height });
+const display = await wallet.requestDisplay();
 try {
   // dialogs / passkey / overlay
 } finally {

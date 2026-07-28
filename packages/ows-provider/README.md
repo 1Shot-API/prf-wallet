@@ -47,18 +47,20 @@ Returns an `OwsUnimplementedError` (from `@1shotapi/ows-types`) if the Branding 
 | `name` | iframe `name` attribute (default `ows-wallet`) |
 | `classList` | CSS classes on iframe at creation |
 | `rpcTimeoutMs` | RPC timeout (default 120s) |
-| `walletSizeX` / `walletSizeY` | Visible panel size in CSS pixels (default 360×600) |
+| `walletSizeX` / `walletSizeY` | Preferred visible panel size in CSS pixels (default 360×600). Branding scales to this; it does not request its own size. |
 | `presentationMode` | `flyout` (default) or `inline` — fixed for this proxy instance |
 | `allowLocalAccess` | When true, add `local-network-access` / `loopback-network` to iframe `allow` (default `false`) |
 
-### Presentation (flyout vs inline)
+### Presentation (flyout / drawer vs inline)
 
 `ows-provider` styles the **host container** passed to `create()`. The iframe fills that container (`width/height: 100%`). **Never reparent the iframe after create** — Postmate messaging breaks. To switch presentation, `destroy()` and create a new proxy against the desired container.
+
+In **flyout** mode, if the host viewport is smaller than `walletSize + 32px` (16px margin on each side), the panel opens as a **full-screen drawer** with a bottom wipe open / wipe-down close. Otherwise it stays a fixed lower-right flyout at the configured size (no clamping).
 
 ```typescript
 import { EWalletPresentationMode, OWSProxy } from "@1shotapi/ows-provider";
 
-// Flyout: collapsed until showWallet(); fixed lower-right when shown
+// Flyout or drawer (auto): collapsed until showWallet()
 const flyout = await OWSProxy.create(flyoutSlot, walletUrl, {
   presentationMode: EWalletPresentationMode.Flyout,
   walletSizeX: 360,
@@ -74,7 +76,7 @@ const inline = await OWSProxy.create(previewSlot, walletUrl, {
 
 | Mode | Container | show / hide |
 |------|-----------|-------------|
-| `flyout` | Usually off-page / body child | Show = lower-right; hide = collapse |
+| `flyout` | Usually off-page / body child | Large viewport → lower-right flyout; small → full-screen drawer wipe; hide collapses |
 | `inline` | Page slot (sidebar, preview) | Show = fill; hide = no-op |
 
 ### `proxy.ethereum`

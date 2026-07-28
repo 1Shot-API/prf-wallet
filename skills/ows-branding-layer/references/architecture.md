@@ -28,11 +28,11 @@ Browsers require the **entire iframe ancestor chain** to be secure for WebAuthn.
 
 Branding:
 
-1. `const display = await wallet.requestDisplay({ width, height })`
+1. `const display = await wallet.requestDisplay()`
 2. Run WebAuthn / approval UI inside the branding iframe
 3. `await display.hide()` (or `wallet.requestHide()`)
 
-Host `OWSProxy` shows a lower-right opaque flyout (no modal backdrop). Protocol events include `ows:requestDisplay`, `ows:requestHide`, and `ows:releaseDisplay` (session `release()` / hide). Apps should not invent parallel display protocols.
+Host `OWSProxy` presents the panel using host-configured `walletSizeX` / `walletSizeY`: lower-right flyout when the viewport fits that size plus a 16px margin on each side; otherwise a full-screen drawer with a bottom wipe open / wipe-down close. No modal backdrop. Branding must scale to the iframe — it does not pass width/height. Protocol events include `ows:requestDisplay`, `ows:requestHide`, and `ows:releaseDisplay` (session `release()` / hide). Apps should not invent parallel display protocols.
 
 Display **queuing** (serializing concurrent modals) is app-owned — see `WalletProvider` modal queue in general-wallet.
 

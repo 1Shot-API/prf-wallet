@@ -121,7 +121,9 @@ export class OWSWallet {
    * Ask the host to show and focus this iframe so WebAuthn / UI can run in a
    * cross-origin embedding. Resolves when the host confirms display is ready.
    */
-  async requestDisplay(params: RequestDisplayParams): Promise<DisplaySession> {
+  async requestDisplay(
+    params: RequestDisplayParams = {},
+  ): Promise<DisplaySession> {
     const childApi =
       this.childApi ?? (await this.handshakePromise);
     if (!childApi) {

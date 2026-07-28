@@ -77,6 +77,52 @@ function createMockParent() {
   };
 }
 
+function ensureWindow(): {
+  innerWidth: number;
+  innerHeight: number;
+  addEventListener: (type: string, listener: () => void) => void;
+  removeEventListener: (type: string, listener: () => void) => void;
+} {
+  if (typeof (globalThis as { window?: unknown }).window === "undefined") {
+    Object.defineProperty(globalThis, "window", {
+      configurable: true,
+      writable: true,
+      value: {
+        innerWidth: 1024,
+        innerHeight: 768,
+        addEventListener() {},
+        removeEventListener() {},
+      },
+    });
+  }
+  return (globalThis as unknown as { window: ReturnType<typeof ensureWindow> })
+    .window;
+}
+
+function stubViewport(width: number, height: number): () => void {
+  const win = ensureWindow();
+  const previous = {
+    innerWidth: Object.getOwnPropertyDescriptor(win, "innerWidth"),
+    innerHeight: Object.getOwnPropertyDescriptor(win, "innerHeight"),
+  };
+  Object.defineProperty(win, "innerWidth", {
+    configurable: true,
+    get: () => width,
+  });
+  Object.defineProperty(win, "innerHeight", {
+    configurable: true,
+    get: () => height,
+  });
+  return () => {
+    if (previous.innerWidth) {
+      Object.defineProperty(win, "innerWidth", previous.innerWidth);
+    }
+    if (previous.innerHeight) {
+      Object.defineProperty(win, "innerHeight", previous.innerHeight);
+    }
+  };
+}
+
 describe("DisplayHostHandler", () => {
   before(() => {
     // @ts-expect-error test shim for instanceof checks in Node
@@ -88,14 +134,15 @@ describe("DisplayHostHandler", () => {
     delete globalThis.HTMLIFrameElement;
   });
 
-  it("shows passthrough layout and notifies child when ready", () => {
+  it("shows lower-right flyout when viewport fits wallet size + 32px", () => {
+    const restore = stubViewport(800, 700);
     const mock = createMockParent();
     Object.setPrototypeOf(mock.frame, MockHTMLIFrameElement.prototype);
     new DisplayHostHandler(mock.parent);
 
-    const displayId = DisplayRequestId("1");
+    const displayId = DisplayRequestId("10");
     mock.listeners.get(OWS_REQUEST_DISPLAY_EVENT)?.(
-      serializeRpc({ displayId, width: 1, height: 1 }),
+      serializeRpc({ displayId }),
     );
 
     assert.equal(mock.calls.length, 1);
@@ -103,31 +150,6 @@ describe("DisplayHostHandler", () => {
     assert.equal(
       JSON.parse(mock.calls[0]!.data as string).displayId,
       displayId,
-    );
-    const containerStyle = mock.frame.parentElement.style as unknown as Record<
-      string,
-      string
-    >;
-    assert.equal(containerStyle.width, "1px");
-    assert.equal(containerStyle.height, "1px");
-    assert.equal(
-      (mock.frame.style as unknown as Record<string, string>).width,
-      "100%",
-    );
-    assert.equal(
-      (mock.frame.style as unknown as Record<string, string>).position,
-      "static",
-    );
-  });
-
-  it("shows lower-right flyout for visible display using host wallet size", () => {
-    const mock = createMockParent();
-    Object.setPrototypeOf(mock.frame, MockHTMLIFrameElement.prototype);
-    new DisplayHostHandler(mock.parent);
-
-    const displayId = DisplayRequestId("10");
-    mock.listeners.get(OWS_REQUEST_DISPLAY_EVENT)?.(
-      serializeRpc({ displayId, width: 448, height: 360 }),
     );
 
     const frameStyle = mock.frame.style as unknown as Record<string, string>;
@@ -144,9 +166,11 @@ describe("DisplayHostHandler", () => {
     assert.equal(containerStyle.opacity, "1");
     assert.equal(containerStyle.width, "360px");
     assert.equal(containerStyle.height, "600px");
+    restore();
   });
 
   it("uses walletSizeX / walletSizeY when provided", () => {
+    const restore = stubViewport(800, 700);
     const mock = createMockParent();
     Object.setPrototypeOf(mock.frame, MockHTMLIFrameElement.prototype);
     new DisplayHostHandler(mock.parent, {
@@ -157,8 +181,6 @@ describe("DisplayHostHandler", () => {
     mock.listeners.get(OWS_REQUEST_DISPLAY_EVENT)?.(
       serializeRpc({
         displayId: DisplayRequestId("11"),
-        width: 999,
-        height: 999,
       }),
     );
 
@@ -168,15 +190,67 @@ describe("DisplayHostHandler", () => {
     >;
     assert.equal(containerStyle.width, "320px");
     assert.equal(containerStyle.height, "480px");
+    restore();
   });
 
-  it("hides on requestHide and notifies child", () => {
+  it("uses full-screen drawer when viewport is smaller than wallet size + 32px", () => {
+    const restore = stubViewport(360, 640);
+    const mock = createMockParent();
+    Object.setPrototypeOf(mock.frame, MockHTMLIFrameElement.prototype);
+    new DisplayHostHandler(mock.parent, {
+      walletSizeX: 360,
+      walletSizeY: 600,
+    });
+
+    mock.listeners.get(OWS_REQUEST_DISPLAY_EVENT)?.(
+      serializeRpc({ displayId: DisplayRequestId("12") }),
+    );
+
+    const containerStyle = mock.frame.parentElement.style as unknown as Record<
+      string,
+      string
+    >;
+    assert.equal(containerStyle.position, "fixed");
+    assert.equal(containerStyle.inset, "0");
+    assert.equal(containerStyle.width, "100%");
+    assert.equal(containerStyle.height, "100%");
+    assert.equal(containerStyle.bottom, "0");
+    assert.equal(containerStyle.right, "0");
+    restore();
+  });
+
+  it("shouldUseDrawer is true when either axis cannot fit margin", () => {
+    const mock = createMockParent();
+    Object.setPrototypeOf(mock.frame, MockHTMLIFrameElement.prototype);
+    const handler = new DisplayHostHandler(mock.parent, {
+      walletSizeX: 360,
+      walletSizeY: 600,
+    });
+
+    // Needs ≥392×632 (size + 16px each side)
+    const restoreNarrow = stubViewport(391, 800);
+    assert.equal(handler.shouldUseDrawer(), true);
+    restoreNarrow();
+
+    const restoreShort = stubViewport(800, 631);
+    assert.equal(handler.shouldUseDrawer(), true);
+    restoreShort();
+
+    const restoreFit = stubViewport(392, 632);
+    assert.equal(handler.shouldUseDrawer(), false);
+    restoreFit();
+
+    handler.destroy();
+  });
+
+  it("hides on requestHide and notifies child", async () => {
     const mock = createMockParent();
     Object.setPrototypeOf(mock.frame, MockHTMLIFrameElement.prototype);
     new DisplayHostHandler(mock.parent);
 
     mock.listeners.get(OWS_REQUEST_HIDE_EVENT)?.(serializeRpc({}));
 
+    await Promise.resolve();
     assert.equal(mock.calls.length, 1);
     assert.equal(mock.calls[0]?.method, OWS_HIDE_READY_MODEL_METHOD);
   });
@@ -246,7 +320,7 @@ describe("DisplayHostHandler", () => {
     handler.destroy();
   });
 
-  it("prepareForRpcAccess overrides clip-path for hidden containers", () => {
+  it("prepareForRpcAccess shows 1×1 passthrough when panel is hidden", () => {
     const mock = createMockParent();
     Object.setPrototypeOf(mock.frame, MockHTMLIFrameElement.prototype);
     const handler = new DisplayHostHandler(mock.parent);
@@ -260,10 +334,12 @@ describe("DisplayHostHandler", () => {
     assert.equal(containerStyle["clip-path"], "none");
     assert.equal(containerStyle.overflow, "hidden");
     assert.equal(containerStyle.width, "1px");
+    assert.equal(containerStyle.height, "1px");
     handler.destroy();
   });
 
   it("prepareForRpcAccess keeps a visible host panel instead of collapsing to 1×1", () => {
+    const restore = stubViewport(800, 700);
     const mock = createMockParent();
     Object.setPrototypeOf(mock.frame, MockHTMLIFrameElement.prototype);
     const handler = new DisplayHostHandler(mock.parent, {
@@ -282,9 +358,10 @@ describe("DisplayHostHandler", () => {
     assert.equal(containerStyle.height, "600px");
     assert.equal(containerStyle.opacity, "1");
     handler.destroy();
+    restore();
   });
 
-  it("inline mode fills create container and ignores host hide", () => {
+  it("inline mode fills create container and ignores host hide", async () => {
     const mock = createMockParent();
     Object.setPrototypeOf(mock.frame, MockHTMLIFrameElement.prototype);
     const handler = new DisplayHostHandler(mock.parent, {
@@ -305,6 +382,7 @@ describe("DisplayHostHandler", () => {
     assert.equal(containerStyle.opacity, "1");
 
     mock.listeners.get(OWS_REQUEST_HIDE_EVENT)?.(serializeRpc({}));
+    await Promise.resolve();
     assert.equal(mock.calls[0]?.method, OWS_HIDE_READY_MODEL_METHOD);
     assert.equal(containerStyle.width, "100%");
     assert.equal(containerStyle.opacity, "1");
@@ -312,13 +390,14 @@ describe("DisplayHostHandler", () => {
   });
 
   it("allows a new display session after release", () => {
+    const restore = stubViewport(800, 700);
     const mock = createMockParent();
     Object.setPrototypeOf(mock.frame, MockHTMLIFrameElement.prototype);
     const handler = new DisplayHostHandler(mock.parent);
     const displayId = DisplayRequestId("2");
 
     mock.listeners.get(OWS_REQUEST_DISPLAY_EVENT)?.(
-      serializeRpc({ displayId, width: 448, height: 360 }),
+      serializeRpc({ displayId }),
     );
 
     mock.listeners.get(OWS_RELEASE_DISPLAY_EVENT)?.(
@@ -327,10 +406,11 @@ describe("DisplayHostHandler", () => {
 
     mock.calls.length = 0;
     mock.listeners.get(OWS_REQUEST_DISPLAY_EVENT)?.(
-      serializeRpc({ displayId: DisplayRequestId("3"), width: 1, height: 1 }),
+      serializeRpc({ displayId: DisplayRequestId("3") }),
     );
 
     assert.equal(mock.calls.length, 1);
     handler.destroy();
+    restore();
   });
 });
