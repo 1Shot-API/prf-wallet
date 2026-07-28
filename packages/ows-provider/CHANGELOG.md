@@ -1,5 +1,11 @@
 # @1shotapi/ows-provider
 
+## 0.3.1
+
+### Patch Changes
+
+- 28dc576: Use width-only viewport checks for flyout vs drawer so short desktop windows keep the corner flyout.
+
 ## 0.3.0
 
 ### Minor Changes
