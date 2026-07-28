@@ -37,6 +37,7 @@ import {
   promptPassphrase,
   promptPrivateKey,
   showPrivateKey,
+  updateCeremonyCopy,
 } from "./ui.js";
 import {
   createPasskeyCredential,
@@ -202,9 +203,14 @@ function ceremonyFieldsFromParams(params) {
  *
  * @param {PublicKeyCredential} credential
  * @param {string} [credentialId]
+ * @param {(() => void) | undefined} [onBeforeFollowUpGet]
  * @returns {Promise<PublicKeyCredential>}
  */
-async function credentialForKeyDerivation(credential, credentialId) {
+async function credentialForKeyDerivation(
+  credential,
+  credentialId,
+  onBeforeFollowUpGet,
+) {
   debugLog("ceremony extension results", describePrfExtensionResults(credential));
 
   const rawPrf = credential.getClientExtensionResults()?.prf?.results?.first;
@@ -217,7 +223,11 @@ async function credentialForKeyDerivation(credential, credentialId) {
   debugLog("no PRF results on registration; running assertion with prf.eval", {
     credentialId: id,
   });
-  // Same RPC — no second Confirm (one screen per call).
+  if (typeof onBeforeFollowUpGet === "function") {
+    onBeforeFollowUpGet();
+  }
+  // Prefer keeping the parent Confirm panel open (call from runOnConfirm) so
+  // the user still sees why this second WebAuthn prompt appears.
   const assertion = await getPasskeyAssertion(undefined, id);
   debugLog(
     "assertion extension results",
@@ -245,14 +255,31 @@ async function handleCreateCredential(params, correlationId, targetOrigin) {
       : {};
 
   await withCeremony(async () => {
-    const credential = await promptCeremonyConfirm(options, () =>
-      createPasskeyCredential(name, options),
-    );
-    const credentialId = getCredentialId(credential);
-    const prfCredential = await credentialForKeyDerivation(
-      credential,
-      credentialId,
-    );
+    // Create + optional PRF follow-up get stay under one Confirm panel so the
+    // explanation remains visible for every WebAuthn prompt in this RPC.
+    /** @type {PublicKeyCredential | undefined} */
+    let registrationCredential;
+    const prfCredential = await promptCeremonyConfirm(options, async () => {
+      registrationCredential = await createPasskeyCredential(name, options);
+      const credentialId = getCredentialId(registrationCredential);
+      return credentialForKeyDerivation(
+        registrationCredential,
+        credentialId,
+        () => {
+          updateCeremonyCopy({
+            explanationHeader: "Unlock your new passkey",
+            explanationText:
+              "Confirm with your passkey again to finish setting up this wallet.",
+            confirmButtonText: options.confirmButtonText,
+            denyButtonText: options.denyButtonText,
+          });
+        },
+      );
+    });
+    if (!registrationCredential) {
+      throw new Error("createCredential: registration credential missing");
+    }
+    const credentialId = getCredentialId(registrationCredential);
     const keys = await deriveKeysFromCredential(prfCredential);
     emitKeyDerived(
       targetOrigin,
@@ -263,7 +290,7 @@ async function handleCreateCredential(params, correlationId, targetOrigin) {
 
     emitEvent(window.parent, targetOrigin, "CredentialCreated", correlationId, {
       credentialId,
-      cosePublicKey: getCosePublicKeyBase64Url(credential),
+      cosePublicKey: getCosePublicKeyBase64Url(registrationCredential),
       secp256k1PublicKey: to0xHex(keys.secp256k1PublicKey),
     });
     zeroize(keys.secp256k1PrivateKey);
