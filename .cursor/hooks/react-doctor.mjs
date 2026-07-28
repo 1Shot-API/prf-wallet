@@ -27,7 +27,7 @@ const shouldScan = (input) => {
     return toolCalls.some((toolCall) => EDIT_TOOL_NAMES.has(toolCall.tool_name));
   }
   const toolName = input.tool_name || input.toolName || input.tool;
-  return !toolName || EDIT_TOOL_NAMES.has(toolName);
+  return EDIT_TOOL_NAMES.has(toolName);
 };
 
 const runReactDoctor = (outputPath) => {
