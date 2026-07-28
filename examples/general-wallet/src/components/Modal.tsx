@@ -95,9 +95,9 @@ export function Modal({
         {footer}
         {actions && actions.length > 0 ? (
           <div className="mt-4 flex flex-wrap justify-end gap-2">
-            {actions.map((action) => (
+            {actions.map((action, index) => (
               <button
-                key={action.label}
+                key={`${index}-${action.label}`}
                 type="button"
                 disabled={action.disabled}
                 data-autofocus={action.autoFocus ? "" : undefined}
