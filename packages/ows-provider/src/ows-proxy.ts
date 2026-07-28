@@ -21,7 +21,7 @@ export type OWSProxyOptions = {
   /**
    * Preferred wallet panel width in CSS pixels (flyout mode).
    * Default: {@link DEFAULT_WALLET_SIZE_X} (360).
-   * When the viewport is smaller than this size + 32px margin, the panel
+   * When the viewport is narrower than this width + 32px margin, the panel
    * opens as a full-screen drawer instead. Branding scales to the iframe;
    * it does not request its own size.
    */
@@ -29,7 +29,8 @@ export type OWSProxyOptions = {
   /**
    * Preferred wallet panel height in CSS pixels (flyout mode).
    * Default: {@link DEFAULT_WALLET_SIZE_Y} (600).
-   * See {@link OWSProxyOptions.walletSizeX}.
+   * Used for the flyout box size; drawer switching is width-based (see
+   * {@link OWSProxyOptions.walletSizeX}).
    */
   walletSizeY?: number;
   /**
@@ -168,8 +169,7 @@ export class OWSProxy {
   /**
    * Show the branding iframe (host-initiated).
    * Flyout mode: lower-right panel, or full-screen drawer with bottom wipe when
-   * the viewport is smaller than {@link OWSProxyOptions.walletSizeX} /
-   * {@link OWSProxyOptions.walletSizeY} + 32px.
+   * the viewport is narrower than {@link OWSProxyOptions.walletSizeX} + 32px.
    * Inline: ensure the create() container is filled.
    */
   showWallet(): void {

@@ -193,8 +193,8 @@ describe("DisplayHostHandler", () => {
     restore();
   });
 
-  it("uses full-screen drawer when viewport is smaller than wallet size + 32px", () => {
-    const restore = stubViewport(360, 640);
+  it("uses full-screen drawer when viewport is narrower than wallet width + 32px", () => {
+    const restore = stubViewport(360, 900);
     const mock = createMockParent();
     Object.setPrototypeOf(mock.frame, MockHTMLIFrameElement.prototype);
     new DisplayHostHandler(mock.parent, {
@@ -219,7 +219,32 @@ describe("DisplayHostHandler", () => {
     restore();
   });
 
-  it("shouldUseDrawer is true when either axis cannot fit margin", () => {
+  it("keeps flyout on a short-but-wide desktop viewport", () => {
+    // 1080p @ 150% DPI with browser chrome often yields height < 632.
+    const restore = stubViewport(1280, 600);
+    const mock = createMockParent();
+    Object.setPrototypeOf(mock.frame, MockHTMLIFrameElement.prototype);
+    new DisplayHostHandler(mock.parent, {
+      walletSizeX: 360,
+      walletSizeY: 600,
+    });
+
+    mock.listeners.get(OWS_REQUEST_DISPLAY_EVENT)?.(
+      serializeRpc({ displayId: DisplayRequestId("13") }),
+    );
+
+    const containerStyle = mock.frame.parentElement.style as unknown as Record<
+      string,
+      string
+    >;
+    assert.equal(containerStyle.width, "360px");
+    assert.equal(containerStyle.height, "600px");
+    assert.equal(containerStyle.bottom, "16px");
+    assert.equal(containerStyle.right, "16px");
+    restore();
+  });
+
+  it("shouldUseDrawer is true only when width cannot fit margin", () => {
     const mock = createMockParent();
     Object.setPrototypeOf(mock.frame, MockHTMLIFrameElement.prototype);
     const handler = new DisplayHostHandler(mock.parent, {
@@ -227,16 +252,16 @@ describe("DisplayHostHandler", () => {
       walletSizeY: 600,
     });
 
-    // Needs ≥392×632 (size + 16px each side)
-    const restoreNarrow = stubViewport(391, 800);
+    // Needs width ≥ 392 (size + 16px each side)
+    const restoreNarrow = stubViewport(391, 900);
     assert.equal(handler.shouldUseDrawer(), true);
     restoreNarrow();
 
-    const restoreShort = stubViewport(800, 631);
-    assert.equal(handler.shouldUseDrawer(), true);
-    restoreShort();
+    const restoreShortWide = stubViewport(1280, 500);
+    assert.equal(handler.shouldUseDrawer(), false);
+    restoreShortWide();
 
-    const restoreFit = stubViewport(392, 632);
+    const restoreFit = stubViewport(392, 500);
     assert.equal(handler.shouldUseDrawer(), false);
     restoreFit();
 

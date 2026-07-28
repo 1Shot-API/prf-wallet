@@ -55,7 +55,7 @@ Returns an `OwsUnimplementedError` (from `@1shotapi/ows-types`) if the Branding 
 
 `ows-provider` styles the **host container** passed to `create()`. The iframe fills that container (`width/height: 100%`). **Never reparent the iframe after create** — Postmate messaging breaks. To switch presentation, `destroy()` and create a new proxy against the desired container.
 
-In **flyout** mode, if the host viewport is smaller than `walletSize + 32px` (16px margin on each side), the panel opens as a **full-screen drawer** with a bottom wipe open / wipe-down close. Otherwise it stays a fixed lower-right flyout at the configured size (no clamping).
+In **flyout** mode, if the host viewport is narrower than `walletSizeX + 32px` (16px margin on each side), the panel opens as a **full-screen drawer** with a bottom wipe open / wipe-down close. Otherwise it stays a fixed lower-right flyout at the configured size (no clamping). Short-but-wide desktop windows keep the flyout — drawer is for narrow / phone-like widths.
 
 ```typescript
 import { EWalletPresentationMode, OWSProxy } from "@1shotapi/ows-provider";
@@ -76,7 +76,7 @@ const inline = await OWSProxy.create(previewSlot, walletUrl, {
 
 | Mode | Container | show / hide |
 |------|-----------|-------------|
-| `flyout` | Usually off-page / body child | Large viewport → lower-right flyout; small → full-screen drawer wipe; hide collapses |
+| `flyout` | Usually off-page / body child | Wide viewport → lower-right flyout; narrow → full-screen drawer wipe; hide collapses |
 | `inline` | Page slot (sidebar, preview) | Show = fill; hide = no-op |
 
 ### `proxy.ethereum`

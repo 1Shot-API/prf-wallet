@@ -30,9 +30,9 @@ const DRAWER_EASING = "cubic-bezier(0.32, 0.72, 0, 1)";
  */
 export enum EWalletPresentationMode {
   /**
-   * Host-controlled panel: flyout (lower-right) when the viewport fits
-   * `walletSize + 32px` margin; full-screen drawer with bottom wipe when not.
-   * Responds to show/hide and branding display requests.
+   * Host-controlled panel: flyout (lower-right) when the viewport is wide
+   * enough for `walletSizeX + 32px`; full-screen drawer with bottom wipe when
+   * not. Responds to show/hide and branding display requests.
    */
   Flyout = "flyout",
   /**
@@ -144,18 +144,19 @@ export class DisplayHostHandler {
   }
 
   /**
-   * True when the host viewport cannot fit the configured wallet size plus a
-   * 16px margin on each side — use a full-screen drawer instead of a flyout.
+   * True when the host viewport is too narrow for the configured wallet width
+   * plus a 16px margin on each side — use a full-screen drawer instead of a flyout.
+   *
+   * Width-only: a short-but-wide desktop window (common on 1080p @ 150% DPI with
+   * browser chrome) should keep the corner flyout, not jump to mobile drawer UX.
    */
   shouldUseDrawer(): boolean {
     if (typeof window === "undefined") {
       return false;
     }
     const margin = POPOVER_MARGIN_PX * 2;
-    return (
-      window.innerWidth < this.walletSizeX + margin ||
-      window.innerHeight < this.walletSizeY + margin
-    );
+    const width = window.visualViewport?.width ?? window.innerWidth;
+    return width < this.walletSizeX + margin;
   }
 
   destroy(): void {
