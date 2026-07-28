@@ -29,6 +29,9 @@ let encryptionKeys: {
 const lastResponses: StoredResponse[] = [];
 let lastRequest: StoredRequest | null = null;
 
+/** Demo endpoints only — reject oversized POSTs before buffering. */
+const MAX_BODY_BYTES = 1_048_576;
+
 async function ensureKeys() {
   if (!encryptionKeys) {
     encryptionKeys = await generateVerifierEncryptionKeyPair();
@@ -36,16 +39,45 @@ async function ensureKeys() {
   return encryptionKeys;
 }
 
-function readBody(req: IncomingMessage): Promise<Record<string, string>> {
+function readBody(req: IncomingMessage): Promise<Record<string, unknown>> {
   return new Promise((resolve, reject) => {
     const chunks: Buffer[] = [];
-    req.on("data", (c: Buffer) => chunks.push(c));
+    let size = 0;
+    req.on("data", (c: Buffer) => {
+      size += c.length;
+      if (size > MAX_BODY_BYTES) {
+        reject(new Error("Request body too large"));
+        req.destroy();
+        return;
+      }
+      chunks.push(c);
+    });
     req.on("end", () => {
       const raw = Buffer.concat(chunks).toString("utf8");
+      const ct = String(req.headers["content-type"] ?? "");
+      // OWS HttpOid4vpClient posts form-urlencoded; also accept JSON for other clients.
+      if (ct.includes("application/json")) {
+        try {
+          resolve(raw ? (JSON.parse(raw) as Record<string, unknown>) : {});
+        } catch (error) {
+          reject(error);
+        }
+        return;
+      }
       resolve(Object.fromEntries(new URLSearchParams(raw)));
     });
     req.on("error", reject);
   });
+}
+
+function asOptionalString(value: unknown): string | undefined {
+  if (typeof value === "string") {
+    return value;
+  }
+  if (value == null) {
+    return undefined;
+  }
+  return JSON.stringify(value);
 }
 
 function sendJson(
@@ -126,8 +158,8 @@ export function oid4vpDemoPlugin(options: {
           if (req.method === "POST" && path === "/response") {
             const body = await readBody(req);
             const keys = await ensureKeys();
-            let vpToken = body.vp_token;
-            const encrypted = body.response;
+            let vpToken = asOptionalString(body.vp_token);
+            const encrypted = asOptionalString(body.response);
             if (encrypted && !vpToken) {
               vpToken = await decryptPresentationResponse(
                 encrypted,
@@ -138,7 +170,9 @@ export function oid4vpDemoPlugin(options: {
               receivedAt: new Date().toISOString(),
               vpToken,
               encryptedResponse: encrypted,
-              presentationSubmission: body.presentation_submission,
+              presentationSubmission: asOptionalString(
+                body.presentation_submission,
+              ),
             });
             if (lastResponses.length > 20) lastResponses.length = 20;
             sendJson(res, 200, { status: "ok" });

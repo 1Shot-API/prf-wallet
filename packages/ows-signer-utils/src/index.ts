@@ -15,7 +15,6 @@ export {
   type Eip1193SignHandlers,
   type SignHelperChainRpc,
   type SignHelperDisplaySession,
-  type SignHelperDisplaySize,
   type SignHelperOptions,
   type SignHelperSigner,
   type SignHelperWallet,

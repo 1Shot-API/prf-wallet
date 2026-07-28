@@ -142,7 +142,7 @@ async function resolveAccount(proxy: OWSProxy): Promise<EVMAccountAddress> {
   if (!account) {
     throw new Error("No account returned from wallet");
   }
-  return account;
+  return EVMAccountAddress(account);
 }
 
 function explorerTxUrl(chainId: EVMChainId, hash: string): string | null {

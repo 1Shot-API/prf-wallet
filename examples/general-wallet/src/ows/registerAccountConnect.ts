@@ -42,7 +42,7 @@ export function registerAccountConnect(
       return [cached];
     }
 
-    const display = await wallet.requestDisplay({ width: 420, height: 360 });
+    const display = await wallet.requestDisplay();
     try {
       const approved = await options.requestConnectApproval();
       if (!approved) {

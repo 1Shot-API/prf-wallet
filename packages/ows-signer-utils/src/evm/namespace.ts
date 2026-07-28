@@ -1,4 +1,5 @@
 import {
+  CredentialId,
   EVMAccountAddress,
   EVMSignatureHex,
   HexString,
@@ -32,7 +33,7 @@ function toEvmRecoverableSignature(signature: Hex): EVMSignatureHex {
 }
 
 export type EvmCallOptions = CeremonyUiParams & {
-  credentialId?: string;
+  credentialId?: CredentialId;
 };
 
 export class EvmSigner {

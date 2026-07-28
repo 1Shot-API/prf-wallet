@@ -1,4 +1,5 @@
 import {
+  CredentialId,
   EVMAccountAddress,
   SolanaAccountAddress,
 } from "@1shotapi/ows-types";
@@ -15,8 +16,9 @@ export function isWalletCreated(): boolean {
   return localStorage.getItem(WALLET_CREATED_KEY) === "true";
 }
 
-export function loadCredentialId(): string | undefined {
-  return localStorage.getItem(CREDENTIAL_ID_KEY) ?? undefined;
+export function loadCredentialId(): CredentialId | undefined {
+  const storedCredentialId = localStorage.getItem(CREDENTIAL_ID_KEY);
+  return storedCredentialId != null ? CredentialId(storedCredentialId) : undefined;
 }
 
 export function saveWalletCreated(credentialId: string): void {

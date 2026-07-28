@@ -20,12 +20,14 @@ export const OWS_HIDE_READY_MODEL_METHOD = "__owsHideReady" as const;
 
 export const DEFAULT_DISPLAY_TIMEOUT_MS = 30_000;
 
-export type RequestDisplayParams = {
-  width: number;
-  height: number;
-};
+/**
+ * Branding requests the host show the wallet panel at the host-configured size.
+ * Panel dimensions are owned by {@link OWSProxy} (`walletSizeX` / `walletSizeY`);
+ * branding must scale to the iframe.
+ */
+export type RequestDisplayParams = Record<string, never>;
 
-export type RequestDisplayEnvelope = RequestDisplayParams & {
+export type RequestDisplayEnvelope = {
   displayId: DisplayRequestId;
 };
 
@@ -47,17 +49,11 @@ export type HideReadyPayload = {
 
 export function deserializeRequestDisplay(data: unknown): RequestDisplayEnvelope {
   const parsed = parseJson(data);
-  if (
-    typeof parsed.displayId !== "string" ||
-    typeof parsed.width !== "number" ||
-    typeof parsed.height !== "number"
-  ) {
+  if (typeof parsed.displayId !== "string") {
     throw new Error("Invalid request display envelope");
   }
   return {
     displayId: DisplayRequestId(parsed.displayId),
-    width: parsed.width,
-    height: parsed.height,
   };
 }
 

@@ -58,6 +58,7 @@ Ceremony UI params (optional on WebAuthn-triggering methods): `explanationHeader
 - `rpName` — relying party display name in passkey UI (default `"OWS"`); does not affect `rpId`
 - `userDisplayName` — friendly account label (defaults to `name`)
 - `userId` — stable user handle bytes (base64); random if omitted
+- `deferKeyDerivation` — when true, skip the PRF follow-up get; `CredentialCreated` includes `credentialId` + `cosePublicKey` only (no `KeyDerived` / no `secp256k1PublicKey`)
 
 ## Signing schemes
 

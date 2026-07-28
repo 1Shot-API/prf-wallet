@@ -21,5 +21,4 @@ export {
   type CredentialsHelperOptions,
   type CredentialsHelperWallet,
   type CredentialsHelperDisplaySession,
-  type CredentialsHelperDisplaySize,
 } from "./credentials/credentials-helper.js";

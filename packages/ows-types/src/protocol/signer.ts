@@ -1,4 +1,5 @@
 import type { COSEPublicKey } from "../primitives/COSEPublicKey.js";
+import { CredentialId } from "../primitives/CredentialId.js";
 import type { ED25519PublicKey } from "../primitives/ED25519PublicKey.js";
 import type { SECP256K1PublicKey } from "../primitives/SECP256K1PublicKey.js";
 
@@ -81,10 +82,14 @@ export type KeyDerivedData = {
 };
 
 export type CredentialCreatedData = {
-  credentialId: string;
+  credentialId: CredentialId;
   /** Authenticator COSE public key; only available on create (attestation). */
   cosePublicKey: COSEPublicKey | null;
-  secp256k1PublicKey: SECP256K1PublicKey;
+  /**
+   * PRF-derived wallet secp256k1 public key.
+   * Absent when `deferKeyDerivation` was set on create (registration only).
+   */
+  secp256k1PublicKey?: SECP256K1PublicKey;
 };
 
 export type DigestSignItem = {
@@ -96,7 +101,7 @@ export type DigestSignedData = {
   digest: `0x${string}`;
   scheme: SignScheme;
   signature: `0x${string}`;
-  credentialId: string | null;
+  credentialId: CredentialId | null;
 };
 
 /** Terminal `DigestSigned` event payload (batch). */
@@ -110,7 +115,7 @@ export type DigestSignedResult = {
  */
 export type SignDigestParams = CeremonyUiParams & {
   digests: DigestSignItem[];
-  credentialId?: string;
+  credentialId?: CredentialId;
 };
 
 /**
@@ -118,7 +123,7 @@ export type SignDigestParams = CeremonyUiParams & {
  * WebAuthn challenge auth under a single passkey assertion.
  */
 export type ExecuteBatchParams = CeremonyUiParams & {
-  credentialId?: string;
+  credentialId?: CredentialId;
   /** WebAuthn assertion challenge (e.g. relayer auth). Forces a real assertion. */
   challenge?: `0x${string}`;
   digests?: DigestSignItem[];
@@ -148,7 +153,7 @@ export type PublicKeyData = {
   cosePublicKey: COSEPublicKey | null;
   secp256k1PublicKey: SECP256K1PublicKey;
   ed25519PublicKey: ED25519PublicKey;
-  credentialId?: string;
+  credentialId?: CredentialId;
 };
 
 /** Terminal `BatchExecuted` event payload. */
@@ -158,7 +163,7 @@ export type ExecuteBatchResult = {
   plaintexts?: string[];
   publicKey?: PublicKeyData;
   challengeSignature?: string;
-  credentialId?: string | null;
+  credentialId?: CredentialId | null;
 };
 
 export type ChallengeSignedData = {
@@ -170,10 +175,16 @@ export type CreateCredentialOptions = CeremonyUiParams & {
   rpName?: string;
   userDisplayName?: string;
   userId?: string;
+  /**
+   * When true, only run WebAuthn registration — skip the PRF follow-up get and
+   * omit `secp256k1PublicKey` from `CredentialCreated`. Use when a different
+   * signer session (e.g. opener after Safari `/create`) will unlock later.
+   */
+  deferKeyDerivation?: boolean;
 };
 
 export type GetPublicKeyParams = CeremonyUiParams & {
-  credentialId?: string;
+  credentialId?: CredentialId;
   challenge?: `0x${string}`;
   /** When true, use discoverable credentials (omit allowCredentials). */
   discoverable?: boolean;
@@ -186,7 +197,7 @@ export type GetPublicKeyParams = CeremonyUiParams & {
  */
 export type EncryptAES256Params = CeremonyUiParams & {
   plaintexts: string[];
-  credentialId?: string;
+  credentialId?: CredentialId;
 };
 
 export type EncryptAES256Result = {
@@ -198,12 +209,12 @@ export type EncryptAES256Result = {
  */
 export type DecryptAES256Params = CeremonyUiParams & {
   ciphertexts: string[];
-  credentialId?: string;
+  credentialId?: CredentialId;
 };
 
 /** Options for recovery / reveal RPCs that may trigger WebAuthn. */
 export type RecoveryCeremonyOptions = CeremonyUiParams & {
-  credentialId?: string;
+  credentialId?: CredentialId;
 };
 
 export type DecryptAES256Result = {

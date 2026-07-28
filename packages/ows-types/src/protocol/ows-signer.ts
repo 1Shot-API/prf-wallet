@@ -1,4 +1,5 @@
 import type { AES256CipherText } from "../primitives/AES256CipherText.js";
+import type { CredentialId } from "../primitives/CredentialId.js";
 import type { EVMAccountAddress } from "../primitives/EVMAccountAddress.js";
 import type { HexString } from "../primitives/HexString.js";
 import type { SolanaAccountAddress } from "../primitives/SolanaAccountAddress.js";
@@ -25,7 +26,7 @@ import type {
  * concrete class or inventing duck-typed clones.
  */
 export interface IOWSSigner {
-  getCredentialId(): string | undefined;
+  getCredentialId(): CredentialId | undefined;
   getLastPublicKeyData(): PublicKeyData | undefined;
   getCachedAddress(): EVMAccountAddress | undefined;
   setCachedAddress(address: EVMAccountAddress): void;
@@ -47,7 +48,7 @@ export interface IOWSSigner {
       digestData: HexString | `0x${string}`;
       scheme?: SignScheme;
     }>,
-    options?: CeremonyUiParams & { credentialId?: string },
+    options?: CeremonyUiParams & { credentialId?: CredentialId },
   ): Promise<DigestSignedData[]>;
   executeBatch(params: ExecuteBatchParams): Promise<ExecuteBatchResult>;
   getPublicKey(
@@ -71,11 +72,11 @@ export interface IOWSSigner {
   clearRecoverySession(): Promise<void>;
   encryptAES256(
     plaintexts: string[],
-    options?: CeremonyUiParams & { credentialId?: string },
+    options?: CeremonyUiParams & { credentialId?: CredentialId },
   ): Promise<AES256CipherText[]>;
   decryptAES256(
     ciphertexts: AES256CipherText[],
-    options?: CeremonyUiParams & { credentialId?: string },
+    options?: CeremonyUiParams & { credentialId?: CredentialId },
   ): Promise<string[]>;
   destroy(): void;
 }

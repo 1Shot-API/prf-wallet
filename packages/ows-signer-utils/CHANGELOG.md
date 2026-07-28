@@ -1,5 +1,26 @@
 # @1shotapi/ows-signer-utils
 
+## 0.4.0
+
+### Minor Changes
+
+- 2f6bb67: Host-owned wallet sizing: flyout vs full-screen drawer, no branding size requests.
+
+  `requestDisplay` is a show session only (no width/height). On small viewports the host panel opens as a full-screen drawer with a bottom wipe; larger viewports keep the lower-right flyout at `walletSizeX`/`walletSizeY`.
+
+### Patch Changes
+
+- Updated dependencies [2f6bb67]
+  - @1shotapi/ows-types@0.2.4
+
+## 0.3.5
+
+### Patch Changes
+
+- c8fd466: Add `createCredential` option `deferKeyDerivation` so Safari first-party registration can skip the PRF follow-up; `CredentialCreated.secp256k1PublicKey` is optional when deferred.
+- Updated dependencies [c8fd466]
+  - @1shotapi/ows-types@0.2.3
+
 ## 0.3.4
 
 ### Patch Changes
