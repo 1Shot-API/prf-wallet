@@ -12,21 +12,41 @@ const SPAWN_MAX_BUFFER_BYTES = 16 * 1024 * 1024;
 
 const EDIT_TOOL_NAMES = new Set(['Edit', 'Write', 'MultiEdit', 'NotebookEdit', 'ApplyPatch']);
 
-const readFileOrEmpty = (source) => {
+const readFileOrEmpty = (filePath) => {
   try {
-    return readFileSync(source, 'utf8');
+    return readFileSync(filePath, 'utf8');
   } catch {
     return '';
   }
 };
 
+/**
+ * Consume hook JSON from stdin without `readFileSync(0)`, which blocks until
+ * EOF and can hang the hook when stdin is not a ready pipe.
+ */
+const readStdin = async () => {
+  if (process.stdin.isTTY) {
+    return '';
+  }
+  const chunks = [];
+  for await (const chunk of process.stdin) {
+    chunks.push(chunk);
+  }
+  return Buffer.concat(chunks).toString('utf8');
+};
+
+const hookEventName = (input) =>
+  input.hook_event_name || input.eventName || input.event_name;
+
 const shouldScan = (input) => {
-  const eventName = input.hook_event_name || input.eventName || input.event_name;
+  const eventName = hookEventName(input);
   if (eventName === 'PostToolBatch') {
     const toolCalls = Array.isArray(input.tool_calls) ? input.tool_calls : [];
     return toolCalls.some((toolCall) => EDIT_TOOL_NAMES.has(toolCall.tool_name));
   }
   const toolName = input.tool_name || input.toolName || input.tool;
+  // hooks.json matcher already limits invocation; if the payload omits
+  // toolName, still scan rather than silently skipping.
   return !toolName || EDIT_TOOL_NAMES.has(toolName);
 };
 
@@ -68,10 +88,10 @@ const cleanup = (...paths) => {
   }
 };
 
-const main = () => {
+const main = async () => {
   let input;
   try {
-    input = JSON.parse(readFileOrEmpty(0) || '{}');
+    input = JSON.parse((await readStdin()) || '{}');
   } catch {
     input = {};
   }
@@ -106,11 +126,13 @@ const main = () => {
 
   const message = `React Doctor found issues in the changed files. Review this output and fix the regressions before finishing. For confirmed issues that cannot be fixed now, create GitHub issues with the rule, file/line, confidence, impact, and proposed fix.\n\n${scanOutput}`;
 
-  if (input.hook_event_name === 'PostToolBatch') {
+  if (hookEventName(input) === 'PostToolBatch') {
     console.log(JSON.stringify({ hookSpecificOutput: { hookEventName: 'PostToolBatch', additionalContext: message } }));
   } else {
     console.log(JSON.stringify({ additional_context: message }));
   }
 };
 
-main();
+main().catch(() => {
+  process.exit(0);
+});

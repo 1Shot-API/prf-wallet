@@ -132,6 +132,22 @@ export function resolveCeremonyUi(fields) {
 }
 
 /**
+ * Update header/body on an open ceremony Confirm panel (e.g. before a follow-up
+ * WebAuthn get). No-op if the ceremony UI is not showing.
+ *
+ * @param {CeremonyUiFields | Record<string, unknown> | undefined} fields
+ */
+export function updateCeremonyCopy(fields) {
+  if (!root) return;
+  const header = root.querySelector(".ows-ceremony-header");
+  const text = root.querySelector(".ows-ceremony-text");
+  if (!header && !text) return;
+  const ui = resolveCeremonyUi(fields);
+  if (header) header.textContent = ui.header;
+  if (text) text.textContent = ui.explanation;
+}
+
+/**
  * Show Confirm/Cancel. On Confirm, runs `runOnConfirm` **synchronously from the
  * click handler** so WebAuthn keeps user activation / document focus on mobile.
  *

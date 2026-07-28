@@ -37,16 +37,11 @@ export type CredentialsHelperDisplaySession = {
 
 export type CredentialsHelperWallet = {
   requestDisplay(
-    params: RequestDisplayParams,
+    params?: RequestDisplayParams,
   ): Promise<CredentialsHelperDisplaySession>;
   credentials: {
     register(handlers: OpenWalletCredentialProvider): void;
   };
-};
-
-export type CredentialsHelperDisplaySize = {
-  width: number;
-  height: number;
 };
 
 export type CredentialsHelperOptions = {
@@ -70,22 +65,11 @@ export type CredentialsHelperOptions = {
   requestCredentialPresentationApproval?: (
     request: CredentialPresentationApprovalRequest,
   ) => Promise<boolean>;
-  offerDisplaySize?: CredentialsHelperDisplaySize;
-  presentDisplaySize?: CredentialsHelperDisplaySize;
   /**
    * When true (default), re-check wallet trust on present after host
    * `acceptedIssuers` filtering.
    */
   recheckTrustOnPresent?: boolean;
-};
-
-const DEFAULT_OFFER_SIZE: CredentialsHelperDisplaySize = {
-  width: 400,
-  height: 460,
-};
-const DEFAULT_PRESENT_SIZE: CredentialsHelperDisplaySize = {
-  width: 420,
-  height: 500,
 };
 
 /**
@@ -184,8 +168,7 @@ export class CredentialsHelper {
     // setup display cannot tear down the consent session.
     await this.options.ensureReady?.();
 
-    const size = this.options.offerDisplaySize ?? DEFAULT_OFFER_SIZE;
-    const display = await this.wallet.requestDisplay(size);
+    const display = await this.wallet.requestDisplay();
     try {
       const approved = await this.requestOfferApproval(offer, metadata);
       if (!approved) {
@@ -282,8 +265,7 @@ export class CredentialsHelper {
     }
 
     const match = matches[0]!;
-    const size = this.options.presentDisplaySize ?? DEFAULT_PRESENT_SIZE;
-    const display = await this.wallet.requestDisplay(size);
+    const display = await this.wallet.requestDisplay();
     try {
       const approved = await this.requestPresentationApproval(definition, match);
       if (!approved) {

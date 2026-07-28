@@ -174,7 +174,7 @@ export function useWalletSession({
   const runSetupFlow = useCallback(async () => {
     const wallet = walletRef.current;
     if (!wallet) throw new Error("Wallet not ready");
-    const display = await wallet.requestDisplay({ width: 420, height: 480 });
+    const display = await wallet.requestDisplay();
     try {
       const choice = await requestWalletSetupChoice();
       if (choice === "cancel") {
@@ -301,7 +301,7 @@ export function useWalletSession({
   const openCreateBackup = useCallback(async () => {
     const wallet = walletRef.current;
     if (!wallet) return;
-    const display = await wallet.requestDisplay({ width: 480, height: 420 });
+    const display = await wallet.requestDisplay();
     try {
       await pushModal<void>(({ id, resolve, reject }) => ({
         id,
@@ -322,7 +322,7 @@ export function useWalletSession({
     }
     const wallet = walletRef.current;
     if (!wallet) return;
-    const display = await wallet.requestDisplay({ width: 480, height: 420 });
+    const display = await wallet.requestDisplay();
     try {
       const restored = await pushModal<boolean>(({ id, resolve }) => ({
         id,

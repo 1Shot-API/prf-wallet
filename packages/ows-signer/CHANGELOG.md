@@ -1,5 +1,17 @@
 # @1shotapi/ows-signer
 
+## 0.3.4
+
+### Patch Changes
+
+- c8fd466: Add `createCredential` option `deferKeyDerivation` so Safari first-party registration can skip the PRF follow-up; `CredentialCreated.secp256k1PublicKey` is optional when deferred.
+
+## 0.3.3
+
+### Patch Changes
+
+- ce5535c: Keep the create-passkey Confirm panel visible through the PRF follow-up assertion, and update its copy so the second WebAuthn prompt explains why it is requested.
+
 ## 0.3.2
 
 ### Patch Changes

@@ -111,7 +111,7 @@ export class DisplayChildClient {
   }
 
   requestDisplay(
-    params: RequestDisplayParams,
+    _params: RequestDisplayParams = {},
     timeoutMs = DEFAULT_DISPLAY_TIMEOUT_MS,
   ): Promise<DisplaySession> {
     if (this.activeSession) {
@@ -119,7 +119,6 @@ export class DisplayChildClient {
       debugLog("display session reused", {
         displayId: this.activeSession.displayId,
         depth: this.displayDepth,
-        ...params,
       });
       return Promise.resolve(this.activeSession);
     }
@@ -134,10 +133,10 @@ export class DisplayChildClient {
 
       this.pending.set(displayId, { resolve, reject, timeoutId });
 
-      debugLog("requesting display from host", { displayId, ...params });
+      debugLog("requesting display from host", { displayId });
       this.childApi.emit(
         OWS_REQUEST_DISPLAY_EVENT,
-        serializeRpc({ displayId, ...params }),
+        serializeRpc({ displayId }),
       );
     });
   }

@@ -12,11 +12,22 @@ import { issueDemoSdJwtVc } from "../../shared/src/demo/issuer.js";
 
 const PRE_AUTH_CODE = "ows-demo-preauth-code";
 const ACCESS_TOKENS = new Map<string, { cNonce: string }>();
+/** Demo endpoints only — reject oversized POSTs before buffering. */
+const MAX_BODY_BYTES = 1_048_576;
 
 function readBody(req: IncomingMessage): Promise<Record<string, unknown>> {
   return new Promise((resolve, reject) => {
     const chunks: Buffer[] = [];
-    req.on("data", (c: Buffer) => chunks.push(c));
+    let size = 0;
+    req.on("data", (c: Buffer) => {
+      size += c.length;
+      if (size > MAX_BODY_BYTES) {
+        reject(new Error("Request body too large"));
+        req.destroy();
+        return;
+      }
+      chunks.push(c);
+    });
     req.on("end", () => {
       const raw = Buffer.concat(chunks).toString("utf8");
       const ct = String(req.headers["content-type"] ?? "");

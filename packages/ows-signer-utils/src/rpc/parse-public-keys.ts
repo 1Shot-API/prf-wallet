@@ -1,5 +1,6 @@
 import {
   COSEPublicKey,
+  CredentialId,
   ED25519PublicKey,
   SECP256K1PublicKey,
 } from "@1shotapi/ows-types";
@@ -53,7 +54,7 @@ export function publicKeyDataFromEvent(
     return null;
   }
   const credentialId =
-    typeof data.credentialId === "string" ? data.credentialId : undefined;
+    typeof data.credentialId === "string" ? CredentialId(data.credentialId) : undefined;
 
   return {
     cosePublicKey: parseCosePublicKey(data.cosePublicKey),
@@ -70,12 +71,9 @@ export function credentialCreatedDataFromEvent(
     return null;
   }
   const secp256k1PublicKey = parseSecp256k1PublicKey(data.secp256k1PublicKey);
-  if (!secp256k1PublicKey) {
-    return null;
-  }
   return {
-    credentialId: data.credentialId,
+    credentialId: CredentialId(data.credentialId),
     cosePublicKey: parseCosePublicKey(data.cosePublicKey),
-    secp256k1PublicKey,
+    ...(secp256k1PublicKey ? { secp256k1PublicKey } : {}),
   };
 }

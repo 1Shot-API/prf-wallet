@@ -37,7 +37,7 @@ export type SignHelperDisplaySession = {
 /** Wallet surface used to show the branding iframe during consent / signing. */
 export type SignHelperWallet = {
   requestDisplay(
-    params: RequestDisplayParams,
+    params?: RequestDisplayParams,
   ): Promise<SignHelperDisplaySession>;
 };
 
@@ -73,11 +73,6 @@ export type SignHelperChainRpc = {
   request(method: string, params?: unknown[]): Promise<unknown>;
 };
 
-export type SignHelperDisplaySize = {
-  width: number;
-  height: number;
-};
-
 export type SignHelperOptions = {
   /**
    * Branding owns consent UI + Signing Layer `signMessage` for EIP-191
@@ -106,12 +101,6 @@ export type SignHelperOptions = {
   ) => Promise<EVMTransactionHash>;
   /** Active EIP-1193 chain id (for request validation). */
   getChainId: () => EVMChainId;
-  /** Flyout size for personal_sign (default 448×360). */
-  personalSignDisplaySize?: SignHelperDisplaySize;
-  /** Flyout size for typed data (default 448×520). */
-  typedDataDisplaySize?: SignHelperDisplaySize;
-  /** Flyout size for eth_sendTransaction (default 448×480). */
-  sendTransactionDisplaySize?: SignHelperDisplaySize;
 };
 
 export type Eip1193SignHandlers = {
@@ -120,19 +109,6 @@ export type Eip1193SignHandlers = {
   eth_signTypedData_v3: Eip1193Handler;
   eth_signTypedData_v4: Eip1193Handler;
   eth_sendTransaction: Eip1193Handler;
-};
-
-const DEFAULT_PERSONAL_SIGN_SIZE: SignHelperDisplaySize = {
-  width: 448,
-  height: 360,
-};
-const DEFAULT_TYPED_DATA_SIZE: SignHelperDisplaySize = {
-  width: 448,
-  height: 520,
-};
-const DEFAULT_SEND_TRANSACTION_SIZE: SignHelperDisplaySize = {
-  width: 448,
-  height: 480,
 };
 
 const ZERO_VALUE = HexString("0x0");
@@ -167,10 +143,8 @@ export class SignHelper {
   private async handlePersonalSign(params: unknown[]): Promise<EVMSignatureHex> {
     const [message, addressParam] = params as [string, string];
     const address = EVMAccountAddress(addressParam as `0x${string}`);
-    const size =
-      this.options.personalSignDisplaySize ?? DEFAULT_PERSONAL_SIGN_SIZE;
 
-    return this.withDisplay(size, () =>
+    return this.withDisplay(() =>
       this.options.approveAndSignPersonalMessage({
         message,
         address,
@@ -185,10 +159,8 @@ export class SignHelper {
     ];
     const address = EVMAccountAddress(addressParam as `0x${string}`);
     const typedData = parseTypedData(typedDataParam);
-    const size =
-      this.options.typedDataDisplaySize ?? DEFAULT_TYPED_DATA_SIZE;
 
-    return this.withDisplay(size, () =>
+    return this.withDisplay(() =>
       this.options.approveAndSignTypedData({
         address,
         typedData,
@@ -210,10 +182,7 @@ export class SignHelper {
       }
     }
 
-    const size =
-      this.options.sendTransactionDisplaySize ?? DEFAULT_SEND_TRANSACTION_SIZE;
-
-    return this.withDisplay(size, async () => {
+    return this.withDisplay(async () => {
       const address = await this.resolveAccount(tx.from);
       if (tx.from && !sameAddress(tx.from, address)) {
         throw new OwsInvalidParamsError(
@@ -268,11 +237,8 @@ export class SignHelper {
     return this.signer.evm.getAccountAddress();
   }
 
-  private async withDisplay<T>(
-    size: SignHelperDisplaySize,
-    run: () => Promise<T>,
-  ): Promise<T> {
-    const display = await this.wallet.requestDisplay(size);
+  private async withDisplay<T>(run: () => Promise<T>): Promise<T> {
+    const display = await this.wallet.requestDisplay({});
     try {
       return await run();
     } finally {

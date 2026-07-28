@@ -1,9 +1,9 @@
-import type { CeremonyUiParams, SolanaAccountAddress } from "@1shotapi/ows-types";
+import type { CeremonyUiParams, CredentialId, SolanaAccountAddress } from "@1shotapi/ows-types";
 import type { OWSSigner } from "../owssigner.js";
 import { addressFromEd25519PublicKey } from "./address.js";
 
 export type SolanaCallOptions = CeremonyUiParams & {
-  credentialId?: string;
+  credentialId?: CredentialId;
 };
 
 export class SolanaSigner {
