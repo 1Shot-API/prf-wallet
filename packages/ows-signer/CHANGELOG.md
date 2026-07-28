@@ -1,5 +1,11 @@
 # @1shotapi/ows-signer
 
+## 0.3.4
+
+### Patch Changes
+
+- c8fd466: Add `createCredential` option `deferKeyDerivation` so Safari first-party registration can skip the PRF follow-up; `CredentialCreated.secp256k1PublicKey` is optional when deferred.
+
 ## 0.3.3
 
 ### Patch Changes
