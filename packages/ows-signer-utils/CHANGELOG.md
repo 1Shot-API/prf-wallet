@@ -1,5 +1,11 @@
 # @1shotapi/ows-signer-utils
 
+## 0.3.4
+
+### Patch Changes
+
+- eafc2c5: Add `OWSSigner.clearSession()` so branding can drop the in-memory credential id and address cache when switching accounts.
+
 ## 0.3.3
 
 ### Patch Changes

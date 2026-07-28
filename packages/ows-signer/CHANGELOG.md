@@ -1,5 +1,11 @@
 # @1shotapi/ows-signer
 
+## 0.3.3
+
+### Patch Changes
+
+- ce5535c: Keep the create-passkey Confirm panel visible through the PRF follow-up assertion, and update its copy so the second WebAuthn prompt explains why it is requested.
+
 ## 0.3.2
 
 ### Patch Changes
