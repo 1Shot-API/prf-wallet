@@ -2,6 +2,8 @@ import type { ReactNode } from "react";
 import { useEffect, useId, useRef } from "react";
 
 export type ModalAction = {
+  /** Stable list key; defaults to label + variant when omitted. */
+  id?: string;
   label: string;
   onClick: () => void;
   variant?: "primary" | "secondary";
@@ -95,9 +97,12 @@ export function Modal({
         {footer}
         {actions && actions.length > 0 ? (
           <div className="mt-4 flex flex-wrap justify-end gap-2">
-            {actions.map((action, index) => (
+            {actions.map((action) => (
               <button
-                key={`${index}-${action.label}`}
+                key={
+                  action.id ??
+                  `${action.variant ?? "secondary"}:${action.label}`
+                }
                 type="button"
                 disabled={action.disabled}
                 data-autofocus={action.autoFocus ? "" : undefined}
