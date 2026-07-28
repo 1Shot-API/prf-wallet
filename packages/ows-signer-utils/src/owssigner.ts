@@ -18,6 +18,7 @@ import type {
   EncryptAES256Result,
   DecryptAES256Result,
   IOWSSigner,
+  CredentialId,
 } from "@1shotapi/ows-types";
 import type { Hex } from "viem";
 import { publicKeyToAddress } from "viem/utils";
@@ -33,7 +34,7 @@ import {
 } from "./rpc/client.js";
 
 export type OWSSignerOptions = {
-  credentialId?: string;
+  credentialId?: CredentialId;
   hidden?: boolean;
   rpcTimeoutMs?: number;
 };
@@ -65,7 +66,7 @@ export class OWSSigner implements IOWSSigner {
   readonly solana: SolanaSigner;
 
   private readonly rpc: SignerRpcClient;
-  private credentialId?: string;
+  private credentialId?: CredentialId;
   private cachedAddress?: EVMAccountAddress;
   private cachedSolanaAddress?: SolanaAccountAddress;
   private lastPublicKeyData?: PublicKeyData;
@@ -98,7 +99,7 @@ export class OWSSigner implements IOWSSigner {
     return new OWSSigner(iframe, rpc, options);
   }
 
-  getCredentialId(): string | undefined {
+  getCredentialId(): CredentialId | undefined {
     return this.credentialId;
   }
 

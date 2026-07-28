@@ -12,12 +12,27 @@ const SPAWN_MAX_BUFFER_BYTES = 16 * 1024 * 1024;
 
 const EDIT_TOOL_NAMES = new Set(['Edit', 'Write', 'MultiEdit', 'NotebookEdit', 'ApplyPatch']);
 
-const readFileOrEmpty = (source) => {
+const readFileOrEmpty = (filePath) => {
   try {
-    return readFileSync(source, 'utf8');
+    return readFileSync(filePath, 'utf8');
   } catch {
     return '';
   }
+};
+
+/**
+ * Consume hook JSON from stdin without `readFileSync(0)`, which blocks until
+ * EOF and can hang the hook when stdin is not a ready pipe.
+ */
+const readStdin = async () => {
+  if (process.stdin.isTTY) {
+    return '';
+  }
+  const chunks = [];
+  for await (const chunk of process.stdin) {
+    chunks.push(chunk);
+  }
+  return Buffer.concat(chunks).toString('utf8');
 };
 
 const shouldScan = (input) => {
@@ -68,10 +83,10 @@ const cleanup = (...paths) => {
   }
 };
 
-const main = () => {
+const main = async () => {
   let input;
   try {
-    input = JSON.parse(readFileOrEmpty(0) || '{}');
+    input = JSON.parse((await readStdin()) || '{}');
   } catch {
     input = {};
   }
@@ -113,4 +128,6 @@ const main = () => {
   }
 };
 
-main();
+main().catch(() => {
+  process.exit(0);
+});
