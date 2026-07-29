@@ -10,6 +10,7 @@
   ],
   "exports": {
     "./html": "./html/index.html",
+    "./html/signer.css": "./html/signer.css",
     "./src/*": "./src/*"
   },
   "scripts": {

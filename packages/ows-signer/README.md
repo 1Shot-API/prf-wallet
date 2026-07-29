@@ -88,6 +88,7 @@ Ceremony UI params (optional on WebAuthn-triggering methods): `explanationHeader
 
 ```
 html/index.html           Entry document
+html/signer.css           Ceremony / reveal UI styles (linked; no inline CSS)
 src/main.js               Bootstrap + message listener
 src/handlers.js           RPC dispatch
 src/webauthn.js           Passkey ceremonies
@@ -95,6 +96,20 @@ src/crypto/               PRF, signing, recovery
 src/crypto/vendor/        Vendored @noble/secp256k1 + ed25519 (MIT)
 reference/                1ShotPay reference (not published)
 ```
+
+## Content Security Policy
+
+Serve the Signing Layer document (and its `/src/*` modules) with a **fail-closed** CSP. The signer has no legitimate network I/O — only same-origin scripts/styles and `postMessage` / WebAuthn / WebCrypto.
+
+Canonical header (single line in production):
+
+```http
+Content-Security-Policy: default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'none'; img-src 'none'; font-src 'none'; media-src 'none'; object-src 'none'; child-src 'none'; frame-src 'none'; worker-src 'none'; manifest-src 'none'; base-uri 'none'; form-action 'none'; upgrade-insecure-requests
+```
+
+- Apply on the **Signing Layer origin path** (e.g. nginx `location /signer/`), not on the Branding Layer SPA.
+- **Omit `frame-ancestors`** so arbitrary Branding Layers may embed the signer. Nesting safety remains in JS (`event.source === window.parent`, `window.parent !== window.top`).
+- Keep iframe Permissions Policy `allow` for WebAuthn / clipboard (set before `src` in `createSignerIframe`) — that is not CSP.
 
 ## On-chain
 
