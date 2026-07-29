@@ -45,9 +45,13 @@ const shouldScan = (input) => {
     return toolCalls.some((toolCall) => EDIT_TOOL_NAMES.has(toolCall.tool_name));
   }
   const toolName = input.tool_name || input.toolName || input.tool;
-  // hooks.json matcher already limits invocation; if the payload omits
-  // toolName, still scan rather than silently skipping.
-  return !toolName || EDIT_TOOL_NAMES.has(toolName);
+  // hooks.json matcher already limits invocation. If the payload omits toolName,
+  // scan conservatively rather than silently skipping. If toolName is present
+  // but not an edit tool, skip.
+  if (toolName == null || toolName === '') {
+    return true;
+  }
+  return EDIT_TOOL_NAMES.has(toolName);
 };
 
 const runReactDoctor = (outputPath) => {
