@@ -92,12 +92,19 @@ const cleanup = (...paths) => {
   }
 };
 
+const fail = (error) => {
+  const message = error instanceof Error ? (error.stack ?? error.message) : String(error);
+  // stderr only — stdout is reserved for hook JSON the agent parses.
+  console.error(`[react-doctor hook] ${message}`);
+  process.exit(1);
+};
+
 const main = async () => {
   let input;
   try {
     input = JSON.parse((await readStdin()) || '{}');
-  } catch {
-    input = {};
+  } catch (error) {
+    fail(error instanceof Error ? error : new Error(`invalid hook stdin JSON: ${String(error)}`));
   }
 
   if (!shouldScan(input)) {
@@ -109,8 +116,8 @@ const main = async () => {
 
   try {
     process.chdir(projectRoot);
-  } catch {
-    process.exit(0);
+  } catch (error) {
+    fail(error);
   }
 
   const scanResult = runReactDoctor(outputPath);
@@ -119,8 +126,8 @@ const main = async () => {
     process.exit(0);
   }
 
-  // The write above is best-effort (unwritable tmpdir), so the read is too
-  // — a hook must never crash the agent loop with a stack trace.
+  // Scan findings are reported via stdout JSON below. Missing scan output
+  // (e.g. unwritable tmpdir) is a soft skip — not a hook runtime failure.
   const scanOutput = readFileOrEmpty(outputPath).trim();
   cleanup(outputPath);
 
@@ -137,6 +144,4 @@ const main = async () => {
   }
 };
 
-main().catch(() => {
-  process.exit(0);
-});
+main().catch(fail);

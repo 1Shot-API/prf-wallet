@@ -1,5 +1,11 @@
 # @1shotapi/ows-types
 
+## 0.4.0
+
+### Minor Changes
+
+- 09afc87: Add Branding→Host analytics wire (`ows:analytics`): `IOWSAnalyticsEvent` / abstract `OWSAnalyticsEvent` (branding subclasses) with index-signature extras, `OWSWallet.analytics.emit`, and `OWSProxy.analytics` EventEmitter.
+
 ## 0.3.1
 
 ### Patch Changes
