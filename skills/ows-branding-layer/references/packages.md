@@ -31,8 +31,8 @@ npm install ../open-wallet/packages/ows-types
 
 | Package | Import surface | Branding uses it for |
 |---------|----------------|----------------------|
-| `ows-types` | primitives, errors, credentials, EIP-1193 tables, `CredentialCryptoUtils`, `PresentationUtils`, `ProofUtils` | Branded values, holder signer bridge, shared errors |
-| `ows-wallet-utils` | `OWSWallet`, `RpcHelper`, display child client | Postmate child, EIP-1193 / custom RPC registration, reads/chain, `requestDisplay` |
+| `ows-types` | primitives, errors, credentials, EIP-1193 / EIP-7715 tables, `CredentialCryptoUtils`, `PresentationUtils`, `ProofUtils` | Branded values, holder signer bridge, shared errors |
+| `ows-wallet-utils` | `OWSWallet`, `RpcHelper` (+ optional `executionPermissions` hooks), display child client | Postmate child, EIP-1193 / custom RPC registration, reads/chain, `requestDisplay` |
 | `ows-signer-utils` | `OWSSigner`, `SignHelper`, `showSignerCeremonyPanel`, `evm.*` | Nested signer iframe, consent→sign wiring, digests → signatures |
 | `ows-oid4` | `CredentialsHelper`, `HttpOid4vciClient`, `HttpOid4vpClient`, … | Optional OID4 accept/present orchestration |
 | `ows-signer` | static files | Custody kernel under `/signer/` |

@@ -117,6 +117,14 @@ export {
   type EIP1193Requests,
   type KnownEIP1193Method,
   type IEVMTransactionRequest,
+  type IExecutionPermission,
+  type IExecutionPermissionDependency,
+  type IExecutionPermissionRequest,
+  type IExecutionPermissionResponse,
+  type IExecutionPermissionRule,
+  type IRevokeExecutionPermissionParams,
+  type ISupportedExecutionPermissionEntry,
+  type SupportedExecutionPermissions,
 } from "./eip1193/index.js";
 
 export {

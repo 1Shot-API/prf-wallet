@@ -6,6 +6,10 @@ import {
   HexString,
   OwsInvalidParamsError,
   OwsRpcError,
+  type IExecutionPermissionRequest,
+  type IExecutionPermissionResponse,
+  type IRevokeExecutionPermissionParams,
+  type SupportedExecutionPermissions,
 } from "@1shotapi/ows-types";
 import type { Eip1193Handler } from "../ows-wallet.js";
 
@@ -74,6 +78,23 @@ export type RpcHelperWallet = {
  */
 export type RpcHelperSigner = object;
 
+/**
+ * Branding callbacks for EIP-7715 execution permissions.
+ * When provided on {@link RpcHelperOptions}, RpcHelper registers the matching
+ * EIP-1193 methods. UI / MetaMask Delegation Framework logic stays app-owned —
+ * see the 1Shot embedded-wallet repo for a reference implementation.
+ */
+export type RpcHelperExecutionPermissionsHooks = {
+  requestExecutionPermissions: (
+    requests: readonly IExecutionPermissionRequest[],
+  ) => Promise<IExecutionPermissionResponse[]>;
+  revokeExecutionPermission: (
+    params: IRevokeExecutionPermissionParams,
+  ) => Promise<null>;
+  getSupportedExecutionPermissions: () => Promise<SupportedExecutionPermissions>;
+  getGrantedExecutionPermissions: () => Promise<IExecutionPermissionResponse[]>;
+};
+
 export type RpcHelperOptions = {
   /**
    * Active chain on construct. Defaults to the first entry in `providers`
@@ -89,6 +110,14 @@ export type RpcHelperOptions = {
   ) => boolean | void | Promise<boolean | void>;
   /** Fired after the active chain id changes. */
   onChainChanged?: (chainId: EVMChainId) => void;
+  /**
+   * Optional EIP-7715 hooks. When set, registers
+   * `wallet_requestExecutionPermissions`, `wallet_revokeExecutionPermission`,
+   * `wallet_getSupportedExecutionPermissions`, and
+   * `wallet_getGrantedExecutionPermissions`. Omit to leave those methods
+   * unimplemented on the wallet.
+   */
+  executionPermissions?: RpcHelperExecutionPermissionsHooks;
 };
 
 /**
@@ -152,6 +181,8 @@ export class RpcHelper {
     for (const method of EIP1193_READ_METHODS) {
       wallet.registerEip1193(method, proxy(method));
     }
+
+    this.registerExecutionPermissions(wallet, options.executionPermissions);
   }
 
   getChainId(): EVMChainId {
@@ -225,6 +256,52 @@ export class RpcHelper {
       this.events.emit("chainChanged", this.currentChainId);
     }
     return null;
+  }
+
+  private registerExecutionPermissions(
+    wallet: RpcHelperWallet,
+    hooks: RpcHelperExecutionPermissionsHooks | undefined,
+  ): void {
+    if (!hooks) {
+      return;
+    }
+
+    wallet.registerEip1193(
+      "wallet_requestExecutionPermissions",
+      async (params) =>
+        hooks.requestExecutionPermissions(
+          params as unknown as readonly IExecutionPermissionRequest[],
+        ),
+    );
+
+    wallet.registerEip1193(
+      "wallet_revokeExecutionPermission",
+      async (params) => {
+        const entry = params[0];
+        if (
+          entry === null ||
+          typeof entry !== "object" ||
+          !("permissionContext" in entry)
+        ) {
+          throw new OwsInvalidParamsError(
+            "wallet_revokeExecutionPermission requires [{ permissionContext }]",
+          );
+        }
+        return hooks.revokeExecutionPermission(
+          entry as IRevokeExecutionPermissionParams,
+        );
+      },
+    );
+
+    wallet.registerEip1193(
+      "wallet_getSupportedExecutionPermissions",
+      async () => hooks.getSupportedExecutionPermissions(),
+    );
+
+    wallet.registerEip1193(
+      "wallet_getGrantedExecutionPermissions",
+      async () => hooks.getGrantedExecutionPermissions(),
+    );
   }
 }
 

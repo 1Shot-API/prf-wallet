@@ -82,6 +82,7 @@ Branding Layer Progress:
 - [ ] 5. Signing consent — SignHelper + app approval UI
 - [ ] 6. Recovery — create/restore via `OWSSigner` auto ceremony panel (no iframe reparent)
 - [ ] 7. Credentials — CredentialsHelper.register + consent UI (optional)
+- [ ] 8. EIP-7715 permissions — optional RpcHelper `executionPermissions` hooks (UI in your app; see embedded-wallet)
 ```
 
 Task details + exact example paths: [references/tasks.md](references/tasks.md)

@@ -15,6 +15,7 @@ export {
 } from "./eip1193/rpc-helper.js";
 export type {
   RpcHelperEventMap,
+  RpcHelperExecutionPermissionsHooks,
   RpcHelperOptions,
   RpcHelperSigner,
   RpcHelperWallet,

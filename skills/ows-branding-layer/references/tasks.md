@@ -86,6 +86,38 @@ new RpcHelper(
 
 Call after `prepare()`, before `start()`. Zod EIP-1193 / credential wire schemas live in `ows-wallet-utils` (transitive).
 
+### EIP-7715 execution permissions (optional)
+
+`RpcHelper` can register the four EIP-7715 draft methods when you pass `executionPermissions` hooks. **OWS does not ship grant/revoke UI** — implement consent, MetaMask Delegation Framework signing, and storage in your branding app. Reference: the **1Shot embedded-wallet** repo (`DelegationService`, grant modal, Delegations tab).
+
+```typescript
+new RpcHelper(providers, wallet, signer, {
+  defaultChainId,
+  executionPermissions: {
+    requestExecutionPermissions: async (requests) => { /* grant UI + sign + store */ },
+    revokeExecutionPermission: async ({ permissionContext }) => { /* cancel UI + on-chain disable */ },
+    getSupportedExecutionPermissions: async () => ({
+      "erc20-token-periodic": {
+        chainIds: [...rpcHelper.getConfiguredChainIds()],
+        ruleTypes: [],
+      },
+    }),
+    getGrantedExecutionPermissions: async () => { /* map stored grants */ },
+  },
+});
+```
+
+Methods (strict EIP-7715 names only — no `wallet_grantPermissions` alias):
+
+| Method | Role |
+|--------|------|
+| `wallet_requestExecutionPermissions` | Host requests permissions; branding returns attenuated responses + `context` / `delegationManager` |
+| `wallet_revokeExecutionPermission` | Host asks user to revoke via `{ permissionContext }` |
+| `wallet_getSupportedExecutionPermissions` | Supported permission types + chain ids |
+| `wallet_getGrantedExecutionPermissions` | Previously granted (non-revoked) permissions |
+
+Omit `executionPermissions` to leave these methods unimplemented (`OwsUnimplementedError`).
+
 ## 5. Signing consent
 
 Thin EIP-1193 adapter in `SignHelper` (`@1shotapi/ows-signer-utils`):
