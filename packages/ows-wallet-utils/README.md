@@ -45,6 +45,26 @@ await prepared.start();
 
 Unregistered EIP-1193 methods respond with `OwsUnimplementedError` (`-32601`). Custom RPC methods must be registered via `options.rpc` or `registerRpc()` before `start()`.
 
+### Analytics (Branding → Host)
+
+Emit product events to the host over Postmate (`ows:analytics`). Extend `OWSAnalyticsEvent` so `eventId`, `timestamp`, and branded `hostDomain` are filled in `super(...)`; add branding fields on the subclass.
+
+```typescript
+import { OWSAnalyticsEvent } from "@1shotapi/ows-types";
+import { OWSWallet } from "@1shotapi/ows-wallet-utils";
+
+class AccountCreatedEvent extends OWSAnalyticsEvent {
+  readonly accountAddress: string;
+  constructor(hostDomain: string, accountAddress: string) {
+    super("AccountCreated", hostDomain);
+    this.accountAddress = accountAddress;
+  }
+}
+
+const wallet = await OWSWallet.create({ /* … */ });
+wallet.analytics.emit(new AccountCreatedEvent("app.example.com", "0x…"));
+```
+
 ### Debug logging
 
 Enable `console.debug` traces for Postmate handshake and RPC traffic:
@@ -69,6 +89,7 @@ localStorage.setItem("ows-wallet-utils:debug", "1");
 ## Exports
 
 - `OWSWallet` — child-side Postmate model
+- `AnalyticsChildClient` — Branding→Host analytics emit (`wallet.analytics.emit`)
 - `RpcHelper` — EIP-1193 read methods + chain switching against JSON-RPC URLs
 - `EIP1193_PARAM_SCHEMAS`, `getEip1193ParamSchema` — Zod validators for standard methods
 - `CredentialWalletRegistrar`, `CREDENTIAL_PARAM_SCHEMAS` — credentials wire hooks (handlers still registered on `OWSWallet.credentials`)

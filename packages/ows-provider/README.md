@@ -38,6 +38,23 @@ const status = await proxy.rpc<{ connected: boolean }>("getStatus");
 
 Returns an `OwsUnimplementedError` (from `@1shotapi/ows-types`) if the Branding Layer did not register that method.
 
+### Analytics (`proxy.analytics`)
+
+Branding publishes product events over Postmate (`ows:analytics`). OWS types only the required base fields (`eventId`, `timestamp`, `hostDomain`, `name`); branding may attach additional properties. Hosts receive the **full** object and can narrow on `name` (per branding docs).
+
+```typescript
+proxy.analytics.on((event) => {
+  // event.name, event.hostDomain, event.timestamp, event.eventId + extras
+  console.log(event);
+});
+
+proxy.analytics.on("TransactionSubmitted", (event) => {
+  // filter by branding-defined name string
+});
+```
+
+OWS does not ship Google Analytics or define a product event catalog.
+
 ## API
 
 ### `OWSProxy.create(container, walletUrl, options?)`

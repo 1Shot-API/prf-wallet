@@ -11,6 +11,10 @@ export {
 
 export { CredentialHostClient } from "./credentials/host-client.js";
 export {
+  AnalyticsHostHandler,
+  type AnalyticsListener,
+} from "./analytics/host-handler.js";
+export {
   verifySdJwtVcPresentation,
   type VerifySdJwtVcPresentationInput,
   type VerifySdJwtVcPresentationResult,

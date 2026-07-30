@@ -47,6 +47,17 @@ export type {
   HideReadyPayload,
 } from "./protocol/display.js";
 
+export {
+  OWS_ANALYTICS_EVENT,
+  OWSAnalyticsEvent,
+  deserializeAnalyticsEvent,
+} from "./protocol/analytics.js";
+
+export type {
+  IOWSAnalyticsEvent,
+  OWSAnalyticsEventOptions,
+} from "./protocol/analytics.js";
+
 export type {
   RpcErrorPayload,
   RpcRequestEnvelope,

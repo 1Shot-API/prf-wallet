@@ -68,6 +68,9 @@ const usdcActionButton = document.getElementById(
 ) as HTMLButtonElement;
 const usdcOutput = document.getElementById("usdc-output") as HTMLPreElement;
 const usdcTxLink = document.getElementById("usdc-tx-link") as HTMLParagraphElement;
+const analyticsOutput = document.getElementById(
+  "analytics-output",
+) as HTMLPreElement;
 const statusEl = document.getElementById("status") as HTMLParagraphElement;
 const signatureOutput = document.getElementById("signature-output") as HTMLPreElement;
 const walletContainer = document.getElementById("wallet-container")!;
@@ -156,6 +159,15 @@ async function main(): Promise<void> {
   console.info("[ows-example-host] embedding Branding Layer", __WALLET_IFRAME_URL__);
 
   const proxy = await OWSProxy.create(walletContainer, __WALLET_IFRAME_URL__);
+
+  const analyticsLines: string[] = [];
+  proxy.analytics.on((event) => {
+    analyticsLines.unshift(
+      `${new Date().toISOString()} ${event.name} ${JSON.stringify(event)}`,
+    );
+    analyticsOutput.textContent = analyticsLines.slice(0, 20).join("\n");
+    console.info("[ows-example-host] analytics", event);
+  });
 
   try {
     const chainId = await refreshChainFromWallet(proxy);
