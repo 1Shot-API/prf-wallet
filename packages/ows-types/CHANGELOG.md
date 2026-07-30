@@ -1,5 +1,15 @@
 # @1shotapi/ows-types
 
+## 0.3.1
+
+### Patch Changes
+
+- Add EVMContractAddress, DomainString, and UnixTimestamp branded primitives
+
+  - EVMContractAddress: contract deployments vs account addresses (EIP-7715 factory / delegationManager)
+  - DomainString: hostname without scheme or path (distinct from UriString)
+  - UnixTimestamp: Unix time in seconds
+
 ## 0.3.0
 
 ### Minor Changes

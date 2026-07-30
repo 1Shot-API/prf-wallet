@@ -1,4 +1,9 @@
-import type { EVMAccountAddress, EVMChainId, HexString } from "../primitives/index.js";
+import type {
+  EVMAccountAddress,
+  EVMChainId,
+  EVMContractAddress,
+  HexString,
+} from "../primitives/index.js";
 
 /**
  * EIP-7715 base permission object (permission type + adjustment flag + type-specific data).
@@ -32,7 +37,7 @@ export interface IExecutionPermissionRequest {
 
 /** ERC-4337 factory dependency required before redeeming a permission. */
 export interface IExecutionPermissionDependency {
-  factory: EVMAccountAddress;
+  factory: EVMContractAddress;
   factoryData: HexString;
 }
 
@@ -43,7 +48,7 @@ export interface IExecutionPermissionDependency {
 export interface IExecutionPermissionResponse extends IExecutionPermissionRequest {
   context: HexString;
   dependencies: IExecutionPermissionDependency[];
-  delegationManager: EVMAccountAddress;
+  delegationManager: EVMContractAddress;
 }
 
 /** Params object for `wallet_revokeExecutionPermission`. */
