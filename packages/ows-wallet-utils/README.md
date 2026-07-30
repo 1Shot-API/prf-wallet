@@ -50,19 +50,26 @@ Unregistered EIP-1193 methods respond with `OwsUnimplementedError` (`-32601`). C
 Emit product events to the host over Postmate (`ows:analytics`). Extend `OWSAnalyticsEvent` so `eventId`, `timestamp`, and branded `hostDomain` are filled in `super(...)`; add branding fields on the subclass.
 
 ```typescript
-import { OWSAnalyticsEvent } from "@1shotapi/ows-types";
+import {
+  DomainString,
+  EVMAccountAddress,
+  OWSAnalyticsEvent,
+} from "@1shotapi/ows-types";
 import { OWSWallet } from "@1shotapi/ows-wallet-utils";
 
 class AccountCreatedEvent extends OWSAnalyticsEvent {
-  readonly accountAddress: string;
-  constructor(hostDomain: string, accountAddress: string) {
+  constructor(
+    hostDomain: DomainString,
+    public readonly accountAddress: EVMAccountAddress,
+  ) {
     super("AccountCreated", hostDomain);
-    this.accountAddress = accountAddress;
   }
 }
 
 const wallet = await OWSWallet.create({ /* … */ });
-wallet.analytics.emit(new AccountCreatedEvent("app.example.com", "0x…"));
+wallet.analytics.emit(
+  new AccountCreatedEvent(DomainString("app.example.com"), EVMAccountAddress("0x…")),
+);
 ```
 
 ### Debug logging

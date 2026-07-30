@@ -14,6 +14,8 @@ import {
   SolanaAccountAddress,
 } from "@1shotapi/ows-types";
 import type { LocalStorageCredentialRepository } from "@ows-shared";
+import { AccountCreatedEvent } from "../analytics/events";
+import { resolveHostDomain } from "../analytics/hostDomain";
 import {
   isWalletCreated,
   loadBackup,
@@ -132,8 +134,13 @@ export function useWalletSession({
       setWalletCreated(true);
       await refreshAddresses();
       setUnlocked(true);
+
+      const accountAddress = await signer.evm.getAccountAddress();
+      walletRef.current?.analytics.emit(
+        new AccountCreatedEvent(resolveHostDomain(), accountAddress),
+      );
     },
-    [refreshAddresses, setUnlocked, setWalletCreated, signerRef],
+    [refreshAddresses, setUnlocked, setWalletCreated, signerRef, walletRef],
   );
 
   const createNewWalletFromUi = useCallback(async () => {

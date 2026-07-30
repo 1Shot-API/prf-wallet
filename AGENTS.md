@@ -37,11 +37,36 @@ Prefer **methods on objects** over standalone exported functions when the logic 
 
 Prefer Typescript interfaces over generic types. Prefix all interfaces with I, ie IHolderSigner. HolderSigner would be an implementation. Prefer enums over discriminated strings. Prefix enums with E, ie EEip1193Method.
 
+Prefer **constructor parameter properties** for DTO / event / value-object classes instead of declaring fields and assigning them separately — it is shorter and easier to read:
+
+```ts
+// Prefer
+class AccountCreatedEvent extends OWSAnalyticsEvent {
+  constructor(
+    hostDomain: DomainString,
+    public readonly accountAddress: EVMAccountAddress,
+  ) {
+    super("AccountCreated", hostDomain);
+  }
+}
+
+// Avoid
+class AccountCreatedEvent extends OWSAnalyticsEvent {
+  readonly accountAddress: EVMAccountAddress;
+  constructor(hostDomain: DomainString, accountAddress: EVMAccountAddress) {
+    super("AccountCreated", hostDomain);
+    this.accountAddress = accountAddress;
+  }
+}
+```
+
 ## Branded types
 
 Use **branded primitives** from `@1shotapi/ows-types` (`ts-brand`) anywhere a value is semantically more than a raw `string`, `number`, or `bigint`.
 
 **Always prefer a branded primitive over an unbranded `string`, `number`, or `bigint`.** Do not use raw primitives for domain values (addresses, call IDs, chain IDs, amounts, etc.) when a branded type exists or should exist in `ows-types`.
+
+**Never union a branded type with its base primitive** (e.g. `EVMAccountAddress | string`, `DomainString | string`, `UnixTimestamp | number`). That defeats the brand — callers can pass unvalidated strings/numbers and TypeScript will not catch it. Accept only the branded type at API boundaries; brand at the validation/derivation site before calling.
 
 - Define each primitive in `packages/ows-types/src/primitives/<Name>.ts` using the same pattern as `RPCCallId` (type alias + `make()` constructor).
 - Export from `packages/ows-types/src/primitives/index.ts`.

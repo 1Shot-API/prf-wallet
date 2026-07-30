@@ -18,8 +18,8 @@ export interface IOWSAnalyticsEvent {
 }
 
 export type OWSAnalyticsEventOptions = {
-  eventId?: AnalyticsEventId | string;
-  timestamp?: UnixTimestamp | number;
+  eventId?: AnalyticsEventId;
+  timestamp?: UnixTimestamp;
 };
 
 /**
@@ -29,10 +29,11 @@ export type OWSAnalyticsEventOptions = {
  * @example
  * ```ts
  * class AccountCreatedEvent extends OWSAnalyticsEvent {
- *   readonly accountAddress: string;
- *   constructor(hostDomain: string, accountAddress: string) {
+ *   constructor(
+ *     hostDomain: DomainString,
+ *     public readonly accountAddress: EVMAccountAddress,
+ *   ) {
  *     super("AccountCreated", hostDomain);
- *     this.accountAddress = accountAddress;
  *   }
  * }
  * ```
@@ -40,37 +41,23 @@ export type OWSAnalyticsEventOptions = {
 export abstract class OWSAnalyticsEvent implements IOWSAnalyticsEvent {
   readonly eventId: AnalyticsEventId;
   readonly timestamp: UnixTimestamp;
-  readonly hostDomain: DomainString;
-  readonly name: string;
   [key: string]: unknown;
 
   constructor(
-    name: string,
-    hostDomain: DomainString | string,
+    public readonly name: string,
+    public readonly hostDomain: DomainString,
     options?: OWSAnalyticsEventOptions,
   ) {
-    if (typeof name !== "string" || name.length === 0) {
+    if (name.length === 0) {
       throw new Error("OWSAnalyticsEvent requires a non-empty name");
     }
-    const domain =
-      typeof hostDomain === "string" ? hostDomain.trim() : String(hostDomain);
-    if (domain.length === 0) {
+    if (hostDomain.length === 0) {
       throw new Error("OWSAnalyticsEvent requires a non-empty hostDomain");
     }
 
-    const id =
-      typeof options?.eventId === "string" && options.eventId.length > 0
-        ? options.eventId
-        : crypto.randomUUID();
-    const ts =
-      typeof options?.timestamp === "number" && Number.isFinite(options.timestamp)
-        ? options.timestamp
-        : Math.floor(Date.now() / 1000);
-
-    this.name = name;
-    this.hostDomain = DomainString(domain);
-    this.eventId = AnalyticsEventId(id);
-    this.timestamp = UnixTimestamp(ts);
+    this.eventId = options?.eventId ?? AnalyticsEventId(crypto.randomUUID());
+    this.timestamp =
+      options?.timestamp ?? UnixTimestamp(Math.floor(Date.now() / 1000));
   }
 }
 

@@ -3,6 +3,7 @@ import { describe, it } from "node:test";
 import {
   AnalyticsEventId,
   DomainString,
+  EVMAccountAddress,
   OWSAnalyticsEvent,
   UnixTimestamp,
   deserializeAnalyticsEvent,
@@ -15,7 +16,10 @@ class TestAnalyticsEvent extends OWSAnalyticsEvent {}
 
 describe("OWSAnalyticsEvent", () => {
   it("mints eventId and timestamp", () => {
-    const event = new TestAnalyticsEvent("AccountCreated", "app.example.com");
+    const event = new TestAnalyticsEvent(
+      "AccountCreated",
+      DomainString("app.example.com"),
+    );
     assert.equal(event.name, "AccountCreated");
     assert.equal(event.hostDomain, DomainString("app.example.com"));
     assert.equal(typeof event.eventId, "string");
@@ -24,10 +28,14 @@ describe("OWSAnalyticsEvent", () => {
   });
 
   it("accepts explicit eventId and timestamp", () => {
-    const event = new TestAnalyticsEvent("AccountCreated", "app.example.com", {
-      eventId: "11111111-1111-4111-8111-111111111111",
-      timestamp: 1_719_792_000,
-    });
+    const event = new TestAnalyticsEvent(
+      "AccountCreated",
+      DomainString("app.example.com"),
+      {
+        eventId: AnalyticsEventId("11111111-1111-4111-8111-111111111111"),
+        timestamp: UnixTimestamp(1_719_792_000),
+      },
+    );
     assert.equal(
       event.eventId,
       AnalyticsEventId("11111111-1111-4111-8111-111111111111"),
@@ -37,14 +45,18 @@ describe("OWSAnalyticsEvent", () => {
 
   it("serializes subclass fields for the wire", () => {
     class AccountCreatedEvent extends OWSAnalyticsEvent {
-      readonly accountAddress: string;
-      constructor(hostDomain: string, accountAddress: string) {
+      constructor(
+        hostDomain: DomainString,
+        public readonly accountAddress: EVMAccountAddress,
+      ) {
         super("AccountCreated", hostDomain);
-        this.accountAddress = accountAddress;
       }
     }
 
-    const event = new AccountCreatedEvent("app.example.com", "0xabc");
+    const event = new AccountCreatedEvent(
+      DomainString("app.example.com"),
+      EVMAccountAddress("0xabc"),
+    );
     const roundTrip = deserializeAnalyticsEvent(serializeRpc(event));
     assert.equal(roundTrip.name, "AccountCreated");
     assert.equal(roundTrip.accountAddress, "0xabc");
