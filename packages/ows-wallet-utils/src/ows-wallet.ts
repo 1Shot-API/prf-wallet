@@ -17,9 +17,13 @@ import {
   DisplayChildClient,
   type DisplaySession,
 } from "./display/child-client.js";
+import { AnalyticsChildClient } from "./analytics/child-client.js";
 import { debugLog, setOwsWalletDebugFromOptions } from "./debug.js";
 import { CredentialWalletRegistrar } from "./credentials/wallet-registrar.js";
-import type { OpenWalletCredentialProvider } from "@1shotapi/ows-types";
+import type {
+  IOWSAnalyticsEvent,
+  OpenWalletCredentialProvider,
+} from "@1shotapi/ows-types";
 
 export type { DisplaySession, RequestDisplayParams };
 
@@ -45,6 +49,7 @@ export class OWSWallet {
   private childApi: Postmate.ChildAPI | null = null;
   private handshakePromise: Promise<Postmate.ChildAPI> | null = null;
   private displayClient: DisplayChildClient | null = null;
+  private analyticsClient: AnalyticsChildClient | null = null;
   private displayReadyHandler: ((data: unknown) => void) | null = null;
   private hideReadyHandler: ((data: unknown) => void) | null = null;
   private readonly eip1193Handlers = new Map<string, Eip1193Handler>();
@@ -84,6 +89,23 @@ export class OWSWallet {
     },
   };
 
+  /**
+   * Branding → Host analytics. Emits the full event object over Postmate
+   * (`ows:analytics`). Extra fields beyond the OWS base are branding-owned.
+   */
+  readonly analytics = {
+    emit: (event: IOWSAnalyticsEvent): void => {
+      const client = this.getAnalyticsClient();
+      if (!client) {
+        debugLog("analytics emit skipped; wallet not connected", {
+          name: event.name,
+        });
+        return;
+      }
+      client.emit(event);
+    },
+  };
+
   static async create(options?: OWSWalletOptions): Promise<OWSWallet> {
     return OWSWallet.prepare(options).start();
   }
@@ -105,6 +127,7 @@ export class OWSWallet {
     this.handshakePromise = new Postmate.Model(model);
     this.childApi = await this.handshakePromise;
     this.displayClient = new DisplayChildClient(this.childApi);
+    this.analyticsClient = new AnalyticsChildClient(this.childApi);
     this.displayReadyHandler = (data) => {
       this.displayClient?.handleDisplayReady(data);
     };
@@ -174,9 +197,21 @@ export class OWSWallet {
   destroy(): void {
     this.displayClient?.destroy();
     this.displayClient = null;
+    this.analyticsClient = null;
     this.displayReadyHandler = null;
     this.hideReadyHandler = null;
     this.childApi = null;
+  }
+
+  private getAnalyticsClient(): AnalyticsChildClient | null {
+    if (this.analyticsClient) {
+      return this.analyticsClient;
+    }
+    if (!this.childApi) {
+      return null;
+    }
+    this.analyticsClient = new AnalyticsChildClient(this.childApi);
+    return this.analyticsClient;
   }
 
   private assertNotConnected(): void {

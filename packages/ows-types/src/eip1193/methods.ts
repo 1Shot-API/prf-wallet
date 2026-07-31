@@ -17,6 +17,11 @@ export const EIP1193_METHODS = [
   "wallet_switchEthereumChain",
   "wallet_addEthereumChain",
   "wallet_watchAsset",
+  // EIP-7715 — Request Permissions from Wallets
+  "wallet_requestExecutionPermissions",
+  "wallet_revokeExecutionPermission",
+  "wallet_getSupportedExecutionPermissions",
+  "wallet_getGrantedExecutionPermissions",
 ] as const;
 
 export type Eip1193Method = (typeof EIP1193_METHODS)[number];

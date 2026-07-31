@@ -10,6 +10,20 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const examplesDir = path.dirname(fileURLToPath(import.meta.url));
+const repoRoot = path.resolve(examplesDir, "..");
+
+/**
+ * Resolve a path from env: absolute paths stay absolute; relative paths are
+ * anchored at the repo root (matches `.env.example` paths like
+ * `examples/host/certs/dev-cert.pem`), not `process.cwd()`.
+ *
+ * @param {string} filePath
+ */
+function resolveRepoPath(filePath) {
+  return path.isAbsolute(filePath)
+    ? filePath
+    : path.resolve(repoRoot, filePath);
+}
 
 /** Host Layer demo hostname (hosts file → 127.0.0.1). */
 export const OWS_HOST_HOSTNAME = "ows-host.com";
@@ -58,10 +72,10 @@ export function resolveHttpsOptions({ certsDir, exampleLabel }) {
   const hostFallbackKey = path.join(examplesDir, "host/certs/dev-key.pem");
 
   let certPath = process.env.HOST_SSL_CERT?.trim()
-    ? path.resolve(process.env.HOST_SSL_CERT.trim())
+    ? resolveRepoPath(process.env.HOST_SSL_CERT.trim())
     : defaultCert;
   let keyPath = process.env.HOST_SSL_KEY?.trim()
-    ? path.resolve(process.env.HOST_SSL_KEY.trim())
+    ? resolveRepoPath(process.env.HOST_SSL_KEY.trim())
     : defaultKey;
 
   // Reuse examples/host mkcert files when this example has none of its own.

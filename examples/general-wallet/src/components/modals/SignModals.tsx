@@ -257,9 +257,11 @@ function formatMessageForDisplay(message: string): string {
 function isMostlyPrintable(text: string): boolean {
   if (!text.trim()) return false;
   let printable = 0;
+  let codePoints = 0;
   for (const char of text) {
+    codePoints++;
     const code = char.codePointAt(0) ?? 0;
     if (code >= 32 && code !== 127) printable++;
   }
-  return printable / text.length >= 0.85;
+  return codePoints > 0 && printable / codePoints >= 0.85;
 }

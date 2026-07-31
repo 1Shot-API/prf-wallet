@@ -7,6 +7,8 @@ export type {
   RpcHandlerRegistration,
 } from "./ows-wallet.js";
 
+export { AnalyticsChildClient } from "./analytics/child-client.js";
+
 export { EIP1193_PARAM_SCHEMAS, getEip1193ParamSchema } from "./eip1193/schemas.js";
 export {
   RpcHelper,
@@ -15,6 +17,7 @@ export {
 } from "./eip1193/rpc-helper.js";
 export type {
   RpcHelperEventMap,
+  RpcHelperExecutionPermissionsHooks,
   RpcHelperOptions,
   RpcHelperSigner,
   RpcHelperWallet,

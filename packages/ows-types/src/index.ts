@@ -47,6 +47,17 @@ export type {
   HideReadyPayload,
 } from "./protocol/display.js";
 
+export {
+  OWS_ANALYTICS_EVENT,
+  OWSAnalyticsEvent,
+  deserializeAnalyticsEvent,
+} from "./protocol/analytics.js";
+
+export type {
+  IOWSAnalyticsEvent,
+  OWSAnalyticsEventOptions,
+} from "./protocol/analytics.js";
+
 export type {
   RpcErrorPayload,
   RpcRequestEnvelope,
@@ -117,6 +128,14 @@ export {
   type EIP1193Requests,
   type KnownEIP1193Method,
   type IEVMTransactionRequest,
+  type IExecutionPermission,
+  type IExecutionPermissionDependency,
+  type IExecutionPermissionRequest,
+  type IExecutionPermissionResponse,
+  type IExecutionPermissionRule,
+  type IRevokeExecutionPermissionParams,
+  type ISupportedExecutionPermissionEntry,
+  type SupportedExecutionPermissions,
 } from "./eip1193/index.js";
 
 export {

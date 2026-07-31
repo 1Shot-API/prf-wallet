@@ -11,6 +11,8 @@ import {
   EWalletPresentationMode,
 } from "./display/host-handler.js";
 import { CredentialHostClient } from "./credentials/host-client.js";
+import { AnalyticsHostHandler } from "./analytics/host-handler.js";
+import type { AnalyticsListener } from "./analytics/host-handler.js";
 
 export type OWSProxyOptions = {
   /** iframe `name` attribute. Default: `ows-wallet` */
@@ -86,22 +88,39 @@ export class OWSProxy {
   public readonly ethereum: EIP1193Provider;
   public readonly credentials: CredentialHostClient;
 
+  /**
+   * Branding→Host analytics notifications (`ows:analytics`).
+   * Events include the OWS base fields plus branding-owned rich properties.
+   */
+  public readonly analytics: {
+    on(listener: AnalyticsListener): () => void;
+    on(name: string, listener: AnalyticsListener): () => void;
+    off(listener: AnalyticsListener): void;
+  };
+
   private readonly rpcClient: RpcHostClient;
   private readonly displayHandler: DisplayHostHandler;
+  private readonly analyticsHandler: AnalyticsHostHandler;
   private readonly parent: Postmate.ParentAPI;
 
   private constructor(
     parent: Postmate.ParentAPI,
     rpcClient: RpcHostClient,
     displayHandler: DisplayHostHandler,
+    analyticsHandler: AnalyticsHostHandler,
   ) {
     this.parent = parent;
     this.rpcClient = rpcClient;
     this.displayHandler = displayHandler;
+    this.analyticsHandler = analyticsHandler;
     this.credentials = new CredentialHostClient(rpcClient);
     this.ethereum = new EIP1193Provider((method, params) =>
       this.rpc(method, params),
     );
+    this.analytics = {
+      on: this.analyticsHandler.on.bind(this.analyticsHandler),
+      off: this.analyticsHandler.off.bind(this.analyticsHandler),
+    };
   }
 
   static async create(
@@ -158,8 +177,9 @@ export class OWSProxy {
         afterRequest: () => displayHandler.completeRpcAccess(),
       },
     );
+    const analyticsHandler = new AnalyticsHostHandler(parent);
 
-    return new OWSProxy(parent, rpcClient, displayHandler);
+    return new OWSProxy(parent, rpcClient, displayHandler, analyticsHandler);
   }
 
   rpc<T = unknown>(method: string, params?: unknown): Promise<T> {
@@ -186,6 +206,7 @@ export class OWSProxy {
   }
 
   destroy(): void {
+    this.analyticsHandler.destroy();
     this.displayHandler.destroy();
     this.rpcClient.destroy();
     this.parent.destroy();

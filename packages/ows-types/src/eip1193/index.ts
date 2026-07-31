@@ -15,3 +15,14 @@ export type {
 } from "./requests.js";
 
 export type { IEVMTransactionRequest } from "./transaction.js";
+
+export type {
+  IExecutionPermission,
+  IExecutionPermissionDependency,
+  IExecutionPermissionRequest,
+  IExecutionPermissionResponse,
+  IExecutionPermissionRule,
+  IRevokeExecutionPermissionParams,
+  ISupportedExecutionPermissionEntry,
+  SupportedExecutionPermissions,
+} from "./eip7715.js";

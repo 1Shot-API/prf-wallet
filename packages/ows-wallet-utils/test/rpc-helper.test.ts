@@ -3,7 +3,9 @@ import assert from "node:assert/strict";
 import {
   EIP1193_READ_METHODS,
   EIP1193_UNRECOGNIZED_CHAIN_ID,
+  EVMAccountAddress,
   EVMChainId,
+  HexString,
   OwsInvalidParamsError,
   OwsRpcError,
 } from "@1shotapi/ows-types";
@@ -329,5 +331,120 @@ describe("RpcHelper", () => {
     } finally {
       fetchMock.mock.restore();
     }
+  });
+
+  it("does not register EIP-7715 methods without executionPermissions hooks", () => {
+    const { wallet, handlers } = createMockWallet();
+    new RpcHelper(
+      new Map([[SEPOLIA, "https://example.invalid"]]),
+      wallet,
+    );
+
+    assert.equal(
+      handlers.has("wallet_requestExecutionPermissions"),
+      false,
+    );
+    assert.equal(handlers.has("wallet_revokeExecutionPermission"), false);
+    assert.equal(
+      handlers.has("wallet_getSupportedExecutionPermissions"),
+      false,
+    );
+    assert.equal(
+      handlers.has("wallet_getGrantedExecutionPermissions"),
+      false,
+    );
+  });
+
+  it("registers EIP-7715 methods when executionPermissions hooks are provided", async () => {
+    const { wallet, handlers } = createMockWallet();
+    const granted = [
+      {
+        chainId: SEPOLIA,
+        to: EVMAccountAddress("0x0000000000000000000000000000000000000001"),
+        permission: {
+          type: "erc20-token-periodic",
+          isAdjustmentAllowed: true,
+          data: {},
+        },
+        context: HexString("0xabc"),
+        dependencies: [],
+        delegationManager: EVMAccountAddress(
+          "0x0000000000000000000000000000000000000002",
+        ),
+      },
+    ];
+    const supported = {
+      "erc20-token-periodic": {
+        chainIds: [SEPOLIA],
+        ruleTypes: [] as string[],
+      },
+    };
+
+    new RpcHelper(
+      new Map([[SEPOLIA, "https://example.invalid"]]),
+      wallet,
+      null,
+      {
+        executionPermissions: {
+          requestExecutionPermissions: async (requests) => {
+            assert.equal(requests.length, 1);
+            return granted;
+          },
+          revokeExecutionPermission: async (params) => {
+            assert.equal(params.permissionContext, "0xdead");
+            return null;
+          },
+          getSupportedExecutionPermissions: async () => supported,
+          getGrantedExecutionPermissions: async () => granted,
+        },
+      },
+    );
+
+    assert.equal(
+      typeof handlers.get("wallet_requestExecutionPermissions"),
+      "function",
+    );
+    assert.equal(
+      typeof handlers.get("wallet_revokeExecutionPermission"),
+      "function",
+    );
+    assert.equal(
+      typeof handlers.get("wallet_getSupportedExecutionPermissions"),
+      "function",
+    );
+    assert.equal(
+      typeof handlers.get("wallet_getGrantedExecutionPermissions"),
+      "function",
+    );
+
+    const requestResult = await handlers.get(
+      "wallet_requestExecutionPermissions",
+    )!([
+      {
+        chainId: SEPOLIA,
+        to: EVMAccountAddress("0x0000000000000000000000000000000000000001"),
+        permission: {
+          type: "erc20-token-periodic",
+          isAdjustmentAllowed: true,
+          data: {},
+        },
+      },
+    ]);
+    assert.deepEqual(requestResult, granted);
+
+    assert.equal(
+      await handlers.get("wallet_revokeExecutionPermission")!([
+        { permissionContext: HexString("0xdead") },
+      ]),
+      null,
+    );
+    assert.deepEqual(
+      await handlers.get("wallet_getSupportedExecutionPermissions")!([]),
+      supported,
+    );
+    assert.deepEqual(
+      await handlers.get("wallet_getGrantedExecutionPermissions")!([]),
+      granted,
+    );
   });
 });

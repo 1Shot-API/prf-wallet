@@ -10,6 +10,7 @@ import {
   EVMChainId,
   type CredentialOfferApprovalRequest,
   type CredentialPresentationApprovalRequest,
+  type EVMSignatureHex,
 } from "@1shotapi/ows-types";
 import type {
   PersonalSignApprovalRequest,
@@ -28,6 +29,8 @@ import {
   HttpOid4vpClient,
   ParseUtils,
 } from "@1shotapi/ows-oid4";
+import { PersonalSignEvent } from "../analytics/events";
+import { resolveHostDomain } from "../analytics/hostDomain";
 import { DEMO_CHAINS } from "../ows/demoChains";
 import { registerAccountConnect } from "../ows/registerAccountConnect";
 import { registerApprovalSigning } from "../ows/registerApprovalSigning";
@@ -174,14 +177,29 @@ export function useWalletBoot({
         ensureReady: () => runEnsureOnboarded(),
         onAuthenticated: () => runOnAuthenticated(),
         chainRpc: rpcHelper,
-        approveAndSignPersonalMessage: (request: PersonalSignApprovalRequest) =>
-          ask(({ id, resolve, reject }) => ({
-            id,
-            kind: "personalSign",
-            request,
-            resolve,
-            reject,
-          })),
+        approveAndSignPersonalMessage: async (
+          request: PersonalSignApprovalRequest,
+        ) => {
+          const started = performance.now();
+          const signature = await ask<EVMSignatureHex>(
+            ({ id, resolve, reject }) => ({
+              id,
+              kind: "personalSign",
+              request,
+              resolve,
+              reject,
+            }),
+          );
+          wallet.analytics.emit(
+            new PersonalSignEvent(
+              resolveHostDomain(),
+              request.address,
+              request.message.length,
+              Math.round(performance.now() - started),
+            ),
+          );
+          return signature;
+        },
         approveAndSignTypedData: (request: SignTypedDataApprovalRequest) =>
           ask(({ id, resolve, reject }) => ({
             id,

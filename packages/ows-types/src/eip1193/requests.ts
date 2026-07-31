@@ -4,6 +4,12 @@ import type {
   EVMSignatureHex,
   EVMTransactionHash,
 } from "../primitives/index.js";
+import type {
+  IExecutionPermissionRequest,
+  IExecutionPermissionResponse,
+  IRevokeExecutionPermissionParams,
+  SupportedExecutionPermissions,
+} from "./eip7715.js";
 import type { IEVMTransactionRequest } from "./transaction.js";
 
 /**
@@ -35,6 +41,24 @@ export type EIP1193Requests = {
   wallet_switchEthereumChain: {
     params: readonly [{ chainId: EVMChainId }];
     result: null;
+  };
+  /**
+   * EIP-7715: `params` is the permission request array itself
+   * (not wrapped in an outer tuple element).
+   */
+  wallet_requestExecutionPermissions: {
+    params: readonly IExecutionPermissionRequest[];
+    result: IExecutionPermissionResponse[];
+  };
+  wallet_revokeExecutionPermission: {
+    params: readonly [IRevokeExecutionPermissionParams];
+    result: null;
+  };
+  wallet_getSupportedExecutionPermissions: {
+    result: SupportedExecutionPermissions;
+  };
+  wallet_getGrantedExecutionPermissions: {
+    result: IExecutionPermissionResponse[];
   };
 };
 
