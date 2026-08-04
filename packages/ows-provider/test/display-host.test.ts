@@ -14,6 +14,7 @@ import {
   applyHiddenWalletFrameStyles,
   DisplayHostHandler,
   EWalletPresentationMode,
+  releaseWalletFrameFocus,
 } from "../src/display/host-handler.ts";
 
 class MockHTMLIFrameElement {}
@@ -36,6 +37,7 @@ function createMockParent() {
     } as unknown as CSSStyleDeclaration,
     parentElement: {
       className: "",
+      inert: false,
       style: {
         length: 0,
         item: () => "",
@@ -281,8 +283,10 @@ describe("DisplayHostHandler", () => {
   });
 
   it("applyHiddenWalletContainerStyles collapses container before iframe exists", () => {
+    const attrs = new Map<string, string>();
     const container = {
       className: "wallet-container",
+      inert: false,
       style: {
         length: 0,
         item: () => "",
@@ -294,10 +298,14 @@ describe("DisplayHostHandler", () => {
           delete this[name];
         },
       } as unknown as CSSStyleDeclaration,
-      setAttribute() {},
-      removeAttribute() {},
-      getAttribute() {
-        return null;
+      setAttribute(name: string, value: string) {
+        attrs.set(name, value);
+      },
+      removeAttribute(name: string) {
+        attrs.delete(name);
+      },
+      getAttribute(name: string) {
+        return attrs.get(name) ?? null;
       },
     };
 
@@ -309,6 +317,68 @@ describe("DisplayHostHandler", () => {
     assert.equal(style.opacity, "0");
     assert.equal(style["clip-path"], "inset(50%)");
     assert.equal(style["pointer-events"], "none");
+    assert.equal(container.inert, true);
+    assert.equal(attrs.get("aria-hidden"), "true");
+  });
+
+  it("releaseWalletFrameFocus moves activeElement off the iframe", () => {
+    const previousDocument = (globalThis as { document?: Document }).document;
+    const body = {
+      appendChild(node: Node) {
+        return node;
+      },
+    };
+    let active: { focus?: () => void; blur?: () => void } | null = null;
+    const frame = {
+      blur() {
+        // Simulated iframe blur that does not clear activeElement (Chrome + WebAuthn).
+      },
+      contains() {
+        return false;
+      },
+    };
+    active = frame;
+
+    Object.defineProperty(globalThis, "document", {
+      configurable: true,
+      writable: true,
+      value: {
+        body,
+        get activeElement() {
+          return active;
+        },
+        createElement(tag: string) {
+          assert.equal(tag, "span");
+          const sink = {
+            tabIndex: 0,
+            style: { cssText: "" },
+            setAttribute() {},
+            focus() {
+              active = sink;
+            },
+            remove() {
+              active = body;
+            },
+          };
+          return sink;
+        },
+      },
+    });
+
+    try {
+      releaseWalletFrameFocus(frame as never);
+      assert.notEqual(active, frame);
+    } finally {
+      if (previousDocument === undefined) {
+        delete (globalThis as { document?: Document }).document;
+      } else {
+        Object.defineProperty(globalThis, "document", {
+          configurable: true,
+          writable: true,
+          value: previousDocument,
+        });
+      }
+    }
   });
 
   it("applyHiddenWalletFrameStyles hides iframe at append time", () => {
