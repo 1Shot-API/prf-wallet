@@ -63,7 +63,6 @@ type StoredLayout = {
   frameStyle: Record<string, string>;
   containerClassName: string;
   containerStyle: Record<string, string>;
-  containerAriaHidden: string | null;
 };
 
 type EVisibleLayoutKind = "flyout" | "drawer";
@@ -384,7 +383,6 @@ export class DisplayHostHandler {
       frameStyle: captureInlineStyles(frame),
       containerClassName: container?.className ?? "",
       containerStyle: container ? captureInlineStyles(container) : {},
-      containerAriaHidden: container?.getAttribute("aria-hidden") ?? null,
     };
   }
 
@@ -399,7 +397,7 @@ export class DisplayHostHandler {
       container.style.setProperty("display", "block", "important");
       container.style.setProperty("clip-path", "none", "important");
       container.style.setProperty("overflow", "hidden", "important");
-      container.removeAttribute("aria-hidden");
+      revealWalletContainer(container);
     }
 
     frame.style.setProperty("display", "block", "important");
@@ -584,6 +582,7 @@ export class DisplayHostHandler {
   }
 
   private applyHiddenLayout(frame: HTMLIFrameElement): void {
+    releaseWalletFrameFocus(frame);
     const container = frame.parentElement;
     if (container) {
       applyHiddenWalletContainerStyles(container);
@@ -612,6 +611,13 @@ export class DisplayHostHandler {
     const frame = this.parent.frame;
     const container =
       frame instanceof HTMLIFrameElement ? frame.parentElement : null;
+
+    // Release focus before any hide styling / aria-hidden so Chrome does not
+    // warn about a focused iframe under an aria-hidden ancestor (common after
+    // WebAuthn leaves focus inside the branding/signing frame).
+    if (frame instanceof HTMLIFrameElement) {
+      releaseWalletFrameFocus(frame);
+    }
 
     if (
       wasDrawer &&
@@ -665,15 +671,7 @@ export class DisplayHostHandler {
     const container = frame.parentElement;
     const stored = this.originalLayout;
 
-    try {
-      frame.contentWindow?.blur();
-      frame.blur();
-      if (document.activeElement === frame) {
-        (document.body as HTMLElement).focus();
-      }
-    } catch {
-      // ignore blur failures
-    }
+    releaseWalletFrameFocus(frame);
 
     restoreInlineStyles(frame, stored.frameClassName, stored.frameStyle);
     if (container) {
@@ -682,15 +680,70 @@ export class DisplayHostHandler {
         stored.containerClassName,
         stored.containerStyle,
       );
-      if (stored.containerAriaHidden !== null) {
-        container.setAttribute("aria-hidden", stored.containerAriaHidden);
-      } else {
-        container.removeAttribute("aria-hidden");
-      }
+      // Always inert + aria-hidden when collapsed — do not restore a host's
+      // pre-create markup flags if that would leave a focused iframe exposed.
+      concealWalletContainer(container, { ariaHidden: "true", inert: true });
     }
 
     this.originalLayout = null;
   }
+}
+
+/**
+ * Move focus out of the branding iframe before collapsing it.
+ * `document.body.focus()` is a no-op (body is not focusable by default), so
+ * after WebAuthn the iframe often remains `document.activeElement` — setting
+ * `aria-hidden` on its ancestor then trips Chrome's accessibility warning.
+ */
+export function releaseWalletFrameFocus(frame: HTMLIFrameElement): void {
+  try {
+    frame.blur();
+  } catch {
+    // ignore
+  }
+
+  if (typeof document === "undefined") {
+    return;
+  }
+
+  const active = document.activeElement;
+  if (active !== frame && !(active instanceof Node && frame.contains(active))) {
+    return;
+  }
+
+  // Temporary focus sink: remove after focus so activeElement becomes <body>.
+  const sink = document.createElement("span");
+  sink.tabIndex = -1;
+  sink.setAttribute("aria-hidden", "true");
+  sink.style.cssText =
+    "position:fixed;width:1px;height:1px;opacity:0;pointer-events:none;overflow:hidden;left:0;top:0;";
+  document.body.appendChild(sink);
+  try {
+    sink.focus({ preventScroll: true });
+  } finally {
+    sink.remove();
+  }
+}
+
+function concealWalletContainer(
+  container: HTMLElement,
+  options: { ariaHidden: string | null; inert: boolean },
+): void {
+  // inert first — browsers move focus out of the subtree, avoiding the
+  // "aria-hidden on focused descendant" warning.
+  container.inert = options.inert;
+  if (options.ariaHidden !== null) {
+    container.setAttribute("aria-hidden", options.ariaHidden);
+  } else if (options.inert) {
+    container.setAttribute("aria-hidden", "true");
+  } else {
+    container.removeAttribute("aria-hidden");
+  }
+}
+
+function revealWalletContainer(container: HTMLElement): void {
+  container.inert = false;
+  container.removeAttribute("aria-hidden");
 }
 
 /**
@@ -717,7 +770,7 @@ export function applyHiddenWalletContainerStyles(container: HTMLElement): void {
   container.style.removeProperty("box-shadow");
   container.style.removeProperty("background");
   container.style.removeProperty("transition");
-  container.setAttribute("aria-hidden", "true");
+  concealWalletContainer(container, { ariaHidden: "true", inert: true });
 }
 
 /**
