@@ -1,5 +1,11 @@
 # @1shotapi/ows-provider
 
+## 0.4.1
+
+### Patch Changes
+
+- f0eff1f: Release focus from the wallet iframe before collapsing it, and mark the host shell `inert` (then `aria-hidden`) so Chrome no longer warns when hiding after a WebAuthn ceremony.
+
 ## 0.4.0
 
 ### Minor Changes
