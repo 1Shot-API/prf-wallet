@@ -27,6 +27,19 @@
   "engines": {
     "node": ">=22"
   },
+  "overrides": {
+    "keyv": "4.5.4",
+    "flat-cache": "4.0.1",
+    "file-entry-cache": "8.0.0",
+    "cacheable": "2.5.0",
+    "cacheable-request": "13.0.19",
+    "@cacheable/memory": "2.2.0",
+    "@cacheable/utils": "2.5.0",
+    "@cacheable/node-cache": "3.1.1",
+    "@cacheable/net": "2.1.0",
+    "cache-manager": "7.2.9",
+    "ecto": "5.0.0"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/1Shot-API/open-wallet.git"
