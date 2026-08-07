@@ -1,5 +1,11 @@
 # @1shotapi/ows-signer
 
+## 0.4.0
+
+### Minor Changes
+
+- df9c4b7: Return full WebAuthn assertion fields (`authenticatorData`, `clientDataJSON`, `signature`, `credentialId`) from challenge-capable Signing Layer ceremonies as nested `assertion`, replacing `challengeSignature`.
+
 ## 0.3.4
 
 ### Patch Changes
