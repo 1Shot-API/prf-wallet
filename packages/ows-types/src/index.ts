@@ -91,6 +91,7 @@ export type {
   RecoverySessionStartedData,
   RecoverySessionClearedData,
   PublicKeyData,
+  WebAuthnAssertionFields,
   ChallengeSignedData,
   CeremonyUiParams,
   CreateCredentialOptions,

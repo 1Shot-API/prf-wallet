@@ -16,6 +16,7 @@ import type {
   RecoveryDataCreatedData,
   SignScheme,
   VersionData,
+  WebAuthnAssertionFields,
 } from "./signer.js";
 
 /**
@@ -53,7 +54,7 @@ export interface IOWSSigner {
   executeBatch(params: ExecuteBatchParams): Promise<ExecuteBatchResult>;
   getPublicKey(
     params?: GetPublicKeyParams,
-  ): Promise<PublicKeyData & { challengeSignature?: string }>;
+  ): Promise<PublicKeyData & { assertion?: WebAuthnAssertionFields }>;
   createRecoveryData(
     passwordText: string,
     buttonText: string,

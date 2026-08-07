@@ -41,7 +41,7 @@ import {
 } from "./ui.js";
 import {
   createPasskeyCredential,
-  getAssertionSignatureBase64Url,
+  getAssertionFieldsBase64Url,
   getCredentialId,
   getPasskeyAssertion,
   getCosePublicKeyBase64Url,
@@ -885,8 +885,8 @@ async function handleGetPublicKey(params, correlationId, targetOrigin) {
     });
 
     if (challenge) {
-      const signature = getAssertionSignatureBase64Url(credential);
-      if (signature) {
+      const assertion = getAssertionFieldsBase64Url(credential);
+      if (assertion) {
         emitEvent(
           window.parent,
           targetOrigin,
@@ -894,7 +894,7 @@ async function handleGetPublicKey(params, correlationId, targetOrigin) {
           correlationId,
           {
             challenge: to0xHex(challenge),
-            signature,
+            assertion,
           },
         );
       }
@@ -1014,9 +1014,9 @@ async function handleExecuteBatch(params, correlationId, targetOrigin) {
       };
     }
     if (challenge && credential) {
-      const signature = getAssertionSignatureBase64Url(credential);
-      if (signature) {
-        data.challengeSignature = signature;
+      const assertion = getAssertionFieldsBase64Url(credential);
+      if (assertion) {
+        data.assertion = assertion;
       }
     }
 

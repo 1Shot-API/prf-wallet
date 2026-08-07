@@ -171,11 +171,21 @@ describe("SignerRpcClient", () => {
 
     emit("ChallengeSigned", {
       challenge: "0x" + "aa".repeat(32),
-      signature: "sig",
+      assertion: {
+        authenticatorData: "ad",
+        clientDataJSON: "cdj",
+        signature: "sig",
+        credentialId: "cid",
+      },
     });
 
     const result = await promise;
-    assert.equal(result.signature, "sig");
+    assert.deepEqual(result.assertion, {
+      authenticatorData: "ad",
+      clientDataJSON: "cdj",
+      signature: "sig",
+      credentialId: "cid",
+    });
     assert.match(String(result.secp256k1PublicKey), /^0x/);
 
     client.destroy();

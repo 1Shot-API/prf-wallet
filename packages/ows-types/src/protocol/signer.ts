@@ -156,19 +156,31 @@ export type PublicKeyData = {
   credentialId?: CredentialId;
 };
 
+/**
+ * WebAuthn assertion fields from a signing-layer ceremony (base64url).
+ * Branding pairs with an out-of-band `challengeId` for relayer auth.
+ */
+export type WebAuthnAssertionFields = {
+  authenticatorData: string;
+  clientDataJSON: string;
+  signature: string;
+  credentialId: string;
+};
+
 /** Terminal `BatchExecuted` event payload. */
 export type ExecuteBatchResult = {
   results?: DigestSignedData[];
   ciphertexts?: string[];
   plaintexts?: string[];
   publicKey?: PublicKeyData;
-  challengeSignature?: string;
+  /** Present when `challenge` was supplied to the ceremony. */
+  assertion?: WebAuthnAssertionFields;
   credentialId?: CredentialId | null;
 };
 
 export type ChallengeSignedData = {
   challenge: `0x${string}`;
-  signature: string;
+  assertion: WebAuthnAssertionFields;
 };
 
 export type CreateCredentialOptions = CeremonyUiParams & {

@@ -19,6 +19,7 @@ import type {
   DecryptAES256Result,
   IOWSSigner,
   CredentialId,
+  WebAuthnAssertionFields,
 } from "@1shotapi/ows-types";
 import type { Hex } from "viem";
 import { publicKeyToAddress } from "viem/utils";
@@ -58,6 +59,27 @@ function withCeremonyDefaults(
       fields?.confirmButtonText ?? DEFAULT_CEREMONY_UI.confirmButtonText,
     denyButtonText:
       fields?.denyButtonText ?? DEFAULT_CEREMONY_UI.denyButtonText,
+  };
+}
+
+function webAuthnAssertionFromEvent(
+  value: unknown,
+): WebAuthnAssertionFields | undefined {
+  if (!value || typeof value !== "object") return undefined;
+  const record = value as Record<string, unknown>;
+  if (
+    typeof record.authenticatorData !== "string" ||
+    typeof record.clientDataJSON !== "string" ||
+    typeof record.signature !== "string" ||
+    typeof record.credentialId !== "string"
+  ) {
+    return undefined;
+  }
+  return {
+    authenticatorData: record.authenticatorData,
+    clientDataJSON: record.clientDataJSON,
+    signature: record.signature,
+    credentialId: record.credentialId,
   };
 }
 
@@ -285,13 +307,14 @@ export class OWSSigner implements IOWSSigner {
           result.publicKey.ed25519PublicKey,
         );
       }
-      return result;
+      const assertion = webAuthnAssertionFromEvent(result.assertion);
+      return assertion ? { ...result, assertion } : { ...result, assertion: undefined };
     });
   }
 
   async getPublicKey(
     params?: GetPublicKeyParams,
-  ): Promise<PublicKeyData & { challengeSignature?: string }> {
+  ): Promise<PublicKeyData & { assertion?: WebAuthnAssertionFields }> {
     const hasChallenge = params?.challenge !== undefined;
     const credentialId = params?.discoverable
       ? undefined
@@ -329,11 +352,8 @@ export class OWSSigner implements IOWSSigner {
         publicKeyData.ed25519PublicKey,
       );
 
-      const signature =
-        typeof result.signature === "string" ? result.signature : undefined;
-      return signature
-        ? { ...publicKeyData, challengeSignature: signature }
-        : publicKeyData;
+      const assertion = webAuthnAssertionFromEvent(result.assertion);
+      return assertion ? { ...publicKeyData, assertion } : publicKeyData;
     });
   }
 
