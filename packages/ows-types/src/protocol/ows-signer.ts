@@ -53,6 +53,9 @@ export interface IOWSSigner {
   ): Promise<DigestSignedData[]>;
   executeBatch(params: ExecuteBatchParams): Promise<ExecuteBatchResult>;
   getPublicKey(
+    params: GetPublicKeyParams & { challenge: `0x${string}` },
+  ): Promise<PublicKeyData & { assertion: WebAuthnAssertionFields }>;
+  getPublicKey(
     params?: GetPublicKeyParams,
   ): Promise<PublicKeyData & { assertion?: WebAuthnAssertionFields }>;
   createRecoveryData(

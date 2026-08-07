@@ -308,10 +308,21 @@ export class OWSSigner implements IOWSSigner {
         );
       }
       const assertion = webAuthnAssertionFromEvent(result.assertion);
+      if (params.challenge !== undefined && !assertion) {
+        throw new Error(
+          "executeBatch: challenge was supplied but assertion fields missing",
+        );
+      }
       return assertion ? { ...result, assertion } : { ...result, assertion: undefined };
     });
   }
 
+  async getPublicKey(
+    params: GetPublicKeyParams & { challenge: `0x${string}` },
+  ): Promise<PublicKeyData & { assertion: WebAuthnAssertionFields }>;
+  async getPublicKey(
+    params?: GetPublicKeyParams,
+  ): Promise<PublicKeyData & { assertion?: WebAuthnAssertionFields }>;
   async getPublicKey(
     params?: GetPublicKeyParams,
   ): Promise<PublicKeyData & { assertion?: WebAuthnAssertionFields }> {
@@ -353,6 +364,11 @@ export class OWSSigner implements IOWSSigner {
       );
 
       const assertion = webAuthnAssertionFromEvent(result.assertion);
+      if (hasChallenge && !assertion) {
+        throw new Error(
+          "getPublicKey: challenge was supplied but assertion fields missing",
+        );
+      }
       return assertion ? { ...publicKeyData, assertion } : publicKeyData;
     });
   }
