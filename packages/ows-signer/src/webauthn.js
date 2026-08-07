@@ -245,3 +245,33 @@ export function getAssertionSignatureBase64Url(credential) {
   }
   return null;
 }
+
+/**
+ * Full WebAuthn assertion fields for host/relayer auth (base64url).
+ * @param {PublicKeyCredential} credential
+ * @returns {{
+ *   authenticatorData: string,
+ *   clientDataJSON: string,
+ *   signature: string,
+ *   credentialId: string,
+ * } | null}
+ */
+export function getAssertionFieldsBase64Url(credential) {
+  const response = credential.response;
+  if (
+    !("authenticatorData" in response) ||
+    !response.authenticatorData ||
+    !("clientDataJSON" in response) ||
+    !response.clientDataJSON ||
+    !("signature" in response) ||
+    !response.signature
+  ) {
+    return null;
+  }
+  return {
+    authenticatorData: bufferToBase64Url(response.authenticatorData),
+    clientDataJSON: bufferToBase64Url(response.clientDataJSON),
+    signature: bufferToBase64Url(response.signature),
+    credentialId: getCredentialId(credential),
+  };
+}

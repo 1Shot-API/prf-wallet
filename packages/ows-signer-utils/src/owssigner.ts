@@ -1,4 +1,12 @@
-import { EVMAccountAddress, SolanaAccountAddress, AES256CipherText } from "@1shotapi/ows-types";
+import {
+  Base64UrlEncodedString,
+  ConversionUtils,
+  CredentialId,
+  EVMAccountAddress,
+  JSONString,
+  SolanaAccountAddress,
+  AES256CipherText,
+} from "@1shotapi/ows-types";
 import type {
   ED25519PublicKey,
   SECP256K1PublicKey,
@@ -18,7 +26,7 @@ import type {
   EncryptAES256Result,
   DecryptAES256Result,
   IOWSSigner,
-  CredentialId,
+  WebAuthnAssertionFields,
 } from "@1shotapi/ows-types";
 import type { Hex } from "viem";
 import { publicKeyToAddress } from "viem/utils";
@@ -59,6 +67,50 @@ function withCeremonyDefaults(
     denyButtonText:
       fields?.denyButtonText ?? DEFAULT_CEREMONY_UI.denyButtonText,
   };
+}
+
+/**
+ * Decode Signing Layer wire assertion (base64url fields) into branded values.
+ */
+function webAuthnAssertionFromEvent(
+  value: unknown,
+): WebAuthnAssertionFields | undefined {
+  if (!value || typeof value !== "object") return undefined;
+  const record = value as Record<string, unknown>;
+  if (
+    typeof record.authenticatorData !== "string" ||
+    typeof record.clientDataJSON !== "string" ||
+    typeof record.signature !== "string" ||
+    typeof record.credentialId !== "string"
+  ) {
+    return undefined;
+  }
+  try {
+    const authenticatorData = ConversionUtils.bytesToHex(
+      ConversionUtils.base64UrlToBytes(
+        Base64UrlEncodedString(record.authenticatorData),
+      ),
+    );
+    const signature = ConversionUtils.bytesToHex(
+      ConversionUtils.base64UrlToBytes(
+        Base64UrlEncodedString(record.signature),
+      ),
+    );
+    const clientDataUtf8 = new TextDecoder().decode(
+      ConversionUtils.base64UrlToBytes(
+        Base64UrlEncodedString(record.clientDataJSON),
+      ),
+    );
+    JSON.parse(clientDataUtf8);
+    return {
+      authenticatorData,
+      clientDataJSON: JSONString(clientDataUtf8),
+      signature,
+      credentialId: CredentialId(record.credentialId),
+    };
+  } catch {
+    return undefined;
+  }
 }
 
 export class OWSSigner implements IOWSSigner {
@@ -285,13 +337,25 @@ export class OWSSigner implements IOWSSigner {
           result.publicKey.ed25519PublicKey,
         );
       }
-      return result;
+      const assertion = webAuthnAssertionFromEvent(result.assertion);
+      if (params.challenge !== undefined && !assertion) {
+        throw new Error(
+          "executeBatch: challenge was supplied but assertion fields missing",
+        );
+      }
+      return assertion ? { ...result, assertion } : { ...result, assertion: undefined };
     });
   }
 
   async getPublicKey(
+    params: GetPublicKeyParams & { challenge: `0x${string}` },
+  ): Promise<PublicKeyData & { assertion: WebAuthnAssertionFields }>;
+  async getPublicKey(
     params?: GetPublicKeyParams,
-  ): Promise<PublicKeyData & { challengeSignature?: string }> {
+  ): Promise<PublicKeyData & { assertion?: WebAuthnAssertionFields }>;
+  async getPublicKey(
+    params?: GetPublicKeyParams,
+  ): Promise<PublicKeyData & { assertion?: WebAuthnAssertionFields }> {
     const hasChallenge = params?.challenge !== undefined;
     const credentialId = params?.discoverable
       ? undefined
@@ -329,11 +393,13 @@ export class OWSSigner implements IOWSSigner {
         publicKeyData.ed25519PublicKey,
       );
 
-      const signature =
-        typeof result.signature === "string" ? result.signature : undefined;
-      return signature
-        ? { ...publicKeyData, challengeSignature: signature }
-        : publicKeyData;
+      const assertion = webAuthnAssertionFromEvent(result.assertion);
+      if (hasChallenge && !assertion) {
+        throw new Error(
+          "getPublicKey: challenge was supplied but assertion fields missing",
+        );
+      }
+      return assertion ? { ...publicKeyData, assertion } : publicKeyData;
     });
   }
 
