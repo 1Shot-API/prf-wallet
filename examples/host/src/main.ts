@@ -171,9 +171,10 @@ async function main(): Promise<void> {
 
   proxy.ethereum.on("chainChanged", (next) => {
     try {
-      setChainSelectValue(normalizeChainIdHex(next));
+      const chainId = normalizeChainIdHex(String(next));
+      setChainSelectValue(chainId);
       syncUsdcUi();
-      setStatus(`Wallet switched to ${String(next)}`);
+      setStatus(`Wallet switched to ${chainId}`);
     } catch (error) {
       console.error("[ows-example-host] chainChanged handler failed", error);
     }
