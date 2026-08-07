@@ -14,6 +14,7 @@ export * from "./DisplayRequestId.js";
 export * from "./DomainString.js";
 export * from "./ED25519PublicKey.js";
 export * from "./ISO8601DateTime.js";
+export * from "./JSONString.js";
 export * from "./PresentationRequestUri.js";
 export * from "./UriString.js";
 export * from "./UnixTimestamp.js";

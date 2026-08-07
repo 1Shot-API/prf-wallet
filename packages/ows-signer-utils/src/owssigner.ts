@@ -1,4 +1,12 @@
-import { EVMAccountAddress, SolanaAccountAddress, AES256CipherText } from "@1shotapi/ows-types";
+import {
+  Base64UrlEncodedString,
+  ConversionUtils,
+  CredentialId,
+  EVMAccountAddress,
+  JSONString,
+  SolanaAccountAddress,
+  AES256CipherText,
+} from "@1shotapi/ows-types";
 import type {
   ED25519PublicKey,
   SECP256K1PublicKey,
@@ -18,7 +26,6 @@ import type {
   EncryptAES256Result,
   DecryptAES256Result,
   IOWSSigner,
-  CredentialId,
   WebAuthnAssertionFields,
 } from "@1shotapi/ows-types";
 import type { Hex } from "viem";
@@ -62,6 +69,9 @@ function withCeremonyDefaults(
   };
 }
 
+/**
+ * Decode Signing Layer wire assertion (base64url fields) into branded values.
+ */
 function webAuthnAssertionFromEvent(
   value: unknown,
 ): WebAuthnAssertionFields | undefined {
@@ -75,12 +85,32 @@ function webAuthnAssertionFromEvent(
   ) {
     return undefined;
   }
-  return {
-    authenticatorData: record.authenticatorData,
-    clientDataJSON: record.clientDataJSON,
-    signature: record.signature,
-    credentialId: record.credentialId,
-  };
+  try {
+    const authenticatorData = ConversionUtils.bytesToHex(
+      ConversionUtils.base64UrlToBytes(
+        Base64UrlEncodedString(record.authenticatorData),
+      ),
+    );
+    const signature = ConversionUtils.bytesToHex(
+      ConversionUtils.base64UrlToBytes(
+        Base64UrlEncodedString(record.signature),
+      ),
+    );
+    const clientDataUtf8 = new TextDecoder().decode(
+      ConversionUtils.base64UrlToBytes(
+        Base64UrlEncodedString(record.clientDataJSON),
+      ),
+    );
+    JSON.parse(clientDataUtf8);
+    return {
+      authenticatorData,
+      clientDataJSON: JSONString(clientDataUtf8),
+      signature,
+      credentialId: CredentialId(record.credentialId),
+    };
+  } catch {
+    return undefined;
+  }
 }
 
 export class OWSSigner implements IOWSSigner {

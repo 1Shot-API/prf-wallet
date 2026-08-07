@@ -1,6 +1,8 @@
 import type { COSEPublicKey } from "../primitives/COSEPublicKey.js";
 import { CredentialId } from "../primitives/CredentialId.js";
 import type { ED25519PublicKey } from "../primitives/ED25519PublicKey.js";
+import type { HexString } from "../primitives/HexString.js";
+import type { JSONString } from "../primitives/JSONString.js";
 import type { SECP256K1PublicKey } from "../primitives/SECP256K1PublicKey.js";
 
 export const API_VERSION = 1 as const;
@@ -157,14 +159,19 @@ export type PublicKeyData = {
 };
 
 /**
- * WebAuthn assertion fields from a signing-layer ceremony (base64url).
- * Branding pairs with an out-of-band `challengeId` for relayer auth.
+ * WebAuthn assertion fields after OWSSigner decodes the Signing Layer wire
+ * payload (iframe still sends base64url). Branding re-encodes for protocols
+ * that need base64url (e.g. SimpleWebAuthn / relayer).
+ *
+ * - `authenticatorData` / `signature` — raw bytes as {@link HexString}
+ * - `clientDataJSON` — UTF-8 JSON text as {@link JSONString} (parseable via
+ *   `JSON.parse` with no further decoding)
  */
 export type WebAuthnAssertionFields = {
-  authenticatorData: string;
-  clientDataJSON: string;
-  signature: string;
-  credentialId: string;
+  authenticatorData: HexString;
+  clientDataJSON: JSONString;
+  signature: HexString;
+  credentialId: CredentialId;
 };
 
 /** Terminal `BatchExecuted` event payload. */
