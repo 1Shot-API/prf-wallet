@@ -18,6 +18,7 @@ import {
   type DisplaySession,
 } from "./display/child-client.js";
 import { AnalyticsChildClient } from "./analytics/child-client.js";
+import { Eip1193EventChildClient } from "./eip1193/event-child-client.js";
 import { debugLog, setOwsWalletDebugFromOptions } from "./debug.js";
 import { CredentialWalletRegistrar } from "./credentials/wallet-registrar.js";
 import type {
@@ -50,6 +51,7 @@ export class OWSWallet {
   private handshakePromise: Promise<Postmate.ChildAPI> | null = null;
   private displayClient: DisplayChildClient | null = null;
   private analyticsClient: AnalyticsChildClient | null = null;
+  private eip1193EventClient: Eip1193EventChildClient | null = null;
   private displayReadyHandler: ((data: unknown) => void) | null = null;
   private hideReadyHandler: ((data: unknown) => void) | null = null;
   private readonly eip1193Handlers = new Map<string, Eip1193Handler>();
@@ -106,6 +108,24 @@ export class OWSWallet {
     },
   };
 
+  /**
+   * Branding → Host EIP-1193 provider notifications (`ows:eip1193`).
+   * Use for `chainChanged`, `accountsChanged`, etc. Host apps subscribe with
+   * `proxy.ethereum.on(event, listener)`.
+   */
+  readonly providerEvents = {
+    emit: (event: string, ...params: unknown[]): void => {
+      const client = this.getEip1193EventClient();
+      if (!client) {
+        debugLog("eip1193 event emit skipped; wallet not connected", {
+          event,
+        });
+        return;
+      }
+      client.emit(event, ...params);
+    },
+  };
+
   static async create(options?: OWSWalletOptions): Promise<OWSWallet> {
     return OWSWallet.prepare(options).start();
   }
@@ -128,6 +148,7 @@ export class OWSWallet {
     this.childApi = await this.handshakePromise;
     this.displayClient = new DisplayChildClient(this.childApi);
     this.analyticsClient = new AnalyticsChildClient(this.childApi);
+    this.eip1193EventClient = new Eip1193EventChildClient(this.childApi);
     this.displayReadyHandler = (data) => {
       this.displayClient?.handleDisplayReady(data);
     };
@@ -198,6 +219,7 @@ export class OWSWallet {
     this.displayClient?.destroy();
     this.displayClient = null;
     this.analyticsClient = null;
+    this.eip1193EventClient = null;
     this.displayReadyHandler = null;
     this.hideReadyHandler = null;
     this.childApi = null;
@@ -212,6 +234,17 @@ export class OWSWallet {
     }
     this.analyticsClient = new AnalyticsChildClient(this.childApi);
     return this.analyticsClient;
+  }
+
+  private getEip1193EventClient(): Eip1193EventChildClient | null {
+    if (this.eip1193EventClient) {
+      return this.eip1193EventClient;
+    }
+    if (!this.childApi) {
+      return null;
+    }
+    this.eip1193EventClient = new Eip1193EventChildClient(this.childApi);
+    return this.eip1193EventClient;
   }
 
   private assertNotConnected(): void {

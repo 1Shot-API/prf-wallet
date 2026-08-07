@@ -299,12 +299,13 @@ export function useWalletBoot({
     if (!rpc) return;
     const handleChainChanged = (next: EVMChainId) => {
       syncChainId(next);
+      walletRef.current?.providerEvents.emit("chainChanged", next);
     };
     rpc.events.on("chainChanged", handleChainChanged);
     return () => {
       rpc.events.off("chainChanged", handleChainChanged);
     };
-  }, [ready, rpcHelperRef]);
+  }, [ready, rpcHelperRef, walletRef]);
 
   return { ready, bootError };
 }

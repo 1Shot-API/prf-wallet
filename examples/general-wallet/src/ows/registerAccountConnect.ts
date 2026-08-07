@@ -55,6 +55,7 @@ export function registerAccountConnect(
       const evm = await signer.evm.getAccountAddress();
       const solana = await signer.solana.getAccountAddress();
       options.storage.saveCachedAddresses(evm, solana);
+      wallet.providerEvents.emit("accountsChanged", [evm]);
       return [evm];
     } finally {
       await display.hide();
