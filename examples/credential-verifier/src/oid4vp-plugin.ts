@@ -21,10 +21,10 @@ type StoredRequest = {
   response_mode: string;
 };
 
-let encryptionKeys: {
+let encryptionKeysPromise: Promise<{
   publicJwk: JsonWebKey;
   privateJwk: JsonWebKey;
-} | null = null;
+}> | null = null;
 
 const lastResponses: StoredResponse[] = [];
 let lastRequest: StoredRequest | null = null;
@@ -32,11 +32,14 @@ let lastRequest: StoredRequest | null = null;
 /** Demo endpoints only — reject oversized POSTs before buffering. */
 const MAX_BODY_BYTES = 1_048_576;
 
-async function ensureKeys() {
-  if (!encryptionKeys) {
-    encryptionKeys = await generateVerifierEncryptionKeyPair();
-  }
-  return encryptionKeys;
+function ensureKeys() {
+  encryptionKeysPromise ??= generateVerifierEncryptionKeyPair().catch(
+    (error: unknown) => {
+      encryptionKeysPromise = null;
+      throw error;
+    },
+  );
+  return encryptionKeysPromise;
 }
 
 function readBody(req: IncomingMessage): Promise<Record<string, unknown>> {
