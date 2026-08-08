@@ -1,5 +1,11 @@
 # @1shotapi/ows-oid4
 
+## 0.4.0
+
+### Minor Changes
+
+- ebc03aa: Refactor CredentialsHelper to SignHelper-style branding ownership: `approveAndAcceptOffer` / `approveAndPresent`, `release()` instead of `hide()`, and drop helper-level `ensureReady` / boolean approval hooks.
+
 ## 0.3.0
 
 ### Minor Changes
