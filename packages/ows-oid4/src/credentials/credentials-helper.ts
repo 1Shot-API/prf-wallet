@@ -2,7 +2,6 @@ import {
   CredentialFormatId,
   CredentialTypeName,
   HexString,
-  OwsUserRejectedError,
   NoopCredentialStatusValidator,
   ProofUtils,
   CredentialCryptoUtils,
@@ -33,6 +32,8 @@ import {
 
 export type CredentialsHelperDisplaySession = {
   hide(): Promise<void>;
+  /** Prefer over `hide` when nested host show / RPC should keep the panel open. */
+  release?(): void;
 };
 
 export type CredentialsHelperWallet = {
@@ -44,27 +45,39 @@ export type CredentialsHelperWallet = {
   };
 };
 
+/** Branding consent + issue (PoP / requestCredential / store). */
+export type ApproveAndAcceptOfferRequest = CredentialOfferApprovalRequest & {
+  offer: CredentialOffer;
+  metadata: IssuerMetadata;
+};
+
+/** Branding consent + present (PoP / buildPresentation). */
+export type ApproveAndPresentRequest = CredentialPresentationApprovalRequest & {
+  definition: PresentationDefinition;
+  match: CredentialSummary;
+  credential: StoredCredential;
+};
+
 export type CredentialsHelperOptions = {
   repository: ICredentialRepository;
   oid4vci: IOid4vciClient;
   oid4vp: IOid4vpClient;
   trust: IIssuerTrustRegistry;
   status?: ICredentialStatusValidator;
-  holderSigner?: IHolderSigner | (() => Promise<IHolderSigner>);
   /**
-   * Resolve OID4VCI C-nonce for proof JWTs. Used when the OID4 client does not
-   * implement `prepareCredentialRequest` (or returns no `cNonce`).
+   * Branding owns setup, consent UI, PoP, OID4 request, and vault store.
+   * Helper opens display, then calls this; session is released afterward.
    */
-  getProofNonce?: (metadata: IssuerMetadata) => string | Promise<string>;
-  /** Optional wallet attestation for issuance / presentation profiles. */
-  attestationProvider?: IWalletAttestationProvider;
-  ensureReady?: () => Promise<void>;
-  requestCredentialOfferApproval?: (
-    request: CredentialOfferApprovalRequest,
-  ) => Promise<boolean>;
-  requestCredentialPresentationApproval?: (
-    request: CredentialPresentationApprovalRequest,
-  ) => Promise<boolean>;
+  approveAndAcceptOffer: (
+    request: ApproveAndAcceptOfferRequest,
+  ) => Promise<CredentialReceipt>;
+  /**
+   * Branding owns setup (if needed), consent UI, PoP, and presentation build.
+   * Helper opens display with a loaded credential, then calls this.
+   */
+  approveAndPresent: (
+    request: ApproveAndPresentRequest,
+  ) => Promise<PresentationResult>;
   /**
    * When true (default), re-check wallet trust on present after host
    * `acceptedIssuers` filtering.
@@ -73,9 +86,9 @@ export type CredentialsHelperOptions = {
 };
 
 /**
- * Coordinates credential accept/present against branding-owned repository,
- * trust, status, OID4 clients, and holder signing. Consent always runs before
- * PoP / requestCredential. Status checks fail closed on non-active.
+ * Thin OID4 adapter: resolve offer/request, trust/match/status, request display,
+ * call branding `approveAnd*` handlers. Setup, consent, and PoP ceremonies belong
+ * inside those branding callbacks — not on this helper (mirrors SignHelper).
  */
 export class CredentialsHelper {
   readonly handlers: OpenWalletCredentialProvider;
@@ -85,7 +98,6 @@ export class CredentialsHelper {
 
   constructor(
     private readonly wallet: CredentialsHelperWallet,
-    private readonly signer: IOWSSigner,
     private readonly options: CredentialsHelperOptions,
   ) {
     this.status = options.status ?? new NoopCredentialStatusValidator();
@@ -102,47 +114,6 @@ export class CredentialsHelper {
   /** Register handlers on `wallet.credentials`. */
   register(): void {
     this.wallet.credentials.register(this.handlers);
-  }
-
-  private async resolveHolderSigner(): Promise<IHolderSigner> {
-    if (this.options.holderSigner) {
-      return typeof this.options.holderSigner === "function"
-        ? this.options.holderSigner()
-        : this.options.holderSigner;
-    }
-
-    return CredentialCryptoUtils.createOwsEd25519HolderSigner({
-      getEd25519PublicKeyHex: async () => {
-        const cached = this.signer.getLastPublicKeyData();
-        if (cached?.ed25519PublicKey) {
-          return cached.ed25519PublicKey;
-        }
-        const keys = await this.signer.getPublicKey({
-          credentialId: this.signer.getCredentialId(),
-        });
-        return keys.ed25519PublicKey;
-      },
-      signDigest: async (digests) => {
-        const results = await this.signer.signDigest(
-          digests.map((item) => ({
-            digestData: HexString(item.digestData),
-            scheme: item.scheme ?? "ed25519",
-          })),
-        );
-        return results.map((result) => ({
-          signature: HexString(result.signature),
-        }));
-      },
-    });
-  }
-
-  private async assertActive(credential: StoredCredential): Promise<void> {
-    const check = await this.status.checkStatus(credential);
-    if (check.status !== "active") {
-      throw new Error(
-        `Credential status is ${check.status}${check.details ? `: ${check.details}` : ""}`,
-      );
-    }
   }
 
   async acceptOffer(input: CredentialOfferInput): Promise<CredentialReceipt> {
@@ -164,64 +135,14 @@ export class CredentialsHelper {
       throw new Error(`Untrusted issuer: ${offer.credentialIssuer}`);
     }
 
-    // Unlock / first-run setup before opening the offer flyout so nested
-    // setup display cannot tear down the consent session.
-    await this.options.ensureReady?.();
-
-    const display = await this.wallet.requestDisplay();
-    try {
-      const approved = await this.requestOfferApproval(offer, metadata);
-      if (!approved) {
-        throw new OwsUserRejectedError("User rejected credential offer");
-      }
-
-      const holderSigner = await this.resolveHolderSigner();
-      const holderPublicKeyJwk = await holderSigner.publicKeyJwk();
-
-      const prepared = this.options.oid4vci.prepareCredentialRequest
-        ? await this.options.oid4vci.prepareCredentialRequest(offer, metadata)
-        : undefined;
-
-      const nonce =
-        prepared?.cNonce ??
-        (this.options.getProofNonce
-          ? await this.options.getProofNonce(metadata)
-          : undefined);
-      if (!nonce) {
-        throw new Error(
-          "OID4VCI C-nonce required (prepareCredentialRequest or getProofNonce)",
-        );
-      }
-
-      const walletAttestationJwt = this.options.attestationProvider
-        ? await this.options.attestationProvider.createAttestation({
-            audience: metadata.credentialIssuer,
-            nonce,
-          })
-        : undefined;
-
-      const proofJwt = await ProofUtils.buildOid4vciProofJwt({
-        holderSigner,
-        audience: metadata.credentialIssuer,
-        nonce,
-      });
-      const stored = await this.options.oid4vci.requestCredential(offer, metadata, {
-        holderPublicKeyJwk,
-        proof: { proof_type: "jwt", jwt: proofJwt },
-        nonce,
-        walletAttestationJwt,
-      });
-      await this.assertActive(stored);
-      await this.options.repository.store(stored);
-
-      return {
-        credentialId: stored.credentialId,
-        format: stored.format,
-        type: stored.type,
-      };
-    } finally {
-      await display.hide();
-    }
+    const approval = buildOfferApprovalRequest(offer, metadata);
+    return this.withDisplay(() =>
+      this.options.approveAndAcceptOffer({
+        ...approval,
+        offer,
+        metadata,
+      }),
+    );
   }
 
   async present(input: PresentationRequestInput): Promise<PresentationResult> {
@@ -233,11 +154,11 @@ export class CredentialsHelper {
       throw new Error("requestUri or request is required");
     }
 
-    let summaries = await this.options.repository.list();
-    // Empty cache (e.g. new top-level origin) — unlock / recover before match.
+    const summaries = await this.options.repository.list();
     if (summaries.length === 0) {
-      await this.options.ensureReady?.();
-      summaries = await this.options.repository.list();
+      throw new Error(
+        "No credentials in wallet (warm the local vault before present)",
+      );
     }
 
     let matches = await this.options.oid4vp.matchCredentials(
@@ -265,33 +186,21 @@ export class CredentialsHelper {
     }
 
     const match = matches[0]!;
-    const display = await this.wallet.requestDisplay();
-    try {
-      const approved = await this.requestPresentationApproval(definition, match);
-      if (!approved) {
-        throw new OwsUserRejectedError("User rejected credential presentation");
-      }
-
-      await this.options.ensureReady?.();
-
-      const credential = await this.options.repository.get(match.credentialId);
-      if (!credential) {
-        throw new Error("Credential not found");
-      }
-
-      await this.assertActive(credential);
-
-      const holderSigner = await this.resolveHolderSigner();
-      const authorizationRequest =
-        this.options.oid4vp.getAuthorizationRequest?.(definition.id);
-      return this.options.oid4vp.buildPresentation(credential, definition, {
-        holderSigner,
-        attestationProvider: this.options.attestationProvider,
-        authorizationRequest,
-      });
-    } finally {
-      await display.hide();
+    const credential = await this.options.repository.get(match.credentialId);
+    if (!credential) {
+      throw new Error("Credential not found");
     }
+    await this.assertActive(credential);
+
+    const approval = buildPresentationApprovalRequest(definition, match);
+    return this.withDisplay(() =>
+      this.options.approveAndPresent({
+        ...approval,
+        definition,
+        match,
+        credential,
+      }),
+    );
   }
 
   async list(filter?: CredentialFilter): Promise<CredentialSummary[]> {
@@ -302,39 +211,33 @@ export class CredentialsHelper {
     await this.options.repository.delete(credentialId);
   }
 
-  private async requestOfferApproval(
-    offer: CredentialOffer,
-    metadata: IssuerMetadata,
-  ): Promise<boolean> {
-    if (!this.options.requestCredentialOfferApproval) {
-      return true;
+  private async assertActive(credential: StoredCredential): Promise<void> {
+    const check = await this.status.checkStatus(credential);
+    if (check.status !== "active") {
+      throw new Error(
+        `Credential status is ${check.status}${check.details ? `: ${check.details}` : ""}`,
+      );
     }
-    return this.options.requestCredentialOfferApproval(
-      buildOfferApprovalRequest(offer, metadata),
-    );
   }
 
-  private async requestPresentationApproval(
-    definition: PresentationDefinition,
-    match: CredentialSummary,
-  ): Promise<boolean> {
-    if (!this.options.requestCredentialPresentationApproval) {
-      return true;
+  private async withDisplay<T>(run: () => Promise<T>): Promise<T> {
+    const display = await this.wallet.requestDisplay({});
+    try {
+      return await run();
+    } finally {
+      // Prefer release over hide so host showWallet / in-flight RPC can keep
+      // the flyout visible (same policy as SignHelper).
+      if ("release" in display && typeof display.release === "function") {
+        display.release();
+      } else {
+        await display.hide();
+      }
     }
-    return this.options.requestCredentialPresentationApproval({
-      verifierName: definition.verifier.name,
-      verifierId: definition.verifier.id,
-      requestedClaims: definition.requestedClaims,
-      credentialType:
-        match.type.find((t) => t !== CredentialTypeName("VerifiableCredential")) ??
-        match.type[0] ??
-        CredentialTypeName("Credential"),
-      credentialIssuer: match.issuer,
-    });
   }
 }
 
-function buildOfferApprovalRequest(
+/** Build the consent UI payload for a credential offer. */
+export function buildOfferApprovalRequest(
   offer: CredentialOffer,
   metadata: IssuerMetadata,
 ): CredentialOfferApprovalRequest {
@@ -350,6 +253,163 @@ function buildOfferApprovalRequest(
       };
     }),
   };
+}
+
+/** Build the consent UI payload for a presentation request. */
+export function buildPresentationApprovalRequest(
+  definition: PresentationDefinition,
+  match: CredentialSummary,
+): CredentialPresentationApprovalRequest {
+  return {
+    verifierName: definition.verifier.name,
+    verifierId: definition.verifier.id,
+    requestedClaims: definition.requestedClaims,
+    credentialType:
+      match.type.find((t) => t !== CredentialTypeName("VerifiableCredential")) ??
+      match.type[0] ??
+      CredentialTypeName("Credential"),
+    credentialIssuer: match.issuer,
+  };
+}
+
+/**
+ * Default OWS Ed25519 holder signer bridged to a Signing Layer instance.
+ * Branding `approveAnd*` callbacks use this for PoP / KB JWT.
+ */
+export function createCredentialsHolderSigner(
+  signer: IOWSSigner,
+  holderSigner?: IHolderSigner | (() => Promise<IHolderSigner>),
+): () => Promise<IHolderSigner> {
+  return async () => {
+    if (holderSigner) {
+      return typeof holderSigner === "function"
+        ? holderSigner()
+        : holderSigner;
+    }
+
+    return CredentialCryptoUtils.createOwsEd25519HolderSigner({
+      getEd25519PublicKeyHex: async () => {
+        const cached = signer.getLastPublicKeyData();
+        if (cached?.ed25519PublicKey) {
+          return cached.ed25519PublicKey;
+        }
+        const keys = await signer.getPublicKey({
+          credentialId: signer.getCredentialId(),
+        });
+        return keys.ed25519PublicKey;
+      },
+      signDigest: async (digests) => {
+        const results = await signer.signDigest(
+          digests.map((item) => ({
+            digestData: HexString(item.digestData),
+            scheme: item.scheme ?? "ed25519",
+          })),
+        );
+        return results.map((result) => ({
+          signature: HexString(result.signature),
+        }));
+      },
+    });
+  };
+}
+
+/**
+ * Issue a credential after branding consent: prepare nonce, PoP JWT,
+ * requestCredential, assert status, store. Call from `approveAndAcceptOffer`.
+ */
+export async function issueCredentialAfterApproval(options: {
+  offer: CredentialOffer;
+  metadata: IssuerMetadata;
+  oid4vci: IOid4vciClient;
+  repository: ICredentialRepository;
+  resolveHolderSigner: () => Promise<IHolderSigner>;
+  getProofNonce?: (metadata: IssuerMetadata) => string | Promise<string>;
+  attestationProvider?: IWalletAttestationProvider;
+  status?: ICredentialStatusValidator;
+}): Promise<CredentialReceipt> {
+  const status = options.status ?? new NoopCredentialStatusValidator();
+  const holderSigner = await options.resolveHolderSigner();
+  const holderPublicKeyJwk = await holderSigner.publicKeyJwk();
+
+  const prepared = options.oid4vci.prepareCredentialRequest
+    ? await options.oid4vci.prepareCredentialRequest(
+        options.offer,
+        options.metadata,
+      )
+    : undefined;
+
+  const nonce =
+    prepared?.cNonce ??
+    (options.getProofNonce
+      ? await options.getProofNonce(options.metadata)
+      : undefined);
+  if (!nonce) {
+    throw new Error(
+      "OID4VCI C-nonce required (prepareCredentialRequest or getProofNonce)",
+    );
+  }
+
+  const walletAttestationJwt = options.attestationProvider
+    ? await options.attestationProvider.createAttestation({
+        audience: options.metadata.credentialIssuer,
+        nonce,
+      })
+    : undefined;
+
+  const proofJwt = await ProofUtils.buildOid4vciProofJwt({
+    holderSigner,
+    audience: options.metadata.credentialIssuer,
+    nonce,
+  });
+  const stored = await options.oid4vci.requestCredential(
+    options.offer,
+    options.metadata,
+    {
+      holderPublicKeyJwk,
+      proof: { proof_type: "jwt", jwt: proofJwt },
+      nonce,
+      walletAttestationJwt,
+    },
+  );
+
+  const check = await status.checkStatus(stored);
+  if (check.status !== "active") {
+    throw new Error(
+      `Credential status is ${check.status}${check.details ? `: ${check.details}` : ""}`,
+    );
+  }
+  await options.repository.store(stored);
+
+  return {
+    credentialId: stored.credentialId,
+    format: stored.format,
+    type: stored.type,
+  };
+}
+
+/**
+ * Build a presentation after branding consent. Call from `approveAndPresent`.
+ */
+export async function presentCredentialAfterApproval(options: {
+  definition: PresentationDefinition;
+  credential: StoredCredential;
+  oid4vp: IOid4vpClient;
+  resolveHolderSigner: () => Promise<IHolderSigner>;
+  attestationProvider?: IWalletAttestationProvider;
+}): Promise<PresentationResult> {
+  const holderSigner = await options.resolveHolderSigner();
+  const authorizationRequest = options.oid4vp.getAuthorizationRequest?.(
+    options.definition.id,
+  );
+  return options.oid4vp.buildPresentation(
+    options.credential,
+    options.definition,
+    {
+      holderSigner,
+      attestationProvider: options.attestationProvider,
+      authorizationRequest,
+    },
+  );
 }
 
 function formatIssuerName(issuer: CredentialOffer["credentialIssuer"]): string {

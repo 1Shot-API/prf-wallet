@@ -226,10 +226,12 @@ export function useWalletBoot({
         trust: issuerTrust,
         attestationProvider,
         ensureReady: () => runEnsureReady(),
+        ensureOnboarded: () => runEnsureOnboarded(),
+        onAuthenticated: () => runOnAuthenticated(),
         requestCredentialOfferApproval: (
           request: CredentialOfferApprovalRequest,
         ) =>
-          ask<boolean>(({ id, resolve }) => ({
+          askModal<boolean>(({ id, resolve }) => ({
             id,
             kind: "credentialOffer",
             request,
@@ -238,7 +240,7 @@ export function useWalletBoot({
         requestCredentialPresentationApproval: (
           request: CredentialPresentationApprovalRequest,
         ) =>
-          ask<boolean>(({ id, resolve }) => ({
+          askModal<boolean>(({ id, resolve }) => ({
             id,
             kind: "credentialPresentation",
             request,

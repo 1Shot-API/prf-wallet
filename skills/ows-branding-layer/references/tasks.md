@@ -160,22 +160,60 @@ Passkey Confirm lives in Signing (required for mobile WebAuthn focus). Branding-
 
 ## 7. Credentials (optional)
 
-Prefer `CredentialsHelper` from `@1shotapi/ows-oid4` (not exported from `ows-wallet-utils`):
+Prefer `CredentialsHelper` from `@1shotapi/ows-oid4` (not exported from `ows-wallet-utils`). Like `SignHelper`, it is a **thin adapter**: resolve offer/request, trust/match, `requestDisplay`, call branding `approveAnd*`, then **`release()`** (not `hide()`).
 
 ```typescript
-new CredentialsHelper(wallet, signer, {
+import {
+  CredentialsHelper,
+  createCredentialsHolderSigner,
+  issueCredentialAfterApproval,
+  presentCredentialAfterApproval,
+} from "@1shotapi/ows-oid4";
+
+const resolveHolderSigner = createCredentialsHolderSigner(signer);
+
+new CredentialsHelper(wallet, {
   repository,
   oid4vci,
   oid4vp,
   trust,
-  ensureReady,
-  requestCredentialOfferApproval,
-  requestCredentialPresentationApproval,
-  // holderSigner optional — defaults via CredentialCryptoUtils.createOwsEd25519HolderSigner
+  approveAndAcceptOffer: async (request) => {
+    await ensureOnboarded(); // setup-only; PoP authenticates
+    if (!(await requestCredentialOfferApproval(request))) {
+      throw new OwsUserRejectedError("User rejected credential offer");
+    }
+    const receipt = await issueCredentialAfterApproval({
+      offer: request.offer,
+      metadata: request.metadata,
+      oid4vci,
+      repository,
+      resolveHolderSigner,
+      getProofNonce,
+      attestationProvider,
+    });
+    await onAuthenticated();
+    return receipt;
+  },
+  approveAndPresent: async (request) => {
+    if (!(await requestCredentialPresentationApproval(request))) {
+      throw new OwsUserRejectedError("User rejected credential presentation");
+    }
+    const result = await presentCredentialAfterApproval({
+      definition: request.definition,
+      credential: request.credential,
+      oid4vp,
+      resolveHolderSigner,
+      attestationProvider,
+    });
+    await onAuthenticated();
+    return result;
+  },
 }).register();
 ```
 
-Constructor arg order: **`(wallet, signer, options)`** — opposite of `SignHelper(signer, wallet, …)`.
+Constructor: **`(wallet, options)`** — signer is only needed for `createCredentialsHolderSigner` / PoP inside branding hooks.
+
+Do **not** put full `ensureReady` / unlock on helper options. Warm vault + known credential → **one** passkey for PoP. Empty vault before `present` → unlock/recover in a registration gate (see `ensureCredentialsReadable` in embedded-wallet), then consent + PoP.
 
 Reference stack:
 
@@ -184,6 +222,6 @@ Reference stack:
 - Demo repositories / trust / HTTP clients fixtures: `examples/shared` (alias `@ows-shared` in the monorepo — not published)
 - Wire methods: `credentials.acceptOffer` / `present` / `list` / `delete`
 
-Do **not** call `PresentationUtils` / low-level SD-JWT helpers unless you bypass `CredentialsHelper`. Holder KB JWT lives in `CredentialCryptoUtils.createOwsEd25519HolderSigner` (`@1shotapi/ows-types`).
+Do **not** call `PresentationUtils` / low-level SD-JWT helpers unless you bypass `CredentialsHelper`. Holder KB JWT lives in `createCredentialsHolderSigner` / `CredentialCryptoUtils` (`@1shotapi/ows-types`).
 
-Host demos: `examples/credential-issuer`, `examples/credential-verifier` (use `ows-provider`; `allowLocalAccess` is host-only).
+Host demos: `examples/credential-issuer`, `examples/credential-verifier` (use `ows-provider`; `allowLocalAccess` is host-only). Do not call `proxy.showWallet()` before issue/present — `CredentialsHelper` `requestDisplay` opens the host panel.

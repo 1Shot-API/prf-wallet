@@ -81,7 +81,7 @@ Branding Layer Progress:
 - [ ] 4. Host RPC — EIP-1193 (RpcHelper + account connect) and/or custom registerRpc
 - [ ] 5. Signing consent — SignHelper + app approval UI
 - [ ] 6. Recovery — create/restore via `OWSSigner` auto ceremony panel (no iframe reparent)
-- [ ] 7. Credentials — CredentialsHelper.register + consent UI (optional)
+- [ ] 7. Credentials — CredentialsHelper + branding `approveAndAcceptOffer` / `approveAndPresent` (optional)
 - [ ] 8. EIP-7715 permissions — optional RpcHelper `executionPermissions` hooks (UI in your app; see embedded-wallet)
 ```
 
@@ -124,8 +124,8 @@ for (const [method, handler] of Object.entries(signHelper.handlers)) {
 }
 
 // Optional:
-// new CredentialsHelper(wallet, signer, { … }).register();
-// Note arg order: CredentialsHelper(wallet, signer) vs SignHelper(signer, wallet)
+// new CredentialsHelper(wallet, { approveAndAcceptOffer, approveAndPresent, … }).register();
+// Note: CredentialsHelper(wallet, options); SignHelper(signer, wallet, options)
 
 void wallet.start(); // registers Model immediately — do not await nested signer first
 void signerPromise; // background load; UI can paint
