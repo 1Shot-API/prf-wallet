@@ -8,6 +8,7 @@ export type {
 } from "./ows-wallet.js";
 
 export { AnalyticsChildClient } from "./analytics/child-client.js";
+export { Eip1193EventChildClient } from "./eip1193/event-child-client.js";
 
 export { EIP1193_PARAM_SCHEMAS, getEip1193ParamSchema } from "./eip1193/schemas.js";
 export {

@@ -16,16 +16,39 @@ await proxy.credentials.delete(input);
 Branding registers handlers on `wallet.credentials` (prefer `CredentialsHelper` from `@1shotapi/ows-oid4`). Handlers must be registered **before** `wallet.start()`:
 
 ```ts
-import { CredentialsHelper } from "@1shotapi/ows-oid4";
+import {
+  CredentialsHelper,
+  createCredentialsHolderSigner,
+  issueCredentialAfterApproval,
+  presentCredentialAfterApproval,
+} from "@1shotapi/ows-oid4";
 
-const helper = new CredentialsHelper(wallet, signer, {
+const resolveHolderSigner = createCredentialsHolderSigner(signer);
+
+const helper = new CredentialsHelper(wallet, {
   repository,
   oid4vci,
   oid4vp,
   trust,
-  getProofNonce: async () => nonceFromIssuer,
-  requestCredentialOfferApproval,
-  requestCredentialPresentationApproval,
+  approveAndAcceptOffer: async (request) => {
+    // setup / consent UI / passkey — branding-owned
+    return issueCredentialAfterApproval({
+      offer: request.offer,
+      metadata: request.metadata,
+      oid4vci,
+      repository,
+      resolveHolderSigner,
+      getProofNonce: async () => nonceFromIssuer,
+    });
+  },
+  approveAndPresent: async (request) => {
+    return presentCredentialAfterApproval({
+      definition: request.definition,
+      credential: request.credential,
+      oid4vp,
+      resolveHolderSigner,
+    });
+  },
 });
 helper.register();
 ```

@@ -8,6 +8,7 @@ export {
 export {
   EIP1193Provider,
 } from "./eip1193/provider.js";
+export { Eip1193EventHostHandler } from "./eip1193/event-host-handler.js";
 
 export { CredentialHostClient } from "./credentials/host-client.js";
 export {

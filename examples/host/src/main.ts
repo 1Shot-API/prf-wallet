@@ -169,6 +169,21 @@ async function main(): Promise<void> {
     console.info("[ows-example-host] analytics", event);
   });
 
+  proxy.ethereum.on("chainChanged", (next) => {
+    try {
+      const chainId = normalizeChainIdHex(String(next));
+      setChainSelectValue(chainId);
+      syncUsdcUi();
+      setStatus(`Wallet switched to ${chainId}`);
+    } catch (error) {
+      console.error("[ows-example-host] chainChanged handler failed", error);
+    }
+  });
+
+  proxy.ethereum.on("accountsChanged", (accounts) => {
+    console.info("[ows-example-host] accountsChanged", accounts);
+  });
+
   try {
     const chainId = await refreshChainFromWallet(proxy);
     setStatus(`Wallet connected on ${chainId}. Enter a message and click Sign.`);

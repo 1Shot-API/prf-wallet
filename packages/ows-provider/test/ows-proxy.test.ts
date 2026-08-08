@@ -96,4 +96,14 @@ describe("EIP1193Provider", () => {
     const accounts = await provider.request({ method: "eth_requestAccounts" });
     assert.equal(accounts[0], address);
   });
+
+  it("emits provider events to on() listeners", () => {
+    const provider = new EIP1193Provider(async () => null);
+    const seen: unknown[] = [];
+    provider.on("chainChanged", (chainId) => {
+      seen.push(chainId);
+    });
+    provider.emit("chainChanged", "0x2105");
+    assert.deepEqual(seen, ["0x2105"]);
+  });
 });

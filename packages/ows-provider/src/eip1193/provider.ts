@@ -40,6 +40,24 @@ export class EIP1193Provider {
   removeListener(event: string, listener: (...args: unknown[]) => void): void {
     this.listeners.get(event)?.delete(listener);
   }
+
+  /**
+   * Notify `on` listeners. Used when Branding pushes `ows:eip1193`
+   * (`chainChanged`, `accountsChanged`, …).
+   */
+  emit(event: string, ...params: unknown[]): void {
+    const set = this.listeners.get(event);
+    if (!set || set.size === 0) {
+      return;
+    }
+    for (const listener of set) {
+      try {
+        listener(...params);
+      } catch {
+        // Host listener errors must not break the provider.
+      }
+    }
+  }
 }
 
 function normalizeEip1193Params(

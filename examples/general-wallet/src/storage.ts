@@ -57,6 +57,7 @@ export function saveCachedAddresses(
 export function clearWalletStorage(): void {
   localStorage.removeItem(WALLET_CREATED_KEY);
   localStorage.removeItem(CREDENTIAL_ID_KEY);
+  localStorage.removeItem(BACKUP_KEY);
   localStorage.removeItem(EVM_ADDRESS_KEY);
   localStorage.removeItem(SOLANA_ADDRESS_KEY);
 }

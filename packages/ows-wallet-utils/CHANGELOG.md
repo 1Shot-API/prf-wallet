@@ -1,5 +1,13 @@
 # @1shotapi/ows-wallet-utils
 
+## 0.4.1
+
+### Patch Changes
+
+- 36fa253: Wire Branding→Host EIP-1193 notifications (`chainChanged`, `accountsChanged`) over Postmate so hosts stay in sync when the wallet changes chain or accounts.
+- Updated dependencies [36fa253]
+  - @1shotapi/ows-types@0.5.1
+
 ## 0.4.0
 
 ### Minor Changes

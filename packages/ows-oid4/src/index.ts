@@ -18,6 +18,13 @@ export {
 } from "./sd-jwt-stored.js";
 export {
   CredentialsHelper,
+  buildOfferApprovalRequest,
+  buildPresentationApprovalRequest,
+  createCredentialsHolderSigner,
+  issueCredentialAfterApproval,
+  presentCredentialAfterApproval,
+  type ApproveAndAcceptOfferRequest,
+  type ApproveAndPresentRequest,
   type CredentialsHelperOptions,
   type CredentialsHelperWallet,
   type CredentialsHelperDisplaySession,

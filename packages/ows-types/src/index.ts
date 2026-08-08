@@ -58,6 +58,13 @@ export type {
   OWSAnalyticsEventOptions,
 } from "./protocol/analytics.js";
 
+export {
+  OWS_EIP1193_EVENT,
+  deserializeEip1193EventNotification,
+} from "./protocol/eip1193-events.js";
+
+export type { IOWSEip1193EventNotification } from "./protocol/eip1193-events.js";
+
 export type {
   RpcErrorPayload,
   RpcRequestEnvelope,

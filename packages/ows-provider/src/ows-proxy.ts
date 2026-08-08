@@ -13,6 +13,7 @@ import {
 import { CredentialHostClient } from "./credentials/host-client.js";
 import { AnalyticsHostHandler } from "./analytics/host-handler.js";
 import type { AnalyticsListener } from "./analytics/host-handler.js";
+import { Eip1193EventHostHandler } from "./eip1193/event-host-handler.js";
 
 export type OWSProxyOptions = {
   /** iframe `name` attribute. Default: `ows-wallet` */
@@ -101,6 +102,7 @@ export class OWSProxy {
   private readonly rpcClient: RpcHostClient;
   private readonly displayHandler: DisplayHostHandler;
   private readonly analyticsHandler: AnalyticsHostHandler;
+  private readonly eip1193EventHandler: Eip1193EventHostHandler;
   private readonly parent: Postmate.ParentAPI;
 
   private constructor(
@@ -116,6 +118,10 @@ export class OWSProxy {
     this.credentials = new CredentialHostClient(rpcClient);
     this.ethereum = new EIP1193Provider((method, params) =>
       this.rpc(method, params),
+    );
+    this.eip1193EventHandler = new Eip1193EventHostHandler(
+      parent,
+      this.ethereum,
     );
     this.analytics = {
       on: this.analyticsHandler.on.bind(this.analyticsHandler),
@@ -206,6 +212,7 @@ export class OWSProxy {
   }
 
   destroy(): void {
+    this.eip1193EventHandler.destroy();
     this.analyticsHandler.destroy();
     this.displayHandler.destroy();
     this.rpcClient.destroy();
