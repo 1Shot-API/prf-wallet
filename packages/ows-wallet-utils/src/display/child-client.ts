@@ -82,8 +82,14 @@ export class DisplayChildClient {
       release: () => this.releaseSession(payload.displayId),
       hide: () => this.requestHide(payload.displayId),
     };
+    // Parallel requestDisplay races can acknowledge out of order — keep depth
+    // instead of resetting to 1 when overwriting the active session.
+    if (this.activeSession) {
+      this.displayDepth++;
+    } else {
+      this.displayDepth = 1;
+    }
     this.activeSession = session;
-    this.displayDepth = 1;
     pending.resolve(session);
   }
 

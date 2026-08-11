@@ -342,6 +342,9 @@ export class DisplayHostHandler {
       this.childDisplayId &&
       this.childDisplayId !== envelope.displayId
     ) {
+      // Stale hide from a superseded display session — still ack so branding
+      // does not hang forever waiting for hideReady (blocks Connect UX).
+      this.notifyHideReady(envelope.displayId);
       return;
     }
 
