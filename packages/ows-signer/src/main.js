@@ -2,6 +2,7 @@ import { handleRequest } from "./handlers.js";
 import {
   abandonCeremony,
   isValidNesting,
+  setCancelConfirmHook,
   setTrustedParentOrigin,
 } from "./state.js";
 import { cancelPendingCeremonyConfirm, initUi } from "./ui.js";
@@ -13,13 +14,14 @@ function bootstrap() {
     throw new Error("OWS signer root element missing");
   }
   initUi(root);
+  setCancelConfirmHook(cancelPendingCeremonyConfirm);
 
   if (!isValidNesting()) {
     console.error("[ows-signer] Must be embedded in a wallet iframe (double iframe).");
     return;
   }
 
-  window.addEventListener("message", async (event) => {
+  window.addEventListener("message", (event) => {
     if (!isValidParentMessage(event)) return;
 
     const data = event.data;
@@ -29,7 +31,9 @@ function bootstrap() {
       /** @type {{ kind?: unknown }} */ (data).kind === "cancel"
     ) {
       setTrustedParentOrigin(event.origin);
-      await abandonCeremony(cancelPendingCeremonyConfirm);
+      // Do not await — parent timeout must unlock immediately even if a prior
+      // handleRequest is still suspended on credentials.get.
+      void abandonCeremony(cancelPendingCeremonyConfirm);
       return;
     }
 
@@ -41,15 +45,18 @@ function bootstrap() {
       data
     );
 
-    // Drop a stuck Confirm wait (e.g. parent timed out) before starting anew.
-    await abandonCeremony(cancelPendingCeremonyConfirm);
-
-    await handleRequest(
-      method,
-      /** @type {Record<string, unknown>} */ (params),
-      correlationId,
-      targetOrigin,
-    );
+    void (async () => {
+      // Drop a stuck Confirm wait (e.g. parent timed out) before starting anew.
+      await abandonCeremony(cancelPendingCeremonyConfirm);
+      await handleRequest(
+        method,
+        /** @type {Record<string, unknown>} */ (params),
+        correlationId,
+        targetOrigin,
+      );
+    })().catch((error) => {
+      console.error("[ows-signer] request handler failed", error);
+    });
   });
 }
 

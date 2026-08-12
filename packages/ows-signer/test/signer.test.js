@@ -218,10 +218,6 @@ describe("ceremony lock", () => {
     );
 
     await Promise.resolve();
-    await assert.rejects(
-      () => withCeremony(async () => "nope"),
-      /ceremonyInProgress/,
-    );
 
     await abandonCeremony(() => {
       rejectWait(new Error("ceremonyCancelled"));
@@ -230,5 +226,26 @@ describe("ceremony lock", () => {
 
     const result = await withCeremony(async () => "ok");
     assert.equal(result, "ok");
+  });
+
+  it("abandonCeremony unlocks even if the ceremony never settles", async () => {
+    const { withCeremony, abandonCeremony } = await import("../src/state.js");
+
+    void withCeremony(() => new Promise(() => {}));
+    await Promise.resolve();
+
+    await abandonCeremony(() => {});
+    const result = await withCeremony(async () => "ok");
+    assert.equal(result, "ok");
+  });
+
+  it("withCeremony steals a stuck lock instead of throwing ceremonyInProgress", async () => {
+    const { withCeremony } = await import("../src/state.js");
+
+    void withCeremony(() => new Promise(() => {}));
+    await Promise.resolve();
+
+    const result = await withCeremony(async () => "stolen");
+    assert.equal(result, "stolen");
   });
 });

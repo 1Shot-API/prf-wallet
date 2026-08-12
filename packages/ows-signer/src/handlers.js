@@ -1096,6 +1096,13 @@ function handleError(error, correlationId, targetOrigin) {
     return;
   }
 
+  if (name === "AbortError" || message === "ceremonyCancelled") {
+    emitEvent(window.parent, targetOrigin, "SignDenied", correlationId, {
+      reason: "ceremonyCancelled",
+    });
+    return;
+  }
+
   if (name === "NotAllowedError" || message.includes("NotAllowed")) {
     emitEvent(window.parent, targetOrigin, "NotAllowed", correlationId, {
       reason: message || "notAllowed",
@@ -1105,7 +1112,7 @@ function handleError(error, correlationId, targetOrigin) {
 
   if (message === "ceremonyInProgress") {
     emitEvent(window.parent, targetOrigin, "InvalidRequest", correlationId, {
-      reason: "ceremonyInProgress",
+      reason: "A request is already pending.",
     });
     return;
   }

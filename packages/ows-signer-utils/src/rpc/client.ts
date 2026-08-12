@@ -69,6 +69,9 @@ export class SignerRpcClient {
     const timeoutMs = options.timeoutMs ?? this.defaultTimeoutMs;
 
     return new Promise<TData>((resolve, reject) => {
+      // Supersede any stuck Confirm / WebAuthn from a prior timed-out RPC.
+      this.postCancel();
+
       const timeoutId = setTimeout(() => {
         this.pending.delete(correlationId);
         this.postCancel();

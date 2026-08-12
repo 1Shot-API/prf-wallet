@@ -1,4 +1,4 @@
-import { getRpId } from "./state.js";
+import { getCeremonyAbortSignal, getRpId } from "./state.js";
 import { PRF_LABEL_SECP256K1 } from "./constants.js";
 import { bufferToBase64Url } from "./hex.js";
 import { debugLog, describePrfExtensionResults } from "./debug.js";
@@ -27,6 +27,7 @@ export async function createPasskeyCredential(name, options = {}) {
     ? Uint8Array.from(atob(options.userId), (c) => c.charCodeAt(0))
     : randomUserId();
   const displayName = options.userDisplayName ?? name;
+  const signal = getCeremonyAbortSignal();
 
   debugLog("createPasskeyCredential userActivation.isActive", {
     isActive: navigator.userActivation?.isActive ?? false,
@@ -41,7 +42,12 @@ export async function createPasskeyCredential(name, options = {}) {
         displayName,
       },
       challenge: crypto.getRandomValues(new Uint8Array(32)),
-      pubKeyCredParams: [{ type: "public-key", alg: -7 }],
+      // Chromium warns when ES256 (-7) is present without RS256 (-257).
+      // Prefer ES256 (PRF); RS256 is listed for authenticator compatibility.
+      pubKeyCredParams: [
+        { type: "public-key", alg: -7 },
+        { type: "public-key", alg: -257 },
+      ],
       authenticatorSelection: {
         residentKey: "required",
         requireResidentKey: true,
@@ -55,6 +61,7 @@ export async function createPasskeyCredential(name, options = {}) {
         },
       },
     },
+    ...(signal ? { signal } : {}),
   });
 
   if (!credential || !(credential instanceof PublicKeyCredential)) {
@@ -79,6 +86,7 @@ export async function getPasskeyAssertion(challenge, credentialId) {
         },
       ]
     : undefined;
+  const signal = getCeremonyAbortSignal();
 
   const credential = await navigator.credentials.get({
     publicKey: {
@@ -94,6 +102,7 @@ export async function getPasskeyAssertion(challenge, credentialId) {
         },
       },
     },
+    ...(signal ? { signal } : {}),
   });
 
   if (!credential || !(credential instanceof PublicKeyCredential)) {

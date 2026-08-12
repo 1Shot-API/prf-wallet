@@ -4,6 +4,9 @@ let recoveryPrivateKey = null;
 /** @type {Promise<unknown> | null} */
 let ceremonyPromise = null;
 
+/** @type {AbortController | null} */
+let ceremonyAbortController = null;
+
 /** @type {string | null} */
 let trustedParentOrigin = null;
 
@@ -71,14 +74,64 @@ export function clearRecoveryPrivateKey() {
 }
 
 /**
+ * AbortSignal for the active ceremony (WebAuthn `credentials.get/create`).
+ * @returns {AbortSignal | undefined}
+ */
+export function getCeremonyAbortSignal() {
+  return ceremonyAbortController?.signal;
+}
+
+/** @type {(() => void) | null} */
+let cancelConfirmHook = null;
+
+/**
+ * Branding/UI registers the Confirm-cancel hook so steal / abandon can dismiss
+ * the panel without a circular import on `ui.js`.
+ *
+ * @param {(() => void) | null} hook
+ */
+export function setCancelConfirmHook(hook) {
+  cancelConfirmHook = hook;
+}
+
+/**
+ * Force-drop the ceremony lock and abort in-flight WebAuthn.
+ * Safe to call when no ceremony is active.
+ */
+function forceUnlockCeremony() {
+  try {
+    cancelConfirmHook?.();
+  } catch {
+    // ignore
+  }
+  const abort = ceremonyAbortController;
+  const pending = ceremonyPromise;
+  ceremonyPromise = null;
+  ceremonyAbortController = null;
+  try {
+    abort?.abort();
+  } catch {
+    // ignore
+  }
+  if (pending) {
+    void pending.catch(() => {
+      // Prior ceremony was cancelled, aborted, or failed.
+    });
+  }
+}
+
+/**
  * @param {() => Promise<T>} fn
  * @returns {Promise<T>}
  * @template T
  */
 export async function withCeremony(fn) {
+  // Steal any leftover lock (e.g. hung credentials.get after parent timeout).
+  // Throwing ceremonyInProgress left Branding retries stuck after RPC timeout.
   if (ceremonyPromise) {
-    throw new Error("ceremonyInProgress");
+    forceUnlockCeremony();
   }
+  ceremonyAbortController = new AbortController();
   const promise = fn();
   ceremonyPromise = promise;
   try {
@@ -86,24 +139,27 @@ export async function withCeremony(fn) {
   } finally {
     if (ceremonyPromise === promise) {
       ceremonyPromise = null;
+      ceremonyAbortController = null;
     }
   }
 }
 
 /**
- * Cancel an open Confirm UI and wait for any in-flight ceremony lock to clear.
- * Used when the parent times out or starts a new RPC.
+ * Cancel Confirm UI, abort in-flight WebAuthn, and unlock the ceremony immediately.
+ * Used when the parent times out or starts a new RPC. Must not wait forever on
+ * hung `credentials.get` — that left Branding retries stuck with ceremonyInProgress.
  *
- * @param {() => void} cancelPendingConfirm
+ * @param {() => void} [_cancelPendingConfirm]
  */
-export async function abandonCeremony(cancelPendingConfirm) {
-  cancelPendingConfirm();
-  const pending = ceremonyPromise;
-  if (!pending) return;
-  try {
-    await pending;
-  } catch {
-    // Prior ceremony was cancelled or failed — lock clears in withCeremony finally.
+export async function abandonCeremony(_cancelPendingConfirm) {
+  // Prefer the registered hook (always current); keep the argument for callers.
+  forceUnlockCeremony();
+  if (typeof _cancelPendingConfirm === "function") {
+    try {
+      _cancelPendingConfirm();
+    } catch {
+      // ignore — hook already ran
+    }
   }
 }
 
