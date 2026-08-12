@@ -1,5 +1,13 @@
 # @1shotapi/ows-signer-utils
 
+## 0.5.1
+
+### Patch Changes
+
+- Clear stuck passkey ceremonies after timeout so a retry can start, and include RS256 alongside ES256 in WebAuthn create params.
+
+  `ows-signer` now steals a hung ceremony lock, aborts in-flight `credentials.get/create`, and treats cancel/Abort as SignDenied. `ows-signer-utils` posts cancel before each new signer RPC so branding retries do not hit “already pending.”
+
 ## 0.5.0
 
 ### Minor Changes
