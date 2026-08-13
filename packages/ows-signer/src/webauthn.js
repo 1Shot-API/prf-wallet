@@ -1,7 +1,11 @@
 import { getCeremonyAbortSignal, getRpId } from "./state.js";
 import { PRF_LABEL_SECP256K1 } from "./constants.js";
 import { bufferToBase64Url } from "./hex.js";
-import { debugLog, describePrfExtensionResults } from "./debug.js";
+import {
+  debugLog,
+  describeCeremonyEnvironment,
+  describePrfExtensionResults,
+} from "./debug.js";
 
 /**
  * @param {Uint8Array} [userId]
@@ -29,9 +33,7 @@ export async function createPasskeyCredential(name, options = {}) {
   const displayName = options.userDisplayName ?? name;
   const signal = getCeremonyAbortSignal();
 
-  debugLog("createPasskeyCredential userActivation.isActive", {
-    isActive: navigator.userActivation?.isActive ?? false,
-  });
+  debugLog("createPasskeyCredential start", describeCeremonyEnvironment());
 
   const credential = await navigator.credentials.create({
     publicKey: {
@@ -88,27 +90,46 @@ export async function getPasskeyAssertion(challenge, credentialId) {
     : undefined;
   const signal = getCeremonyAbortSignal();
 
-  const credential = await navigator.credentials.get({
-    publicKey: {
-      challenge: challenge ?? crypto.getRandomValues(new Uint8Array(32)),
-      rpId,
-      userVerification: "required",
-      allowCredentials,
-      extensions: {
-        prf: {
-          eval: {
-            first: PRF_LABEL_SECP256K1,
+  debugLog("getPasskeyAssertion start", {
+    ...describeCeremonyEnvironment(),
+    rpId,
+    hasChallenge: Boolean(challenge),
+    hasAllowCredentials: Boolean(allowCredentials),
+    credentialIdPrefix:
+      typeof credentialId === "string" ? credentialId.slice(0, 8) : null,
+  });
+
+  let credential;
+  try {
+    credential = await navigator.credentials.get({
+      publicKey: {
+        challenge: challenge ?? crypto.getRandomValues(new Uint8Array(32)),
+        rpId,
+        userVerification: "required",
+        allowCredentials,
+        extensions: {
+          prf: {
+            eval: {
+              first: PRF_LABEL_SECP256K1,
+            },
           },
         },
       },
-    },
-    ...(signal ? { signal } : {}),
-  });
+      ...(signal ? { signal } : {}),
+    });
+  } catch (error) {
+    debugLog("getPasskeyAssertion rejected", {
+      ...describeCeremonyEnvironment(),
+      name: error instanceof Error ? error.name : typeof error,
+      message: error instanceof Error ? error.message : String(error),
+    });
+    throw error;
+  }
 
   if (!credential || !(credential instanceof PublicKeyCredential)) {
     throw new Error("credentialGetFailed");
   }
-  debugLog("getPasskeyAssertion", describePrfExtensionResults(credential));
+  debugLog("getPasskeyAssertion ok", describePrfExtensionResults(credential));
   return credential;
 }
 

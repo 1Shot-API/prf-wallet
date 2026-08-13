@@ -1,4 +1,5 @@
 import { to0xHex } from "./hex.js";
+import { debugLog, describeCeremonyEnvironment } from "./debug.js";
 
 /** @type {HTMLElement | null} */
 let root = null;
@@ -223,6 +224,7 @@ export function promptCeremonyConfirm(fields, runOnConfirm) {
       try {
         // Start WebAuthn in the same turn as the click (no prior await).
         // Keep copy visible until the ceremony settles.
+        debugLog("ceremony Confirm click", describeCeremonyEnvironment());
         Promise.resolve(runOnConfirm()).then(settleSuccess, settleFailure);
       } catch (error) {
         settleFailure(error);
