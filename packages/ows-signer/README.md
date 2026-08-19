@@ -68,8 +68,8 @@ Ceremony UI params (optional on WebAuthn-triggering methods): `explanationHeader
 
 ## PRF labels
 
-- `ows-v1/secp256k1`
-- `ows-v1/ed25519` (derived via HKDF from PRF output)
+- `ows-v1/secp256k1` (HKDF from PRF output, rejection sampling into the curve order)
+- `ows-v1/ed25519` (HKDF from the secp256k1 scalar — same material as `signDigest` / recovery)
 - `ows-v1/aes256-gcm` (HKDF from the secp256k1 scalar — same material as `signDigest`)
 
 ## Recovery envelope

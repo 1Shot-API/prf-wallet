@@ -76,16 +76,27 @@ export async function deriveScalarFromPrf(prfBuffer, infoLabel) {
 }
 
 /**
- * @param {ArrayBuffer} prfBuffer
+ * HKDF info `ows-v1/ed25519` — IKM is the secp256k1 scalar (`signDigest`
+ * material), not raw PRF. Recovery / import only hold that scalar, so Ed25519
+ * must chain through it or a recovery session would emit a different pubkey.
+ *
+ * @param {Uint8Array} secp256k1Scalar
  * @returns {Promise<Uint8Array>}
  */
-export async function deriveEd25519SeedFromPrf(prfBuffer) {
-  return hkdfExpand(prfBuffer, PRF_LABEL_ED25519, 32);
+export async function deriveEd25519SeedFromSecp256k1Scalar(secp256k1Scalar) {
+  return hkdfExpand(
+    secp256k1Scalar.buffer.slice(
+      secp256k1Scalar.byteOffset,
+      secp256k1Scalar.byteOffset + secp256k1Scalar.byteLength,
+    ),
+    PRF_LABEL_ED25519,
+    32,
+  );
 }
 
 /**
  * @param {PublicKeyCredential} credential
- * @returns {Promise<{ secp256k1PrivateKey: Uint8Array, secp256k1PublicKey: Uint8Array, ed25519PublicKey: Uint8Array }>}
+ * @returns {Promise<{ secp256k1PrivateKey: Uint8Array, secp256k1PublicKey: Uint8Array, ed25519Seed: Uint8Array, ed25519PublicKey: Uint8Array }>}
  */
 export async function deriveKeysFromCredential(credential) {
   const rawPrf = /** @type {{ prf?: { results?: { first?: unknown } } }} */ (
@@ -100,12 +111,18 @@ export async function deriveKeysFromCredential(credential) {
     prfBuffer,
     PRF_LABEL_SECP256K1,
   );
-  const ed25519Seed = await deriveEd25519SeedFromPrf(prfBuffer);
+  const ed25519Seed =
+    await deriveEd25519SeedFromSecp256k1Scalar(secp256k1PrivateKey);
   // Uncompressed (0x04 ‖ X ‖ Y) — required by viem `publicKeyToAddress`.
   const secp256k1PublicKey = secpGetPublicKey(secp256k1PrivateKey, false);
   const ed25519PublicKey = await edGetPublicKeyAsync(ed25519Seed);
 
-  return { secp256k1PrivateKey, secp256k1PublicKey, ed25519PublicKey };
+  return {
+    secp256k1PrivateKey,
+    secp256k1PublicKey,
+    ed25519Seed,
+    ed25519PublicKey,
+  };
 }
 
 /**
