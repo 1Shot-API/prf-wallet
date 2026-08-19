@@ -22,8 +22,10 @@ export type ModalProps = {
 };
 
 /**
- * Consent / status panel. Uses the native `<dialog>` + `showModal()` so the
- * browser owns focus trapping, Escape, and the backdrop.
+ * Consent / status panel. Uses a modeless `<dialog>` (`show()`, not
+ * `showModal()`) so it stays in the normal stacking context below the Signing
+ * Layer iframe (`z-index: 10001`). A top-layer modal would cover Confirm /
+ * passphrase and stall the ceremony.
  */
 export function Modal({
   title,
@@ -41,7 +43,7 @@ export function Modal({
     if (!dialog) return;
 
     if (!dialog.open) {
-      dialog.showModal();
+      dialog.show();
     }
 
     const focusTarget =
@@ -73,7 +75,7 @@ export function Modal({
     <dialog
       ref={dialogRef}
       aria-labelledby={titleId}
-      className="fixed inset-0 m-0 h-full max-h-none w-full max-w-none border-0 bg-transparent p-4 open:grid open:place-items-center backdrop:bg-[color-mix(in_srgb,CanvasText_35%,transparent)]"
+      className="fixed inset-0 z-[10000] m-0 h-full max-h-none w-full max-w-none border-0 bg-[color-mix(in_srgb,CanvasText_35%,transparent)] p-4 open:grid open:place-items-center"
     >
       {onBackdropDismiss ? (
         <button
