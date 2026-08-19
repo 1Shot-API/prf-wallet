@@ -87,6 +87,16 @@ export function useWalletSession({
     setCredentialCount(listed.length);
   }, [credentialRepository, setCredentialCount]);
 
+  const awaitSignerReady = useCallback(async (): Promise<OWSSigner> => {
+    const awaitSigner = awaitSignerRef.current;
+    if (!awaitSigner) {
+      throw new Error(
+        "Signing Layer not started — wallet boot has not begun yet",
+      );
+    }
+    return awaitSigner();
+  }, [awaitSignerRef]);
+
   const promptPasskeyName = useCallback((): Promise<string | null> => {
     return pushModal<string | null>(({ id, resolve }) => ({
       id,
@@ -105,8 +115,7 @@ export function useWalletSession({
     }, [pushModal]);
 
   const loginWithPasskey = useCallback(async () => {
-    const signer = signerRef.current;
-    if (!signer) throw new Error("Signer not ready");
+    const signer = await awaitSignerReady();
     const result = await signer.getPublicKey({ discoverable: true });
     const credentialId = result.credentialId ?? signer.getCredentialId();
     if (!credentialId) {
@@ -116,12 +125,11 @@ export function useWalletSession({
     setWalletCreated(true);
     await refreshAddresses();
     setUnlocked(true);
-  }, [refreshAddresses, setUnlocked, setWalletCreated, signerRef]);
+  }, [awaitSignerReady, refreshAddresses, setUnlocked, setWalletCreated]);
 
   const createNewWallet = useCallback(
     async (accountName: string) => {
-      const signer = signerRef.current;
-      if (!signer) throw new Error("Signer not ready");
+      const signer = await awaitSignerReady();
       await signer.createCredential(accountName, {
         rpName: "Open Wallet",
         userDisplayName: accountName,
@@ -140,7 +148,13 @@ export function useWalletSession({
         new AccountCreatedEvent(resolveHostDomain(), accountAddress),
       );
     },
-    [refreshAddresses, setUnlocked, setWalletCreated, signerRef, walletRef],
+    [
+      awaitSignerReady,
+      refreshAddresses,
+      setUnlocked,
+      setWalletCreated,
+      walletRef,
+    ],
   );
 
   const createNewWalletFromUi = useCallback(async () => {
@@ -152,8 +166,7 @@ export function useWalletSession({
   }, [createNewWallet, promptPasskeyName]);
 
   const unlockWithStoredCredential = useCallback(async () => {
-    const signer = signerRef.current;
-    if (!signer) throw new Error("Signer not ready");
+    const signer = await awaitSignerReady();
     const storedCredentialId = loadCredentialId();
     if (storedCredentialId) {
       const result = await signer.getPublicKey({
@@ -171,11 +184,11 @@ export function useWalletSession({
     }
     await loginWithPasskey();
   }, [
+    awaitSignerReady,
     loginWithPasskey,
     refreshAddresses,
     setUnlocked,
     setWalletCreated,
-    signerRef,
   ]);
 
   const runSetupFlow = useCallback(async () => {
@@ -231,40 +244,18 @@ export function useWalletSession({
     ensureReadyRef.current = ensureReadyImpl;
   }, [ensureReadyImpl]);
 
-  const awaitSignerReady = useCallback(async (): Promise<OWSSigner> => {
-    const awaitSigner = awaitSignerRef.current;
-    if (!awaitSigner) {
-      throw new Error(
-        "Signing Layer not started — wallet boot has not begun yet",
-      );
-    }
-    return awaitSigner();
-  }, [awaitSignerRef]);
-
   const ensureReady = useCallback(async () => {
-    const awaitSigner = awaitSignerRef.current;
-    if (!awaitSigner) {
-      throw new Error(
-        "Signing Layer not started — wallet boot has not begun yet",
-      );
-    }
-    await awaitSigner();
+    await awaitSignerReady();
     await ensureReadyRef.current();
-  }, [awaitSignerRef]);
+  }, [awaitSignerReady]);
 
   const ensureOnboardedForSigning = useCallback(async () => {
-    const awaitSigner = awaitSignerRef.current;
-    if (!awaitSigner) {
-      throw new Error(
-        "Signing Layer not started — wallet boot has not begun yet",
-      );
-    }
-    await awaitSigner();
+    await awaitSignerReady();
     if (isWalletCreated()) {
       return;
     }
     await ensureReadyRef.current();
-  }, [awaitSignerRef]);
+  }, [awaitSignerReady]);
 
   const onSigningAuthenticated = useCallback(async () => {
     await refreshAddresses();

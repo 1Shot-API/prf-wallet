@@ -105,6 +105,117 @@ describe("aes256", () => {
   });
 });
 
+describe("ed25519 derivation", () => {
+  /**
+   * @param {Uint8Array} prfOutput
+   */
+  function mockPrfCredential(prfOutput) {
+    return {
+      getClientExtensionResults() {
+        return { prf: { results: { first: prfOutput } } };
+      },
+    };
+  }
+
+  it("is deterministic for a given secp256k1 scalar", async () => {
+    const { deriveEd25519SeedFromSecp256k1Scalar } = await import(
+      "../src/crypto/prf.js"
+    );
+    const scalar = crypto.getRandomValues(new Uint8Array(32));
+    scalar[31] |= 1;
+    const a = await deriveEd25519SeedFromSecp256k1Scalar(scalar);
+    const b = await deriveEd25519SeedFromSecp256k1Scalar(scalar);
+    assert.deepEqual(a, b);
+    assert.equal(a.length, 32);
+  });
+
+  it("matches between PRF derivation and recovery/import (scalar-only) path", async () => {
+    const {
+      deriveKeysFromCredential,
+      deriveEd25519SeedFromSecp256k1Scalar,
+    } = await import("../src/crypto/prf.js");
+    const { getPublicKeyAsync } = await import(
+      "../src/crypto/vendor/noble-ed25519.js"
+    );
+    const prf = crypto.getRandomValues(new Uint8Array(32));
+    const fromPrf = await deriveKeysFromCredential(
+      /** @type {PublicKeyCredential} */ (mockPrfCredential(prf)),
+    );
+    const fromScalar = await deriveEd25519SeedFromSecp256k1Scalar(
+      fromPrf.secp256k1PrivateKey,
+    );
+    assert.deepEqual(fromPrf.ed25519Seed, fromScalar);
+    assert.deepEqual(
+      fromPrf.ed25519PublicKey,
+      await getPublicKeyAsync(fromScalar),
+    );
+  });
+
+  it("does not use raw PRF as Ed25519 IKM (same label, different key)", async () => {
+    const { deriveKeysFromCredential, hkdfExpand } = await import(
+      "../src/crypto/prf.js"
+    );
+    const { PRF_LABEL_ED25519 } = await import("../src/constants.js");
+    const prf = crypto.getRandomValues(new Uint8Array(32));
+    const fromPrf = await deriveKeysFromCredential(
+      /** @type {PublicKeyCredential} */ (mockPrfCredential(prf)),
+    );
+    const directFromPrf = await hkdfExpand(
+      prf.buffer.slice(prf.byteOffset, prf.byteOffset + prf.byteLength),
+      PRF_LABEL_ED25519,
+      32,
+    );
+    assert.notDeepEqual(fromPrf.ed25519Seed, directFromPrf);
+  });
+
+  it("produces a different seed for a different scalar", async () => {
+    const { deriveEd25519SeedFromSecp256k1Scalar } = await import(
+      "../src/crypto/prf.js"
+    );
+    const a = crypto.getRandomValues(new Uint8Array(32));
+    const b = crypto.getRandomValues(new Uint8Array(32));
+    a[31] |= 1;
+    b[31] |= 2;
+    assert.notDeepEqual(
+      await deriveEd25519SeedFromSecp256k1Scalar(a),
+      await deriveEd25519SeedFromSecp256k1Scalar(b),
+    );
+  });
+
+  it("reads only the 32-byte scalar window from a larger buffer", async () => {
+    const { deriveEd25519SeedFromSecp256k1Scalar } = await import(
+      "../src/crypto/prf.js"
+    );
+    const scalar = crypto.getRandomValues(new Uint8Array(32));
+    scalar[31] |= 1;
+    const padded = new Uint8Array(64);
+    padded.set(scalar, 8);
+    const view = padded.subarray(8, 40);
+    assert.deepEqual(
+      await deriveEd25519SeedFromSecp256k1Scalar(view),
+      await deriveEd25519SeedFromSecp256k1Scalar(scalar),
+    );
+  });
+
+  it("signs ed25519 with the scalar-derived seed against that seed's pubkey", async () => {
+    const { deriveEd25519SeedFromSecp256k1Scalar } = await import(
+      "../src/crypto/prf.js"
+    );
+    const { signWithScheme } = await import("../src/crypto/sign.js");
+    const { getPublicKeyAsync, verifyAsync } = await import(
+      "../src/crypto/vendor/noble-ed25519.js"
+    );
+    const scalar = crypto.getRandomValues(new Uint8Array(32));
+    scalar[31] |= 1;
+    const seed = await deriveEd25519SeedFromSecp256k1Scalar(scalar);
+    const digest = crypto.getRandomValues(new Uint8Array(32));
+    const signatureHex = await signWithScheme("ed25519", digest, scalar, seed);
+    const signature = parse0xHex(signatureHex);
+    const pub = await getPublicKeyAsync(seed);
+    assert.equal(await verifyAsync(signature, digest, pub), true);
+  });
+});
+
 describe("sign validation", () => {
   it("requires 32-byte digest for secp256k1", () => {
     assert.throws(() =>

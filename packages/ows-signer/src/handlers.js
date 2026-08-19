@@ -1,7 +1,6 @@
 import {
   API_VERSION,
   METHODS,
-  PRF_LABEL_ED25519,
   SIGN_SCHEMES,
   SIGNER_VERSION,
 } from "./constants.js";
@@ -10,9 +9,8 @@ import {
   encryptAes256Batch,
 } from "./crypto/aes256.js";
 import {
-  deriveEd25519SeedFromPrf,
+  deriveEd25519SeedFromSecp256k1Scalar,
   deriveKeysFromCredential,
-  hkdfExpand,
   normalizePrfOutputToArrayBuffer,
 } from "./crypto/prf.js";
 import { getPublicKeyAsync as edGetPublicKeyAsync } from "./crypto/vendor/noble-ed25519.js";
@@ -46,34 +44,6 @@ import {
   getPasskeyAssertion,
   getCosePublicKeyBase64Url,
 } from "./webauthn.js";
-
-/**
- * @param {PublicKeyCredential} credential
- * @returns {Promise<Uint8Array>}
- */
-async function ed25519SeedFromCredential(credential) {
-  const prfRaw = /** @type {{ prf?: { results?: { first?: unknown } } }} */ (
-    credential.getClientExtensionResults()
-  ).prf?.results?.first;
-  const prfBuf = normalizePrfOutputToArrayBuffer(prfRaw);
-  if (!prfBuf) throw new Error("noPrf");
-  return deriveEd25519SeedFromPrf(prfBuf);
-}
-
-/**
- * @param {Uint8Array} secp256k1Scalar
- * @returns {Promise<Uint8Array>}
- */
-async function ed25519SeedFromSecp256k1Scalar(secp256k1Scalar) {
-  return hkdfExpand(
-    secp256k1Scalar.buffer.slice(
-      secp256k1Scalar.byteOffset,
-      secp256k1Scalar.byteOffset + secp256k1Scalar.byteLength,
-    ),
-    PRF_LABEL_ED25519,
-    32,
-  );
-}
 
 /**
  * @param {string} targetOrigin
@@ -311,6 +281,7 @@ async function handleCreateCredential(params, correlationId, targetOrigin) {
       secp256k1PublicKey: to0xHex(keys.secp256k1PublicKey),
     });
     zeroize(keys.secp256k1PrivateKey);
+    zeroize(keys.ed25519Seed);
   });
 }
 
@@ -432,7 +403,7 @@ async function handleSignDigest(params, correlationId, targetOrigin) {
   if (hasRecoverySession()) {
     const cached = getRecoveryPrivateKey();
     if (!cached) throw new Error("recoverySessionEmpty");
-    const ed25519Seed = await ed25519SeedFromSecp256k1Scalar(cached);
+    const ed25519Seed = await deriveEd25519SeedFromSecp256k1Scalar(cached);
     try {
       const results = await signParsedDigests(
         items,
@@ -455,7 +426,6 @@ async function handleSignDigest(params, correlationId, targetOrigin) {
       () => getPasskeyAssertion(undefined, credentialId),
     );
     const keys = await deriveKeysFromCredential(credential);
-    const ed25519Seed = await ed25519SeedFromCredential(credential);
     emitKeyDerived(
       targetOrigin,
       correlationId,
@@ -466,7 +436,7 @@ async function handleSignDigest(params, correlationId, targetOrigin) {
       const results = await signParsedDigests(
         items,
         keys.secp256k1PrivateKey,
-        ed25519Seed,
+        keys.ed25519Seed,
         credentialId ?? getCredentialId(credential),
       );
       emitEvent(window.parent, targetOrigin, "DigestSigned", correlationId, {
@@ -474,7 +444,7 @@ async function handleSignDigest(params, correlationId, targetOrigin) {
       });
     } finally {
       zeroize(keys.secp256k1PrivateKey);
-      zeroize(ed25519Seed);
+      zeroize(keys.ed25519Seed);
     }
   });
 }
@@ -506,6 +476,7 @@ async function handleRevealPrivateKey(params, correlationId, targetOrigin) {
       await dismiss;
     } finally {
       zeroize(keys.secp256k1PrivateKey);
+      zeroize(keys.ed25519Seed);
     }
   });
   emitEvent(
@@ -543,7 +514,7 @@ async function handleImportPrivateKey(_params, correlationId, targetOrigin) {
   setRecoveryPrivateKey(privateKey);
 
   const secp256k1PublicKey = secpGetPublicKey(privateKey, false);
-  const ed25519Seed = await ed25519SeedFromSecp256k1Scalar(privateKey);
+  const ed25519Seed = await deriveEd25519SeedFromSecp256k1Scalar(privateKey);
   const ed25519PublicKey = await edGetPublicKeyAsync(ed25519Seed);
   emitKeyDerived(
     targetOrigin,
@@ -607,7 +578,7 @@ async function handleCreateRecoveryData(params, correlationId, targetOrigin) {
     const cached = getRecoveryPrivateKey();
     if (!cached) throw new Error("recoverySessionEmpty");
     const secp256k1PublicKey = secpGetPublicKey(cached, false);
-    const ed25519Seed = await ed25519SeedFromSecp256k1Scalar(cached);
+    const ed25519Seed = await deriveEd25519SeedFromSecp256k1Scalar(cached);
     const ed25519PublicKey = await edGetPublicKeyAsync(ed25519Seed);
     emitKeyDerived(
       targetOrigin,
@@ -645,6 +616,7 @@ async function handleCreateRecoveryData(params, correlationId, targetOrigin) {
       passphrase,
     );
     zeroize(keys.secp256k1PrivateKey);
+    zeroize(keys.ed25519Seed);
     emitEvent(
       window.parent,
       targetOrigin,
@@ -683,7 +655,7 @@ async function handleRecoverKey(params, correlationId, targetOrigin) {
   // Emit public keys so OWSSigner can cache addresses (uncompressed secp256k1 —
   // viem publicKeyToAddress requires 0x04 ‖ X ‖ Y).
   const secp256k1PublicKey = secpGetPublicKey(privateKey, false);
-  const ed25519Seed = await ed25519SeedFromSecp256k1Scalar(privateKey);
+  const ed25519Seed = await deriveEd25519SeedFromSecp256k1Scalar(privateKey);
   const ed25519PublicKey = await edGetPublicKeyAsync(ed25519Seed);
   emitKeyDerived(
     targetOrigin,
@@ -787,6 +759,7 @@ async function handleEncryptAES256(params, correlationId, targetOrigin) {
       });
     } finally {
       zeroize(keys.secp256k1PrivateKey);
+      zeroize(keys.ed25519Seed);
     }
   });
 }
@@ -847,6 +820,7 @@ async function handleDecryptAES256(params, correlationId, targetOrigin) {
       });
     } finally {
       zeroize(keys.secp256k1PrivateKey);
+      zeroize(keys.ed25519Seed);
     }
   });
 }
@@ -901,6 +875,7 @@ async function handleGetPublicKey(params, correlationId, targetOrigin) {
     }
 
     zeroize(keys.secp256k1PrivateKey);
+    zeroize(keys.ed25519Seed);
   });
 }
 
@@ -1031,7 +1006,6 @@ async function handleExecuteBatch(params, correlationId, targetOrigin) {
         () => getPasskeyAssertion(challenge, credentialId),
       );
       const keys = await deriveKeysFromCredential(credential);
-      const ed25519Seed = await ed25519SeedFromCredential(credential);
       emitKeyDerived(
         targetOrigin,
         correlationId,
@@ -1041,7 +1015,7 @@ async function handleExecuteBatch(params, correlationId, targetOrigin) {
       try {
         await runOps(
           keys.secp256k1PrivateKey,
-          ed25519Seed,
+          keys.ed25519Seed,
           keys.secp256k1PublicKey,
           keys.ed25519PublicKey,
           credentialId ?? getCredentialId(credential),
@@ -1049,7 +1023,7 @@ async function handleExecuteBatch(params, correlationId, targetOrigin) {
         );
       } finally {
         zeroize(keys.secp256k1PrivateKey);
-        zeroize(ed25519Seed);
+        zeroize(keys.ed25519Seed);
       }
     });
     return;
@@ -1057,7 +1031,7 @@ async function handleExecuteBatch(params, correlationId, targetOrigin) {
 
   const cached = getRecoveryPrivateKey();
   if (!cached) throw new Error("recoverySessionEmpty");
-  const ed25519Seed = await ed25519SeedFromSecp256k1Scalar(cached);
+  const ed25519Seed = await deriveEd25519SeedFromSecp256k1Scalar(cached);
   const secp256k1PublicKey = secpGetPublicKey(cached, false);
   const ed25519PublicKey = await edGetPublicKeyAsync(ed25519Seed);
   emitKeyDerived(
