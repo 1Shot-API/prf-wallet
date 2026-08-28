@@ -2,6 +2,8 @@
 
 **1Shot API Open Wallet Standard** — open-source reference implementation for **WebAuthn PRF** non-custodial wallets. See the [1Shot API blog post](https://1shotapi.com/blog/rip-embedded-wallets-stop-paying-privy) for motivation.
 
+> Use of 1Shot-hosted public infrastructure is subject to the [Public Infrastructure Terms](https://1shotapi.com/legal/public-infrastructure-terms) and [Acceptable Use Policy](https://1shotapi.com/legal/acceptable-use-policy). By accessing or using those hosted services, you agree to those terms.
+
 OWS defines a three-layer iframe architecture: **Host Layer** → **Branding Layer** → **Signing Layer**. The Signing Layer is published on-chain ([EIP-8244](https://github.com/TtheBC01/eip-8244)) as immutable plain JavaScript with zero dependencies.
 
 ## Architecture
