@@ -40,6 +40,24 @@ export class ConversionUtils {
     );
   }
 
+  /**
+   * Left-pad a 20-byte EVM address to `bytes32` (32-byte hex).
+   * Accepts checksummed or lowercase `0x` addresses; output is lowercase.
+   * Does not perform EIP-55 checksum validation — pass a validated address
+   * ({@link import("../primitives/EVMAccountAddress.js").EVMAccountAddress},
+   * {@link import("../primitives/EVMContractAddress.js").EVMContractAddress},
+   * or equivalent).
+   */
+  static addressToBytes32Hex(address: `0x${string}`): HexString {
+    const normalized = address.toLowerCase();
+    if (!/^0x[0-9a-f]{40}$/.test(normalized)) {
+      throw new Error(
+        "address must be a 20-byte 0x-prefixed hex string",
+      );
+    }
+    return HexString(`0x${"0".repeat(24)}${normalized.slice(2)}`);
+  }
+
   /** UTF-8 encode a string, then {@link bytesToHex}. */
   static utf8ToHex(value: string): HexString {
     return ConversionUtils.bytesToHex(new TextEncoder().encode(value));
