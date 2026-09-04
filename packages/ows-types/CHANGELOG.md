@@ -1,5 +1,11 @@
 # @1shotapi/ows-types
 
+## 0.6.0
+
+### Minor Changes
+
+- 4c9757f: Add `ConversionUtils.addressToBytes32Hex` to left-pad a 20-byte EVM address (`0x${string}`) to `bytes32` without duplicating pad helpers in consumers.
+
 ## 0.5.1
 
 ### Patch Changes
