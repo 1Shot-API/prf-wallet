@@ -9,7 +9,7 @@ import {
   type CredentialSummary,
 } from "@1shotapi/ows-types";
 import type { CredentialId } from "@1shotapi/ows-types";
-import type { RpcHostClient } from "../rpc/host-client.js";
+import type { RpcHostClient } from "../rpc/RpcHostClient.js";
 
 /** Host-side credentials namespace — routes via namespaced wire keys only. */
 export class CredentialHostClient implements OpenWalletCredentialProvider {

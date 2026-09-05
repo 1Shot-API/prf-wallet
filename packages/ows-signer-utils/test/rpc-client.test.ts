@@ -85,9 +85,14 @@ describe("SignerRpcClient", () => {
       terminalEvent: "Version",
     });
 
-    assert.equal(posted.length, 1);
-    assert.equal(posted[0]?.targetOrigin, SIGNER_ORIGIN);
+    // The client sends a cancel message before each request, then the request.
+    assert.equal(posted.length, 2);
     assert.deepEqual(posted[0]?.message, {
+      v: API_VERSION,
+      kind: "cancel",
+    });
+    assert.equal(posted[1]?.targetOrigin, SIGNER_ORIGIN);
+    assert.deepEqual(posted[1]?.message, {
       v: 1,
       kind: "request",
       method: "getVersion",

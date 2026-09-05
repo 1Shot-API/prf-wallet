@@ -15,7 +15,7 @@ import {
   DisplayHostHandler,
   EWalletPresentationMode,
   releaseWalletFrameFocus,
-} from "../src/display/host-handler.ts";
+} from "../src/display/DisplayHostHandler.ts";
 
 class MockHTMLIFrameElement {}
 

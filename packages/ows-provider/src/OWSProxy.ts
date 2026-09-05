@@ -1,7 +1,7 @@
 import Postmate from "postmate";
 import { DEFAULT_RPC_TIMEOUT_MS } from "@1shotapi/ows-types";
-import { RpcHostClient } from "./rpc/host-client.js";
-import { EIP1193Provider } from "./eip1193/provider.js";
+import { RpcHostClient } from "./rpc/RpcHostClient.js";
+import { EIP1193Provider } from "./eip1193/EIP1193Provider.js";
 import {
   applyHiddenWalletContainerStyles,
   applyHiddenWalletFrameStyles,
@@ -9,11 +9,12 @@ import {
   DEFAULT_WALLET_SIZE_Y,
   DisplayHostHandler,
   EWalletPresentationMode,
-} from "./display/host-handler.js";
-import { CredentialHostClient } from "./credentials/host-client.js";
-import { AnalyticsHostHandler } from "./analytics/host-handler.js";
-import type { AnalyticsListener } from "./analytics/host-handler.js";
-import { Eip1193EventHostHandler } from "./eip1193/event-host-handler.js";
+} from "./display/DisplayHostHandler.js";
+import { CredentialHostClient } from "./credentials/CredentialsHostClient.js";
+import { BitcoinHostClient } from "./bitcoin/BitcoinHostClient.js";
+import { AnalyticsHostHandler } from "./analytics/AnalyticsHostHandler.js";
+import type { AnalyticsListener } from "./analytics/AnalyticsHostHandler.js";
+import { Eip1193EventHostHandler } from "./eip1193/Eip1193EventHostHandler.js";
 
 export type OWSProxyOptions = {
   /** iframe `name` attribute. Default: `ows-wallet` */
@@ -88,6 +89,7 @@ const EXTENDED_HANDSHAKE_BUDGET_MS = 30_000;
 export class OWSProxy {
   public readonly ethereum: EIP1193Provider;
   public readonly credentials: CredentialHostClient;
+  public readonly bitcoin: BitcoinHostClient;
 
   /**
    * Branding→Host analytics notifications (`ows:analytics`).
@@ -116,6 +118,7 @@ export class OWSProxy {
     this.displayHandler = displayHandler;
     this.analyticsHandler = analyticsHandler;
     this.credentials = new CredentialHostClient(rpcClient);
+    this.bitcoin = new BitcoinHostClient(rpcClient);
     this.ethereum = new EIP1193Provider((method, params) =>
       this.rpc(method, params),
     );

@@ -1,8 +1,8 @@
 import { describe, it, afterEach } from "node:test";
 import assert from "node:assert/strict";
 import { EVMAccountAddress, OWS_RPC_CALLBACK_EVENT, RPCCallId } from "@1shotapi/ows-types";
-import { RpcHostClient } from "../src/rpc/host-client.ts";
-import { EIP1193Provider } from "../src/eip1193/provider.ts";
+import { RpcHostClient } from "../src/rpc/RpcHostClient.ts";
+import { EIP1193Provider } from "../src/eip1193/EIP1193Provider.ts";
 
 describe("RpcHostClient", () => {
   afterEach(() => {
@@ -105,5 +105,32 @@ describe("EIP1193Provider", () => {
     });
     provider.emit("chainChanged", "0x2105");
     assert.deepEqual(seen, ["0x2105"]);
+  });
+});
+
+describe("BitcoinHostClient", () => {
+  it("forwards getAccountAddresses through RpcHostClient with namespaced wire method", async () => {
+    const { BitcoinHostClient } = await import("../src/bitcoin/host-client.ts");
+    const sentCalls: Array<{ method: string; params: unknown }> = [];
+    const mockRpcClient = {
+      request: async <T>(method: string, params: unknown): Promise<T> => {
+        sentCalls.push({ method, params });
+        return [
+          {
+            address: "bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4",
+            intention: "payment",
+          },
+        ] as T;
+      },
+    };
+
+    const client = new BitcoinHostClient(mockRpcClient as never);
+    const result = await client.getAccountAddresses();
+
+    assert.equal(sentCalls.length, 1);
+    assert.equal(sentCalls[0]?.method, "bitcoin.getAccountAddresses");
+    assert.deepEqual(sentCalls[0]?.params, {});
+    assert.equal(result.length, 1);
+    assert.equal(result[0]?.address, "bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4");
   });
 });

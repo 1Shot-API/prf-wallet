@@ -3,7 +3,7 @@ import {
   deserializeEip1193EventNotification,
 } from "@1shotapi/ows-types";
 import type Postmate from "postmate";
-import type { EIP1193Provider } from "./provider.js";
+import type { EIP1193Provider } from "./EIP1193Provider.js";
 
 /**
  * Host-side delivery for Branding→Host `ows:eip1193` notifications.

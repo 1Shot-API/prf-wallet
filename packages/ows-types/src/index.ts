@@ -118,6 +118,14 @@ export {
   type OpenWalletCredentialProvider,
 } from "./protocol/credentials.js";
 
+export {
+  BITCOIN_WIRE_METHODS,
+  type BitcoinWireMethod,
+  type IBitcoinAccountAddressEntry,
+  type IBitcoinGetAccountAddressesParams,
+  type IOpenWalletBitcoinProvider,
+} from "./protocol/bitcoin.js";
+
 export * from "./credentials/index.js";
 
 export * from "./primitives/index.js";

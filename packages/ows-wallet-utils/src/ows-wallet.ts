@@ -21,7 +21,9 @@ import { AnalyticsChildClient } from "./analytics/child-client.js";
 import { Eip1193EventChildClient } from "./eip1193/event-child-client.js";
 import { debugLog, setOwsWalletDebugFromOptions } from "./debug.js";
 import { CredentialWalletRegistrar } from "./credentials/wallet-registrar.js";
+import { BitcoinWalletRegistrar } from "./bitcoin/wallet-registrar.js";
 import type {
+  IOpenWalletBitcoinProvider,
   IOWSAnalyticsEvent,
   OpenWalletCredentialProvider,
 } from "@1shotapi/ows-types";
@@ -57,6 +59,7 @@ export class OWSWallet {
   private readonly eip1193Handlers = new Map<string, Eip1193Handler>();
   private readonly customHandlers = new Map<string, RpcHandlerRegistration>();
   private readonly credentialRegistrar = new CredentialWalletRegistrar();
+  private readonly bitcoinRegistrar = new BitcoinWalletRegistrar();
   private handshakeStarted = false;
 
   private constructor(options?: OWSWalletOptions) {
@@ -88,6 +91,14 @@ export class OWSWallet {
     register: (handlers: OpenWalletCredentialProvider): void => {
       this.assertNotConnected();
       this.credentialRegistrar.register(handlers);
+    },
+  };
+
+  /** Namespaced Bitcoin handlers (e.g. BIP-122 static wallet methods). */
+  readonly bitcoin = {
+    register: (provider: IOpenWalletBitcoinProvider): void => {
+      this.assertNotConnected();
+      this.bitcoinRegistrar.register(provider);
     },
   };
 
@@ -295,6 +306,14 @@ export class OWSWallet {
       }
     }
 
+    for (const wireKey of this.bitcoinRegistrar.registeredWireMethods()) {
+      if (!(wireKey in model)) {
+        model[wireKey] = async (data) => {
+          await this.dispatchBitcoin(wireKey, data);
+        };
+      }
+    }
+
     return model;
   }
 
@@ -317,6 +336,37 @@ export class OWSWallet {
           handler: async () => {
             throw new OwsUnimplementedError(
               `Credential method not registered: ${wireKey}`,
+            );
+          },
+        },
+        wireKey,
+      );
+      return;
+    }
+
+    await handleRpcModelCall(childApi, data, registration, wireKey);
+  }
+
+  private async dispatchBitcoin(
+    wireKey: string,
+    data: unknown,
+  ): Promise<void> {
+    const childApi =
+      this.childApi ?? (await this.handshakePromise);
+    if (!childApi) {
+      debugLog("Bitcoin RPC dropped — child API not available", { wireKey });
+      return;
+    }
+
+    const registration = this.bitcoinRegistrar.getRegistration(wireKey);
+    if (!registration) {
+      await handleRpcModelCall(
+        childApi,
+        data,
+        {
+          handler: async () => {
+            throw new OwsUnimplementedError(
+              `Bitcoin handler not registered for wire method: ${wireKey}`,
             );
           },
         },

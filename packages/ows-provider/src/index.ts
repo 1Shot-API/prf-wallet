@@ -1,20 +1,21 @@
-export { OWSProxy } from "./ows-proxy.js";
-export type { OWSProxyOptions } from "./ows-proxy.js";
+export { OWSProxy } from "./OWSProxy.js";
+export type { OWSProxyOptions } from "./OWSProxy.js";
 export {
   DEFAULT_WALLET_SIZE_X,
   DEFAULT_WALLET_SIZE_Y,
   EWalletPresentationMode,
-} from "./display/host-handler.js";
+} from "./display/DisplayHostHandler.js";
 export {
   EIP1193Provider,
-} from "./eip1193/provider.js";
-export { Eip1193EventHostHandler } from "./eip1193/event-host-handler.js";
+} from "./eip1193/EIP1193Provider.js";
+export { Eip1193EventHostHandler } from "./eip1193/Eip1193EventHostHandler.js";
 
-export { CredentialHostClient } from "./credentials/host-client.js";
+export { CredentialHostClient } from "./credentials/CredentialsHostClient.js";
+export { BitcoinHostClient } from "./bitcoin/BitcoinHostClient.js";
 export {
   AnalyticsHostHandler,
   type AnalyticsListener,
-} from "./analytics/host-handler.js";
+} from "./analytics/AnalyticsHostHandler.js";
 export {
   verifySdJwtVcPresentation,
   type VerifySdJwtVcPresentationInput,

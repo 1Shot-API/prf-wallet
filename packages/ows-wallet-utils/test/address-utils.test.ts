@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import { getAddress } from "viem";
-import { EVMChainId } from "@1shotapi/ows-types";
+import {
+  BITCOIN_MAINNET_CHAIN_ID,
+  BITCOIN_TESTNET_CHAIN_ID,
+  EVMChainId,
+} from "@1shotapi/ows-types";
 import { AddressUtils } from "../src/AddressUtils.js";
 import type { IBlockchainProvider } from "../src/IBlockchainProvider.js";
 
@@ -48,11 +52,57 @@ describe("AddressUtils", () => {
     assert.throws(() => utils.validateSolanaAddress("0xnotsolana"));
   });
 
-  it("normalizes Bitcoin hex with 0x", () => {
+  it("validates Bitcoin Native SegWit (P2WPKH) addresses on mainnet and testnet", () => {
     const utils = new AddressUtils(mockProvider());
-    const addr = utils.validateBitcoinAddress(
-      "AbCdEf0123456789AbCdEf0123456789aBcDeF01",
+
+    // Valid mainnet P2WPKH
+    const mainnet = utils.validateBitcoinSegwitAddress(
+      "bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4",
     );
-    assert.equal(addr, "0xabcdef0123456789abcdef0123456789abcdef01");
+    assert.equal(mainnet, "bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4");
+
+    // Valid testnet P2WPKH
+    const testnet = utils.validateBitcoinSegwitAddress(
+      "tb1qw508d6qejxtdg4y5r3zarvary0c5xw7kxpjzsx",
+      BITCOIN_TESTNET_CHAIN_ID,
+    );
+    assert.equal(testnet, "tb1qw508d6qejxtdg4y5r3zarvary0c5xw7kxpjzsx");
+
+    // Rejects testnet on mainnet
+    assert.throws(() =>
+      utils.validateBitcoinSegwitAddress(
+        "tb1qw508d6qejxtdg4y5r3zarvary0c5xw7kxpjzsx",
+        BITCOIN_MAINNET_CHAIN_ID,
+      ),
+    );
+
+    // Rejects mainnet on testnet
+    assert.throws(() =>
+      utils.validateBitcoinSegwitAddress(
+        "bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4",
+        BITCOIN_TESTNET_CHAIN_ID,
+      ),
+    );
+
+    // Rejects Taproot (bc1p...)
+    assert.throws(() =>
+      utils.validateBitcoinSegwitAddress(
+        "bc1p5d7rjq7g6rdk2yhzks9s2cqmmxdumgah52q6g27ur76rw0vd2hsjqxpxaq",
+      ),
+    );
+
+    // Rejects legacy Base58 address
+    assert.throws(() =>
+      utils.validateBitcoinSegwitAddress(
+        "1BvBMSEYstWetqTFn5Au4m4GFg7xJaNVN2",
+      ),
+    );
+
+    // Rejects hex
+    assert.throws(() =>
+      utils.validateBitcoinSegwitAddress(
+        "0xabcdef0123456789abcdef0123456789abcdef01",
+      ),
+    );
   });
 });

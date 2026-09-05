@@ -1,4 +1,6 @@
 import type { AES256CipherText } from "../primitives/AES256CipherText.js";
+import type { BitcoinChainId } from "../primitives/BitcoinChainId.js";
+import type { BitcoinSegwitAccountAddress } from "../primitives/BitcoinSegwitAccountAddress.js";
 import type { CredentialId } from "../primitives/CredentialId.js";
 import type { EVMAccountAddress } from "../primitives/EVMAccountAddress.js";
 import type { HexString } from "../primitives/HexString.js";
@@ -33,6 +35,13 @@ export interface IOWSSigner {
   setCachedAddress(address: EVMAccountAddress): void;
   getCachedSolanaAddress(): SolanaAccountAddress | undefined;
   setCachedSolanaAddress(address: SolanaAccountAddress): void;
+  getCachedBitcoinSegwitAddress(
+    chainId?: BitcoinChainId,
+  ): BitcoinSegwitAccountAddress | undefined;
+  setCachedBitcoinSegwitAddress(
+    chainId: BitcoinChainId,
+    address: BitcoinSegwitAccountAddress,
+  ): void;
 
   getVersion(): Promise<VersionData>;
   createCredential(

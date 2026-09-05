@@ -45,3 +45,9 @@ export {
   deleteParamsSchema,
 } from "./credentials/schemas.js";
 export { CredentialWalletRegistrar } from "./credentials/wallet-registrar.js";
+
+export {
+  BITCOIN_PARAM_SCHEMAS,
+  getAccountAddressesParamsSchema,
+  BitcoinWalletRegistrar,
+} from "./bitcoin/wallet-registrar.js";

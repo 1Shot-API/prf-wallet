@@ -1,20 +1,20 @@
 import { getAddress } from "viem";
 import { getEnsAddress } from "viem/actions";
 import {
-  BitcoinAccountAddress,
+  BITCOIN_MAINNET_CHAIN_ID,
+  type BitcoinChainId,
+  BitcoinSegwitAccountAddress,
   EVMAccountAddress,
   type EVMChainId,
   SolanaAccountAddress,
 } from "@1shotapi/ows-types";
+import { bech32 } from "@scure/base";
 import type { IBlockchainProvider } from "./IBlockchainProvider.js";
 
 const EVM_ADDRESS_RE = /^0x[0-9a-fA-F]{40}$/;
 const EVM_ADDRESS_BARE_RE = /^[0-9a-fA-F]{40}$/;
 /** Solana base58 alphabet (no 0, O, I, l). */
 const SOLANA_BASE58_RE = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
-const BITCOIN_HEX_RE = /^(0x)?[0-9a-fA-F]{40,64}$/;
-const BITCOIN_BECH32_RE = /^(bc1|tb1|bcrt1)[0-9a-z]{6,87}$/i;
-const BITCOIN_BASE58_RE = /^[123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz]{25,35}$/;
 
 /**
  * Validates and brands account addresses. EVM paths may resolve ENS via the
@@ -69,19 +69,45 @@ export class AddressUtils {
   }
 
   /**
-   * Validate a Bitcoin address (hex with optional 0x, bech32, or base58 legacy).
+   * Validate a Bitcoin Native SegWit (P2WPKH) address:
+   * bech32-decoded witness version 0, 20-byte witness program, and matching HRP.
+   * Rejects non-Segwit formats (hex, legacy base58, and Taproot bc1p/tb1p).
    */
-  validateBitcoinAddress(input: string): BitcoinAccountAddress {
-    const trimmed = input.trim();
-    if (BITCOIN_HEX_RE.test(trimmed)) {
-      const withPrefix = trimmed.startsWith("0x") || trimmed.startsWith("0X")
-        ? `0x${trimmed.slice(2).toLowerCase()}`
-        : `0x${trimmed.toLowerCase()}`;
-      return BitcoinAccountAddress(withPrefix);
+  validateBitcoinSegwitAddress(
+    input: string,
+    chainId: BitcoinChainId = BITCOIN_MAINNET_CHAIN_ID,
+  ): BitcoinSegwitAccountAddress {
+    const trimmed = input.trim().toLowerCase();
+    const expectedHrp = chainId === BITCOIN_MAINNET_CHAIN_ID ? "bc" : "tb";
+
+    try {
+      const decoded = bech32.decode(trimmed);
+      if (decoded.prefix !== expectedHrp) {
+        throw new Error(
+          `Bitcoin address HRP "${decoded.prefix}" does not match expected "${expectedHrp}" for chain ${chainId}`,
+        );
+      }
+
+      // Witness version 0 (P2WPKH)
+      const version = decoded.words[0];
+      if (version !== 0) {
+        throw new Error(
+          `Expected witness version 0 for P2WPKH SegWit address, got version ${version}`,
+        );
+      }
+
+      // Program bytes (words after version converted from 5-bit to 8-bit)
+      const program = bech32.fromWords(decoded.words.slice(1));
+      if (program.length !== 20) {
+        throw new Error(
+          `Expected 20-byte witness program for P2WPKH SegWit address, got ${program.length} bytes`,
+        );
+      }
+
+      return BitcoinSegwitAccountAddress(trimmed);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      throw new Error(`Invalid Bitcoin SegWit address: ${input} (${msg})`);
     }
-    if (BITCOIN_BECH32_RE.test(trimmed) || BITCOIN_BASE58_RE.test(trimmed)) {
-      return BitcoinAccountAddress(trimmed);
-    }
-    throw new Error(`Invalid Bitcoin address: ${input}`);
   }
 }
