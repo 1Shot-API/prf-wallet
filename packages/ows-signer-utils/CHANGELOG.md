@@ -1,5 +1,20 @@
 # @1shotapi/ows-signer-utils
 
+## 0.6.0
+
+### Minor Changes
+
+- 728eb8d: Add Bitcoin Native SegWit (P2WPKH) support:
+  - `ows-types`: Replace `BitcoinAccountAddress` with `BitcoinSegwitAccountAddress`. Add `BitcoinSignatureHex`, `BitcoinTransactionHash`, `BitcoinChainId` (-1 mainnet, -2 testnet), `OWSChainId`, BIP-122 static wallet types, and dual-network Bitcoin cache methods on `IOWSSigner`.
+  - `ows-signer-utils`: Add `BitcoinSigner` (`signer.bitcoin`), SegWit address derivation (`addressFromSecp256k1PublicKey`), BIP-143 transaction marshalling, and dual-network caching.
+  - `ows-provider`: Add `BitcoinHostClient` (`proxy.bitcoin.getAccountAddresses`) conforming to Reown BIP-122 static-wallet pattern.
+  - `ows-wallet-utils`: Add `validateBitcoinSegwitAddress` with strict bech32 SegWit v0 validation, and `BitcoinWalletRegistrar` (`wallet.bitcoin.register`).
+
+### Patch Changes
+
+- Updated dependencies [728eb8d]
+  - @1shotapi/ows-types@0.7.0
+
 ## 0.5.1
 
 ### Patch Changes
