@@ -200,7 +200,7 @@ describe("OWSSigner", () => {
     signer.destroy();
   });
 
-  it("caches EVM and Solana addresses from getPublicKey", async () => {
+  it("caches EVM, Solana, and Bitcoin addresses from getPublicKey", async () => {
     const { container } = setupBrowserMocks();
     const signer = await OWSSigner.create(container, SIGNER_URL, {
       credentialId: "cred-1",
@@ -212,6 +212,10 @@ describe("OWSSigner", () => {
 
     const solana = await signer.solana.getAccountAddress();
     assert.equal(signer.getCachedSolanaAddress(), solana);
+
+    const btcMainnet = await signer.bitcoin.getAccountAddress();
+    assert.ok(btcMainnet.startsWith("bc1q"));
+    assert.equal(signer.getCachedBitcoinSegwitAddress(), btcMainnet);
 
     signer.destroy();
   });

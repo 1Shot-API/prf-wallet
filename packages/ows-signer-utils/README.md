@@ -138,6 +138,15 @@ All EVM batch methods accept optional `{ credentialId, explanationHeader, … }`
 
 Accepts optional `{ credentialId }` per call.
 
+### `signer.bitcoin`
+
+| Method | Description |
+|--------|-------------|
+| `getAccountAddress(chainId?)` | Native SegWit address (P2WPKH: `bc1q…` on Mainnet -1, `tb1q…` on Testnet -2) |
+| `signTransaction(transactions[], options?)` | Sign and finalize P2WPKH transactions via `signDigest` |
+
+Accepts optional `{ credentialId, explanationHeader, … }` per ceremony.
+
 ### Errors
 
 - `OwsNotAllowedError` — WebAuthn cancelled or policy blocked

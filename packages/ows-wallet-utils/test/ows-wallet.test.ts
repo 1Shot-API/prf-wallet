@@ -66,4 +66,47 @@ describe("handleRpcModelCall", () => {
     assert.equal(response.success, false);
     assert.equal(response.error?.code, -32_602);
   });
+
+  it("dispatches Bitcoin getAccountAddresses through BitcoinWalletRegistrar", async () => {
+    const { BitcoinWalletRegistrar } = await import(
+      "../src/bitcoin/wallet-registrar.ts"
+    );
+    const registrar = new BitcoinWalletRegistrar();
+    let calledWith: unknown = null;
+    registrar.register({
+      getAccountAddresses: async (params) => {
+        calledWith = params;
+        return [
+          {
+            address: "bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4" as never,
+            intention: "payment",
+          },
+        ];
+      },
+    });
+
+    const reg = registrar.getRegistration("bitcoin.getAccountAddresses");
+    assert.ok(reg);
+
+    await handleRpcModelCall(
+      childApi,
+      serializeRpc({
+        callId: RPCCallId(4),
+        method: "bitcoin.getAccountAddresses",
+        params: { chainId: -1 },
+      }),
+      reg,
+      "bitcoin.getAccountAddresses",
+    );
+
+    assert.deepEqual(calledWith, { chainId: -1 });
+    const response = deserializeRpcResponse(emitted[0]!.data);
+    assert.equal(response.success, true);
+    assert.deepEqual(response.result, [
+      {
+        address: "bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4",
+        intention: "payment",
+      },
+    ]);
+  });
 });

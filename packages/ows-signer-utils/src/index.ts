@@ -39,6 +39,21 @@ export {
 } from "./evm/to-viem-account.js";
 export { SolanaSigner, type SolanaCallOptions } from "./solana/namespace.js";
 export { addressFromEd25519PublicKey } from "./solana/address.js";
+export { BitcoinSigner, type BitcoinCallOptions } from "./bitcoin/namespace.js";
+export {
+  addressFromSecp256k1PublicKey,
+  compressSecp256k1PublicKey,
+  bitcoinNetworkForChainId,
+} from "./bitcoin/address.js";
+export {
+  prepareBitcoinTransaction,
+  finalizeBitcoinTransaction,
+  type IBitcoinTransactionInput,
+  type IBitcoinTransactionOutput,
+  type IBitcoinUnsignedTransaction,
+  type IBitcoinSignedTransactionResult,
+  type IPreparedBitcoinTransaction,
+} from "./bitcoin/marshal.js";
 export {
   keyDerivedDataFromEvent,
   publicKeyDataFromEvent,

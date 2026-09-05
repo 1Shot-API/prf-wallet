@@ -100,6 +100,10 @@ const inline = await OWSProxy.create(previewSlot, walletUrl, {
 
 `EIP1193Provider` — EIP-1193 `request` with typed results for known methods (`eth_requestAccounts` → `EVMAccountAddress[]`, `personal_sign` → signature hex, etc.). Construct with `new EIP1193Provider(invoke)` or use `OWSProxy.create`, which wires RPC automatically.
 
+### `proxy.bitcoin`
+
+`BitcoinHostClient` — Reown / BIP-122 static-wallet pattern helper (`proxy.bitcoin.getAccountAddresses(params?)`).
+
 ### `proxy.rpc(method, params?)`
 
 Extension RPC for wallet-specific methods (non–EIP-1193).

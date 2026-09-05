@@ -1,5 +1,7 @@
 import {
   Base64UrlEncodedString,
+  BITCOIN_MAINNET_CHAIN_ID,
+  BITCOIN_TESTNET_CHAIN_ID,
   ConversionUtils,
   CredentialId,
   EVMAccountAddress,
@@ -8,6 +10,8 @@ import {
   AES256CipherText,
 } from "@1shotapi/ows-types";
 import type {
+  BitcoinChainId,
+  BitcoinSegwitAccountAddress,
   ED25519PublicKey,
   SECP256K1PublicKey,
   CeremonyUiParams,
@@ -34,6 +38,8 @@ import { createSignerIframe, getSignerOrigin, showSignerCeremonyPanel } from "./
 import { EvmSigner } from "./evm/namespace.js";
 import { addressFromEd25519PublicKey } from "./solana/address.js";
 import { SolanaSigner } from "./solana/namespace.js";
+import { addressFromSecp256k1PublicKey } from "./bitcoin/address.js";
+import { BitcoinSigner } from "./bitcoin/namespace.js";
 import {
   keyDerivedDataFromEvent,
   credentialCreatedDataFromEvent,
@@ -116,11 +122,14 @@ function webAuthnAssertionFromEvent(
 export class OWSSigner implements IOWSSigner {
   readonly evm: EvmSigner;
   readonly solana: SolanaSigner;
+  readonly bitcoin: BitcoinSigner;
 
   private readonly rpc: SignerRpcClient;
   private credentialId?: CredentialId;
   private cachedAddress?: EVMAccountAddress;
   private cachedSolanaAddress?: SolanaAccountAddress;
+  private cachedBitcoinMainnetAddress?: BitcoinSegwitAccountAddress;
+  private cachedBitcoinTestnetAddress?: BitcoinSegwitAccountAddress;
   private lastPublicKeyData?: PublicKeyData;
 
   private constructor(
@@ -132,6 +141,7 @@ export class OWSSigner implements IOWSSigner {
     this.credentialId = options?.credentialId;
     this.evm = new EvmSigner(this);
     this.solana = new SolanaSigner(this);
+    this.bitcoin = new BitcoinSigner(this);
   }
 
   static async create(
@@ -163,6 +173,8 @@ export class OWSSigner implements IOWSSigner {
     this.credentialId = undefined;
     this.cachedAddress = undefined;
     this.cachedSolanaAddress = undefined;
+    this.cachedBitcoinMainnetAddress = undefined;
+    this.cachedBitcoinTestnetAddress = undefined;
     this.lastPublicKeyData = undefined;
   }
 
@@ -180,6 +192,25 @@ export class OWSSigner implements IOWSSigner {
 
   setCachedSolanaAddress(address: SolanaAccountAddress): void {
     this.cachedSolanaAddress = address;
+  }
+
+  getCachedBitcoinSegwitAddress(
+    chainId: BitcoinChainId = BITCOIN_MAINNET_CHAIN_ID,
+  ): BitcoinSegwitAccountAddress | undefined {
+    return chainId === BITCOIN_MAINNET_CHAIN_ID
+      ? this.cachedBitcoinMainnetAddress
+      : this.cachedBitcoinTestnetAddress;
+  }
+
+  setCachedBitcoinSegwitAddress(
+    chainId: BitcoinChainId,
+    address: BitcoinSegwitAccountAddress,
+  ): void {
+    if (chainId === BITCOIN_MAINNET_CHAIN_ID) {
+      this.cachedBitcoinMainnetAddress = address;
+    } else {
+      this.cachedBitcoinTestnetAddress = address;
+    }
   }
 
   /** Last `getPublicKey` result in this session — avoids repeat WebAuthn for holder binding. */
@@ -221,11 +252,36 @@ export class OWSSigner implements IOWSSigner {
       this.cachedSolanaAddress =
         addressFromEd25519PublicKey(ed25519PublicKey);
     }
+    if (!this.cachedBitcoinMainnetAddress) {
+      this.cachedBitcoinMainnetAddress = addressFromSecp256k1PublicKey(
+        secp256k1PublicKey,
+        BITCOIN_MAINNET_CHAIN_ID,
+      );
+    }
+    if (!this.cachedBitcoinTestnetAddress) {
+      this.cachedBitcoinTestnetAddress = addressFromSecp256k1PublicKey(
+        secp256k1PublicKey,
+        BITCOIN_TESTNET_CHAIN_ID,
+      );
+    }
   }
 
   private cacheAddressFromPublicKey(publicKey: SECP256K1PublicKey): void {
-    if (this.cachedAddress) return;
-    this.cachedAddress = EVMAccountAddress(publicKeyToAddress(publicKey));
+    if (!this.cachedAddress) {
+      this.cachedAddress = EVMAccountAddress(publicKeyToAddress(publicKey));
+    }
+    if (!this.cachedBitcoinMainnetAddress) {
+      this.cachedBitcoinMainnetAddress = addressFromSecp256k1PublicKey(
+        publicKey,
+        BITCOIN_MAINNET_CHAIN_ID,
+      );
+    }
+    if (!this.cachedBitcoinTestnetAddress) {
+      this.cachedBitcoinTestnetAddress = addressFromSecp256k1PublicKey(
+        publicKey,
+        BITCOIN_TESTNET_CHAIN_ID,
+      );
+    }
   }
 
   private async withCeremonyPanel<T>(run: () => Promise<T>): Promise<T> {
