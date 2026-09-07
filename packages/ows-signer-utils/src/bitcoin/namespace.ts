@@ -24,7 +24,7 @@ export class BitcoinSigner {
   constructor(private readonly signer: OWSSigner) {}
 
   /**
-   * Return the P2WPKH address for the given chain ID (mainnet -1 or testnet -2).
+   * Return the P2WPKH address for the given chain ID (`Bitcoin` / `BitcoinTestnet`).
    */
   async getAccountAddress(
     chainId: BitcoinChainId = BITCOIN_MAINNET_CHAIN_ID,

@@ -155,6 +155,7 @@ export {
 } from "./eip1193/index.js";
 
 export {
+  ChainUtils,
   PresentationUtils,
   ProofUtils,
   ConversionUtils,
