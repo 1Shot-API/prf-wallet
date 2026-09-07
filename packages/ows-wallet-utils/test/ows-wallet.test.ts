@@ -93,13 +93,13 @@ describe("handleRpcModelCall", () => {
       serializeRpc({
         callId: RPCCallId(4),
         method: "bitcoin.getAccountAddresses",
-        params: { chainId: -1 },
+        params: { chainId: "Bitcoin" },
       }),
       reg,
       "bitcoin.getAccountAddresses",
     );
 
-    assert.deepEqual(calledWith, { chainId: -1 });
+    assert.deepEqual(calledWith, { chainId: "Bitcoin" });
     const response = deserializeRpcResponse(emitted[0]!.data);
     assert.equal(response.success, true);
     assert.deepEqual(response.result, [

@@ -8,7 +8,9 @@ export const getAccountAddressesParamsSchema = z
   .object({
     account: z.string().optional(),
     intentions: z.array(z.string()).optional(),
-    chainId: z.union([z.literal(-1), z.literal(-2)]).optional(),
+    chainId: z
+      .enum(["Bitcoin", "BitcoinTestnet"])
+      .optional(),
   })
   .optional()
   .default({});

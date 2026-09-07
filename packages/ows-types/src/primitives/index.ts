@@ -6,6 +6,7 @@ export * from "./BitcoinSignatureHex.js";
 export * from "./BitcoinTransactionHash.js";
 export * from "./BitcoinChainId.js";
 export * from "./OWSChainId.js";
+export * from "./SolanaChainId.js";
 export * from "./CredentialClaimName.js";
 export * from "./CredentialConfigurationId.js";
 export * from "./CredentialFormatId.js";

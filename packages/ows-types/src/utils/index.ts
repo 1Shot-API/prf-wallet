@@ -1,3 +1,4 @@
+export { ChainUtils } from "./ChainUtils.js";
 export { ConversionUtils } from "./ConversionUtils.js";
 export {
   CredentialCryptoUtils,

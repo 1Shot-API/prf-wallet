@@ -1,6 +1,6 @@
 {
   "name": "@1shotapi/ows-provider",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "OWS EIP-1193 provider for Host Layer applications — embed Branding Layer iframe and use with viem, ethers, etc.",
   "type": "module",
   "main": "./dist/index.js",

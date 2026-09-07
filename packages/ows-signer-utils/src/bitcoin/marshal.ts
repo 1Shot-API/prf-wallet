@@ -8,7 +8,7 @@ import {
   BitcoinTransactionHash,
   type SECP256K1PublicKey,
 } from "@1shotapi/ows-types";
-import { secp256k1 } from "@noble/curves/secp256k1";
+import { secp256k1 } from "@noble/curves/secp256k1.js";
 import * as btc from "@scure/btc-signer";
 import {
   bitcoinNetworkForChainId,
@@ -136,8 +136,8 @@ export function finalizeBitcoinTransaction(
       );
     }
 
-    const parsedSig = secp256k1.Signature.fromCompact(compactBytes);
-    const derBytes = parsedSig.toDERRawBytes();
+    const parsedSig = secp256k1.Signature.fromBytes(compactBytes, "compact");
+    const derBytes = parsedSig.toBytes("der");
     const sigWithHash = new Uint8Array(derBytes.length + 1);
     sigWithHash.set(derBytes);
     sigWithHash[derBytes.length] = btc.SigHash.ALL;

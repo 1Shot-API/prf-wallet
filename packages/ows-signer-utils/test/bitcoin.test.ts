@@ -6,7 +6,7 @@ import {
   BitcoinSegwitAccountAddress,
   type SECP256K1PublicKey,
 } from "@1shotapi/ows-types";
-import { secp256k1 } from "@noble/curves/secp256k1";
+import { secp256k1 } from "@noble/curves/secp256k1.js";
 import {
   addressFromSecp256k1PublicKey,
   compressSecp256k1PublicKey,
@@ -83,7 +83,8 @@ describe("bitcoin signer utils", () => {
 
     // Mock signing: compute low-S compact signature using secp256k1
     const sig = secp256k1.sign(prepared.sighashes[0]!, privKey, { lowS: true });
-    const compactHex = ("0x" + Buffer.from(sig.toCompactRawBytes()).toString("hex")) as `0x${string}`;
+    const compactHex = ("0x" +
+      Buffer.from(sig).toString("hex")) as `0x${string}`;
 
     const finalized = finalizeBitcoinTransaction(prepared, [compactHex]);
     assert.ok(finalized.rawHex.length > 0);

@@ -70,7 +70,8 @@ Use **branded primitives** from `@1shotapi/ows-types` (`ts-brand`) anywhere a va
 
 - Define each primitive in `packages/ows-types/src/primitives/<Name>.ts` using the same pattern as `RPCCallId` (type alias + `make()` constructor).
 - Export from `packages/ows-types/src/primitives/index.ts`.
-- Examples: `EVMAccountAddress` (not `0x${string}` or viem `Address`), `EVMSignatureHex`, `SolanaAccountAddress`, `BitcoinSegwitAccountAddress`, `RPCCallId`.
+- Examples: `EVMAccountAddress` (not `0x${string}` or viem `Address`), `EVMSignatureHex`, `SolanaAccountAddress`, `BitcoinSegwitAccountAddress`, `BitcoinChainId` (`"Bitcoin"` / `"BitcoinTestnet"`), `SolanaChainId`, `RPCCallId`.
+- Narrow `OWSChainId` with `ChainUtils.isEVMChainId` / `isBitcoinChainId` / `isSolanaChainId` (see `packages/ows-types/src/utils/ChainUtils.ts`).
 - Brand at the point of validation or derivation (e.g. Zod `.transform(EVMAccountAddress)`, or after `publicKeyToAddress`).
 - For polymorphic APIs (e.g. EIP-1193 `request`), use a **mapped method table** (`EIP1193Requests` in `ows-types`) with a conditional generic on `request()` so callers get inferred branded results without `as` casts.
 

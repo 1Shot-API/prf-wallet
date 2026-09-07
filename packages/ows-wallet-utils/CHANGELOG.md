@@ -1,5 +1,13 @@
 # @1shotapi/ows-wallet-utils
 
+## 0.5.1
+
+### Patch Changes
+
+- 042beab: Bitcoin chain ids are now descriptive string sentinels (`"Bitcoin"`, `"BitcoinTestnet"`) instead of numeric `-1`/`-2`. Add `ChainUtils` for narrowing `OWSChainId` across EVM, Bitcoin, and Solana, plus `SolanaChainId` sentinels.
+- Updated dependencies [042beab]
+  - @1shotapi/ows-types@0.8.0
+
 ## 0.5.0
 
 ### Minor Changes
