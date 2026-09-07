@@ -1,5 +1,11 @@
 # @1shotapi/ows-types
 
+## 0.8.0
+
+### Minor Changes
+
+- 042beab: Bitcoin chain ids are now descriptive string sentinels (`"Bitcoin"`, `"BitcoinTestnet"`) instead of numeric `-1`/`-2`. Add `ChainUtils` for narrowing `OWSChainId` across EVM, Bitcoin, and Solana, plus `SolanaChainId` sentinels.
+
 ## 0.7.0
 
 ### Minor Changes

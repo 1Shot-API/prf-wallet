@@ -1,6 +1,6 @@
 {
   "name": "@1shotapi/ows-signer-utils",
-  "version": "0.6.1",
+  "version": "0.6.2",
   "description": "OWS utilities to embed the Signing Layer iframe and communicate via postMessage — chain-specific signing helpers (EVM, etc.)",
   "type": "module",
   "main": "./dist/index.js",
