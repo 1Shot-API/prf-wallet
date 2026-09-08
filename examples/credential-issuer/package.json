@@ -12,8 +12,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@1shotapi/ows-provider": "*",
-    "@1shotapi/ows-types": "*"
+    "@1shotapi/ows-provider": "workspace:^",
+    "@1shotapi/ows-types": "workspace:^"
   },
   "devDependencies": {
     "dotenv": "^16.4.7",

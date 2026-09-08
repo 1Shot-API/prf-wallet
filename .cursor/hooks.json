@@ -4,7 +4,7 @@
     "postToolUse": [
       {
         "command": "node .cursor/hooks/react-doctor.mjs",
-        "matcher": "Write|Edit|MultiEdit|ApplyPatch",
+        "matcher": "Write|Edit|MultiEdit|ApplyPatch|NotebookEdit",
         "timeout": 120
       }
     ]
