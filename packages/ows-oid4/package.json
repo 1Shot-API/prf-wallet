@@ -22,7 +22,7 @@
     "lint": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
-    "@1shotapi/ows-types": "*",
+    "@1shotapi/ows-types": "workspace:^",
     "jose": "^6.0.11"
   },
   "devDependencies": {

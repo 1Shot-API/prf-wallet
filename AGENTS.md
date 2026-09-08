@@ -82,6 +82,7 @@ Do not introduce parallel branded types in consumer packages — add or extend p
 - Node.js 22+, npm workspaces
 - TypeScript packages: `tsc` → `dist/`
 - Changesets for `@1shotapi/*` independent versioning
+- Internal deps: `workspace:^` (not bare `"*"`) — `npm run version-packages` bumps ranges; `updateInternalDependents: "always"` republishes dependents when a dependency releases; npm publish rewrites `workspace:^` → `^x.y.z`
 - On-chain: https://github.com/TtheBC01/eip-8244
 
 ## Common commands

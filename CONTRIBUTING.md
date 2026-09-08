@@ -37,6 +37,15 @@ npm run build -w @1shotapi/ows-signer-utils
 
 Include a changeset for user-facing changes to publishable packages: `npm run changeset`.
 
+Inter-package deps use the npm `workspace:` protocol (e.g. `"@1shotapi/ows-types": "workspace:^"`). Do **not** use bare `"*"` — that range is always satisfied, so Changesets will not bump dependents, and the published tarball keeps `"*"` (consumers can resolve an incompatible older `ows-types`).
+
+On `npm run version-packages` (`changeset version`):
+
+1. `updateInternalDependencies: "patch"` rewrites workspace/`^` ranges to the versions being released.
+2. `updateInternalDependents: "always"` patch-bumps dependents whenever a dependency they use is released (even if the old range would still match), so e.g. publishing `ows-types` also republishes `ows-provider` with an updated range.
+
+On `npm run release` / `changeset publish`, npm replaces `workspace:^` with a concrete `^x.y.z` in the published `package.json`.
+
 ## Porting from 1ShotPay (maintainers)
 
 [1ShotPay](https://1shotpay.com) validates OWS patterns in a **private repository**:

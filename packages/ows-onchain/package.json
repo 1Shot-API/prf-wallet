@@ -22,7 +22,7 @@
     "clean": "node -e \"require('fs').rmSync('cache',{recursive:true,force:true}); require('fs').rmSync('artifacts',{recursive:true,force:true})\""
   },
   "dependencies": {
-    "@1shotapi/ows-signer": "*"
+    "@1shotapi/ows-signer": "workspace:*"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-ignition": "^3.1.7",

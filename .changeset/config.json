@@ -7,6 +7,9 @@
   "access": "public",
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
+  "___experimentalUnsafeOptions_WILL_CHANGE_IN_PATCH": {
+    "updateInternalDependents": "always"
+  },
   "ignore": [
     "@1shotapi/ows-onchain",
     "@1shotapi/ows-example-general-wallet",
