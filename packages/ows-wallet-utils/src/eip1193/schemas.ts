@@ -1,32 +1,16 @@
 import {
-  EVMAccountAddress,
-  EVMChainId,
-  HexString,
+  EVMAccountAddressSchema,
+  EVMChainIdSchema,
+  HexStringSchema,
   type Eip1193Method,
 } from "@1shotapi/ows-types";
 import { z } from "zod";
 
-const addressSchema = z
-  .string()
-  .regex(/^0x[0-9a-fA-F]{40}$/)
-  .transform((value) => EVMAccountAddress(value as `0x${string}`));
-
 const hexSchema = z.string().regex(/^0x[0-9a-fA-F]*$/);
 
-const hexStringSchema = hexSchema.transform((value) =>
-  HexString(value as `0x${string}`),
-);
-
-const chainIdSchema = z
-  .string()
-  .regex(/^0x[0-9a-fA-F]+$/)
-  .transform((value) =>
-    EVMChainId(`0x${BigInt(value).toString(16)}` as `0x${string}`),
-  );
-
 const transactionObjectSchema = z.object({
-  from: addressSchema.optional(),
-  to: addressSchema.nullish(),
+  from: EVMAccountAddressSchema.optional(),
+  to: EVMAccountAddressSchema.nullish(),
   gas: hexSchema.optional(),
   gasPrice: hexSchema.optional(),
   maxFeePerGas: hexSchema.optional(),
@@ -85,7 +69,7 @@ const addChainParamsSchema = z.object({
 const watchAssetParamsSchema = z.object({
   type: z.literal("ERC20"),
   options: z.object({
-    address: addressSchema,
+    address: EVMAccountAddressSchema,
     symbol: z.string().optional(),
     decimals: z.number().optional(),
     image: z.string().optional(),
@@ -105,9 +89,9 @@ const executionPermissionRuleSchema = z.object({
 
 /** Single EIP-7715 permission request object. */
 const executionPermissionRequestSchema = z.object({
-  chainId: chainIdSchema,
-  from: addressSchema.optional(),
-  to: addressSchema,
+  chainId: EVMChainIdSchema,
+  from: EVMAccountAddressSchema.optional(),
+  to: EVMAccountAddressSchema,
   permission: executionPermissionSchema,
   rules: z.array(executionPermissionRuleSchema).optional(),
 });
@@ -121,18 +105,21 @@ const requestExecutionPermissionsParamsSchema = z.array(
 );
 
 const revokeExecutionPermissionParamsSchema = z.object({
-  permissionContext: hexStringSchema,
+  permissionContext: HexStringSchema,
 });
 
 export const EIP1193_PARAM_SCHEMAS: Record<Eip1193Method, z.ZodType> = {
   eth_requestAccounts: z.tuple([]),
   eth_accounts: z.tuple([]),
   eth_chainId: z.tuple([]),
-  personal_sign: z.tuple([z.union([hexSchema, z.string()]), addressSchema]),
-  eth_sign: z.tuple([addressSchema, z.union([hexSchema, z.string()])]),
-  eth_signTypedData: z.tuple([addressSchema, typedDataSchema]),
-  eth_signTypedData_v3: z.tuple([addressSchema, typedDataSchema]),
-  eth_signTypedData_v4: z.tuple([addressSchema, typedDataSchema]),
+  personal_sign: z.tuple([
+    z.union([hexSchema, z.string()]),
+    EVMAccountAddressSchema,
+  ]),
+  eth_sign: z.tuple([EVMAccountAddressSchema, z.union([hexSchema, z.string()])]),
+  eth_signTypedData: z.tuple([EVMAccountAddressSchema, typedDataSchema]),
+  eth_signTypedData_v3: z.tuple([EVMAccountAddressSchema, typedDataSchema]),
+  eth_signTypedData_v4: z.tuple([EVMAccountAddressSchema, typedDataSchema]),
   eth_sendTransaction: z.tuple([transactionObjectSchema]),
   eth_signTransaction: z.tuple([transactionObjectSchema]),
   wallet_switchEthereumChain: z.tuple([switchChainParamsSchema]),

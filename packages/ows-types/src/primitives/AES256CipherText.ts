@@ -1,11 +1,19 @@
 import { type Brand, make } from "ts-brand";
+import { z } from "zod";
 
 /**
- * AES-256-GCM ciphertext envelope (branded string).
+ * Raw AES-256-GCM ciphertext bytes as a `0x`-prefixed hex string
+ * (IV / version / packaging live on {@link AES256CipherTextEnvelope}).
  *
- * Signing Layer packaging: `ows-aes1:0x` ‖ version(1) ‖ IV(12) ‖ ciphertext+tag.
- * Key is HKDF-SHA256 from the wallet secp256k1 scalar with info `ows-v1/aes256-gcm`
- * (same material as `signDigest`; not passphrase PBKDF2).
+ * Example: `"0x" + ciphertext and tag hex`
  */
-export type AES256CipherText = Brand<string, "AES256CipherText">;
+export type AES256CipherText = Brand<`0x${string}`, "AES256CipherText">;
 export const AES256CipherText = make<AES256CipherText>();
+
+/** Zod schema: non-empty 0x-prefixed hex ciphertext. */
+export const AES256CipherTextSchema = z
+  .string()
+  .regex(/^0x[0-9a-fA-F]+$/, {
+    message: "must be a non-empty 0x-prefixed hex ciphertext",
+  })
+  .transform((s) => AES256CipherText(s as `0x${string}`));

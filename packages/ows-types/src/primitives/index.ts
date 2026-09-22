@@ -1,4 +1,5 @@
 export * from "./AES256CipherText.js";
+export * from "./AES256CipherTextEnvelope.js";
 export * from "./AnalyticsEventId.js";
 export * from "./Base64UrlEncodedString.js";
 export * from "./BitcoinSegwitAccountAddress.js";
