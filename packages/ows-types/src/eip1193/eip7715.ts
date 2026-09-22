@@ -22,6 +22,25 @@ export interface IExecutionPermissionRule {
 }
 
 /**
+ * One appended caveat on an EIP-7715 permission request.
+ *
+ * The wire shape nests the caveat's config under `data` (consistent with
+ * `IExecutionPermission.data`), rather than the spread form
+ * `@metamask/smart-accounts-kit`'s `CoreCaveatConfiguration` uses internally
+ * (`{ type, ...config }`). At sign time the wallet maps `data` to the kit's
+ * caveat config via `builder.addCaveat(type, data)` and merges the result onto
+ * the top-level scope through `createDelegation({ scope, caveats })`.
+ *
+ * `type` matches a `CaveatType` value from `@metamask/smart-accounts-kit`.
+ * `data` carries the config for that caveat's builder (e.g.
+ * `{ startIndex: 4, value: "0x..." }` for `allowedCalldata`).
+ */
+export interface IAppendedCaveatConfiguration {
+  type: string;
+  data: Record<string, unknown>;
+}
+
+/**
  * One entry in `wallet_requestExecutionPermissions` params.
  * `params` is the array of these objects (not nested in a further wrapper).
  */
@@ -33,6 +52,13 @@ export interface IExecutionPermissionRequest {
   to: EVMAccountAddress;
   permission: IExecutionPermission;
   rules?: IExecutionPermissionRule[];
+  /**
+   * Appended caveats merged onto the top-level `permission` scope at sign time,
+   * mirroring `createDelegation({ scope, caveats })` in
+   * `@metamask/smart-accounts-kit`. Optional + additive: omitting it keeps the
+   * legacy single-scope behaviour.
+   */
+  caveats?: IAppendedCaveatConfiguration[];
 }
 
 /** ERC-4337 factory dependency required before redeeming a permission. */

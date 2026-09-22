@@ -149,6 +149,7 @@ export {
   type IExecutionPermissionRequest,
   type IExecutionPermissionResponse,
   type IExecutionPermissionRule,
+  type IAppendedCaveatConfiguration,
   type IRevokeExecutionPermissionParams,
   type ISupportedExecutionPermissionEntry,
   type SupportedExecutionPermissions,

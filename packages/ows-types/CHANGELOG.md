@@ -1,5 +1,13 @@
 # @1shotapi/ows-types
 
+## 0.10.0
+
+### Minor Changes
+
+- 02b6de2: Add `IAppendedCaveatConfiguration` and optional `caveats?: IAppendedCaveatConfiguration[]` on `IExecutionPermissionRequest`.
+
+  Hosts can now append extra caveats to a top-level EIP-7715 scope on a single delegation, mirroring `createDelegation({ scope, caveats })` in `@metamask/smart-accounts-kit`. The field is optional and additive, so existing requests are unchanged.
+
 ## 0.8.0
 
 ### Minor Changes
