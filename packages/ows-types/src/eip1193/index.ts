@@ -22,6 +22,7 @@ export type {
   IExecutionPermissionRequest,
   IExecutionPermissionResponse,
   IExecutionPermissionRule,
+  IAppendedCaveatConfiguration,
   IRevokeExecutionPermissionParams,
   ISupportedExecutionPermissionEntry,
   SupportedExecutionPermissions,
