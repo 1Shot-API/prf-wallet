@@ -21,6 +21,7 @@
   },
   "devDependencies": {
     "@changesets/cli": "^2.29.0",
+    "@types/node": "^22.19.0",
     "react-doctor": "^0.9.1",
     "typescript": "~5.8.0"
   },
