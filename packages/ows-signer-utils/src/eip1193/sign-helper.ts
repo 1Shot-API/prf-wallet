@@ -102,9 +102,9 @@ export type SignHelperOptions = {
   /** Active EIP-1193 chain id (for request validation). */
   getChainId: () => EVMChainId;
   /**
-   * After a successful personal_sign / typed-data ceremony, once the display
-   * session has been released. Branding uses this for unlock + address refresh
-   * so post-sign work cannot hold the flyout open.
+   * After a successful personal_sign / typed-data / eth_sendTransaction ceremony,
+   * once the display session has been released. Branding uses this for unlock +
+   * address refresh so post-sign work cannot hold the flyout open.
    */
   onAuthenticated?: () => void | Promise<void>;
 };
@@ -192,7 +192,7 @@ export class SignHelper {
       }
     }
 
-    return this.withDisplay(async () => {
+    const hash = await this.withDisplay(async () => {
       const address = await this.resolveAccount(tx.from);
       if (tx.from && !sameAddress(tx.from, address)) {
         throw new OwsInvalidParamsError(
@@ -212,7 +212,7 @@ export class SignHelper {
         chainId,
       };
 
-      const hash = await this.options.approveAndSignTransaction({
+      const result = await this.options.approveAndSignTransaction({
         address,
         to,
         data,
@@ -220,13 +220,15 @@ export class SignHelper {
         chainId,
         transaction,
       });
-      if (typeof hash !== "string" || !/^0x[0-9a-fA-F]{64}$/.test(hash)) {
+      if (typeof result !== "string" || !/^0x[0-9a-fA-F]{64}$/.test(result)) {
         throw new OwsInvalidParamsError(
           "approveAndSignTransaction returned an invalid transaction hash",
         );
       }
-      return EVMTransactionHash(hash as `0x${string}`);
+      return EVMTransactionHash(result as `0x${string}`);
     });
+    await this.options.onAuthenticated?.();
+    return hash;
   }
 
   private async resolveAccount(
