@@ -1,1 +1,1 @@
-export { EChainTechnology } from "./EChainTechnology.js";
+export { EChainTechnology, EChainTechnologySchema } from "./EChainTechnology.js";

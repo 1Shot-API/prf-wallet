@@ -58,6 +58,33 @@ describe("DisplayChildClient", () => {
     assert.equal(emitted[0]?.name, OWS_RELEASE_DISPLAY_EVENT);
   });
 
+  it("stale release still decrements the live session", async () => {
+    const client = new DisplayChildClient(childApi as never);
+    const firstPending = client.requestDisplay();
+    const firstReq = JSON.parse(emitted[0]!.data) as { displayId: string };
+
+    // Parallel acquire before either is ready (both pending).
+    const secondPending = client.requestDisplay();
+    const secondReq = JSON.parse(emitted[1]!.data) as { displayId: string };
+
+    client.handleDisplayReady(serializeRpc({ displayId: firstReq.displayId }));
+    const first = await firstPending;
+
+    client.handleDisplayReady(serializeRpc({ displayId: secondReq.displayId }));
+    const second = await secondPending;
+
+    emitted.length = 0;
+    // Superseded handle — must still decrement live depth (not silent no-op).
+    first.release();
+    assert.equal(emitted.length, 0);
+
+    second.release();
+    assert.equal(emitted.length, 1);
+    assert.equal(emitted[0]?.name, OWS_RELEASE_DISPLAY_EVENT);
+    const payload = JSON.parse(emitted[0]!.data) as { displayId: string };
+    assert.equal(payload.displayId, secondReq.displayId);
+  });
+
   it("requestHide resolves on hide ready", async () => {
     const client = new DisplayChildClient(childApi as never);
     const pending = client.requestHide();

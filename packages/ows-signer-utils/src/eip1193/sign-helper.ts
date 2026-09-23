@@ -101,6 +101,12 @@ export type SignHelperOptions = {
   ) => Promise<EVMTransactionHash>;
   /** Active EIP-1193 chain id (for request validation). */
   getChainId: () => EVMChainId;
+  /**
+   * After a successful personal_sign / typed-data ceremony, once the display
+   * session has been released. Branding uses this for unlock + address refresh
+   * so post-sign work cannot hold the flyout open.
+   */
+  onAuthenticated?: () => void | Promise<void>;
 };
 
 export type Eip1193SignHandlers = {
@@ -119,8 +125,8 @@ const EMPTY_DATA = HexString("0x");
  * `approveAndSign*` handlers. Does **not** register handlers — the branding
  * app calls `wallet.registerEip1193` in the order it wants.
  *
- * Setup (`ensureReady`) and post-ceremony unlock (`onAuthenticated`) belong
- * inside branding's approve callbacks, next to the `OWSSigner` work.
+ * Setup (`ensureReady`) belongs inside branding's approve callbacks.
+ * Post-ceremony unlock (`onAuthenticated`) runs after display release.
  */
 export class SignHelper {
   readonly handlers: Eip1193SignHandlers;
@@ -144,12 +150,14 @@ export class SignHelper {
     const [message, addressParam] = params as [string, string];
     const address = EVMAccountAddress(addressParam as `0x${string}`);
 
-    return this.withDisplay(() =>
+    const signature = await this.withDisplay(() =>
       this.options.approveAndSignPersonalMessage({
         message,
         address,
       }),
     );
+    await this.options.onAuthenticated?.();
+    return signature;
   }
 
   private async handleTypedData(params: unknown[]): Promise<EVMSignatureHex> {
@@ -160,12 +168,14 @@ export class SignHelper {
     const address = EVMAccountAddress(addressParam as `0x${string}`);
     const typedData = parseTypedData(typedDataParam);
 
-    return this.withDisplay(() =>
+    const signature = await this.withDisplay(() =>
       this.options.approveAndSignTypedData({
         address,
         typedData,
       }),
     );
+    await this.options.onAuthenticated?.();
+    return signature;
   }
 
   private async handleSendTransaction(

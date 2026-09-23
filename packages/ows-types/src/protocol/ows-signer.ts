@@ -1,4 +1,4 @@
-import type { AES256CipherText } from "../primitives/AES256CipherText.js";
+import type { AES256CipherTextEnvelope } from "../primitives/AES256CipherTextEnvelope.js";
 import type { BitcoinChainId } from "../primitives/BitcoinChainId.js";
 import type { BitcoinSegwitAccountAddress } from "../primitives/BitcoinSegwitAccountAddress.js";
 import type { CredentialId } from "../primitives/CredentialId.js";
@@ -86,9 +86,9 @@ export interface IOWSSigner {
   encryptAES256(
     plaintexts: string[],
     options?: CeremonyUiParams & { credentialId?: CredentialId },
-  ): Promise<AES256CipherText[]>;
+  ): Promise<AES256CipherTextEnvelope[]>;
   decryptAES256(
-    ciphertexts: AES256CipherText[],
+    ciphertexts: AES256CipherTextEnvelope[],
     options?: CeremonyUiParams & { credentialId?: CredentialId },
   ): Promise<string[]>;
   destroy(): void;

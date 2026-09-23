@@ -7,7 +7,7 @@ import {
   EVMAccountAddress,
   JSONString,
   SolanaAccountAddress,
-  AES256CipherText,
+  AES256CipherTextEnvelope,
 } from "@1shotapi/ows-types";
 import type {
   BitcoinChainId,
@@ -564,7 +564,7 @@ export class OWSSigner implements IOWSSigner {
   async encryptAES256(
     plaintexts: string[],
     options?: CeremonyUiParams & { credentialId?: string },
-  ): Promise<AES256CipherText[]> {
+  ): Promise<AES256CipherTextEnvelope[]> {
     const ceremony = withCeremonyDefaults(options);
     return this.withCeremonyPanel(async () => {
       const result = await this.rpc.request<EncryptAES256Result>(
@@ -579,7 +579,7 @@ export class OWSSigner implements IOWSSigner {
           onIntermediate: (_event, data) => this.onKeyDerived(data),
         },
       );
-      return result.ciphertexts.map((c) => AES256CipherText(c));
+      return result.ciphertexts.map((c) => AES256CipherTextEnvelope(c));
     });
   }
 
@@ -588,7 +588,7 @@ export class OWSSigner implements IOWSSigner {
    * (or recovery session) covers the whole batch.
    */
   async decryptAES256(
-    ciphertexts: AES256CipherText[],
+    ciphertexts: AES256CipherTextEnvelope[],
     options?: CeremonyUiParams & { credentialId?: string },
   ): Promise<string[]> {
     const ceremony = withCeremonyDefaults(options);

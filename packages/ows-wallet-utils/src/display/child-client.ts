@@ -189,22 +189,39 @@ export class DisplayChildClient {
   }
 
   private releaseSession(displayId: DisplayRequestId): void {
-    if (!this.activeSession || this.activeSession.displayId !== displayId) {
+    if (!this.activeSession) {
       return;
+    }
+
+    // Parallel displayReady can overwrite activeSession with a newer id while
+    // callers still hold the older handle. Always decrement/release against the
+    // live session so a stale release cannot silently no-op and leak childDisplayId.
+    const activeId = this.activeSession.displayId;
+    if (activeId !== displayId) {
+      debugLog("release with stale displayId; releasing active session", {
+        staleId: displayId,
+        activeId,
+        depth: this.displayDepth,
+      });
     }
 
     this.displayDepth = Math.max(0, this.displayDepth - 1);
     if (this.displayDepth > 0) {
-      debugLog("display session retained", { displayId, depth: this.displayDepth });
+      debugLog("display session retained", {
+        displayId: activeId,
+        depth: this.displayDepth,
+      });
       return;
     }
 
-    debugLog("releasing display", { displayId });
+    debugLog("releasing display", { displayId: activeId });
     this.childApi.emit(
       OWS_RELEASE_DISPLAY_EVENT,
-      serializeRpc({ displayId } satisfies { displayId: DisplayRequestId }),
+      serializeRpc({ displayId: activeId } satisfies {
+        displayId: DisplayRequestId;
+      }),
     );
-    this.clearActiveSession(displayId);
+    this.clearActiveSession(activeId);
   }
 
   private clearActiveSession(displayId?: DisplayRequestId): void {

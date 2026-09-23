@@ -1,8 +1,26 @@
 import { type Brand, make } from "ts-brand";
+import { z } from "zod";
 
 /**
- * Non-serialized raw JSON. May be a JSON object or array. Example: `{"foo":"bar"}` or `["foo","bar"]`.
- * Should be able to be parsed by `JSON.parse` with no manipulation.
+ * A string that parses as JSON (object or array JSON text).
+ *
+ * Example: `'{"foo":"bar"}'`
  */
 export type JSONString = Brand<string, "JSONString">;
 export const JSONString = make<JSONString>();
+
+/** Zod schema: string that `JSON.parse` accepts. */
+export const JSONStringSchema = z
+  .string()
+  .refine(
+    (s) => {
+      try {
+        JSON.parse(s);
+        return true;
+      } catch {
+        return false;
+      }
+    },
+    { message: "must be valid JSON" },
+  )
+  .transform((s) => JSONString(s));

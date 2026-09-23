@@ -1,26 +1,24 @@
 import { z } from "zod";
 import {
-  CredentialClaimName,
-  CredentialConfigurationId,
-  CredentialId,
-  CredentialIssuer,
-  CredentialOfferUri,
-  CredentialTypeName,
-  PresentationRequestUri,
-  UriString,
+  CredentialClaimNameSchema,
+  CredentialConfigurationIdSchema,
+  CredentialIdSchema,
+  CredentialIssuerSchema,
+  CredentialOfferUriSchema,
+  CredentialTypeNameSchema,
+  PresentationRequestUriSchema,
+  UriStringSchema,
 } from "@1shotapi/ows-types";
 
 const credentialOfferSchema = z.object({
-  credentialIssuer: z.string().transform(CredentialIssuer),
-  credentialConfigurationIds: z
-    .array(z.string())
-    .transform((ids) => ids.map(CredentialConfigurationId)),
+  credentialIssuer: CredentialIssuerSchema,
+  credentialConfigurationIds: z.array(CredentialConfigurationIdSchema),
   grants: z.record(z.string(), z.unknown()).optional(),
 });
 
 export const acceptOfferParamsSchema = z
   .object({
-    credentialOfferUri: z.string().transform(CredentialOfferUri).optional(),
+    credentialOfferUri: CredentialOfferUriSchema.optional(),
     offer: credentialOfferSchema.optional(),
   })
   .refine((v) => v.credentialOfferUri !== undefined || v.offer !== undefined, {
@@ -29,29 +27,21 @@ export const acceptOfferParamsSchema = z
 
 export const presentParamsSchema = z
   .object({
-    requestUri: z.string().transform(PresentationRequestUri).optional(),
+    requestUri: PresentationRequestUriSchema.optional(),
     request: z
       .object({
         id: z.string(),
         verifier: z.object({
-          id: z.string().transform(UriString),
+          id: UriStringSchema,
           name: z.string(),
         }),
-        requestedClaims: z
-          .array(z.string())
-          .transform((claims) => claims.map(CredentialClaimName)),
-        credentialTypes: z
-          .array(z.string())
-          .transform((types) => types.map(CredentialTypeName))
-          .optional(),
+        requestedClaims: z.array(CredentialClaimNameSchema),
+        credentialTypes: z.array(CredentialTypeNameSchema).optional(),
         nonce: z.string().optional(),
         audience: z.string().optional(),
       })
       .optional(),
-    acceptedIssuers: z
-      .array(z.string())
-      .transform((ids) => ids.map(CredentialIssuer))
-      .optional(),
+    acceptedIssuers: z.array(CredentialIssuerSchema).optional(),
   })
   .refine((v) => v.requestUri !== undefined || v.request !== undefined, {
     message: "requestUri or request is required",
@@ -59,13 +49,13 @@ export const presentParamsSchema = z
 
 export const listParamsSchema = z
   .object({
-    type: z.string().transform(CredentialTypeName).optional(),
-    issuer: z.string().transform(CredentialIssuer).optional(),
+    type: CredentialTypeNameSchema.optional(),
+    issuer: CredentialIssuerSchema.optional(),
   })
   .optional();
 
 export const deleteParamsSchema = z.object({
-  credentialId: z.string().transform(CredentialId),
+  credentialId: CredentialIdSchema,
 });
 
 export const CREDENTIAL_PARAM_SCHEMAS = {

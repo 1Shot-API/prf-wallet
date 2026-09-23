@@ -153,6 +153,44 @@ describe("SignHelper", () => {
     assert.equal(getHideCount(), 1);
   });
 
+  it("personal_sign: onAuthenticated runs after display release", async () => {
+    const { signer, chainId, calls } = createMocks();
+    let releaseCount = 0;
+    const walletWithRelease: SignHelperWallet = {
+      async requestDisplay() {
+        calls.push("requestDisplay");
+        return {
+          release() {
+            releaseCount += 1;
+            calls.push("release");
+          },
+          async hide() {
+            calls.push("hide");
+          },
+        };
+      },
+    };
+
+    const helper = new SignHelper(signer, walletWithRelease, {
+      getChainId: () => chainId,
+      onAuthenticated: async () => {
+        calls.push("onAuthenticated");
+      },
+      ...brandingSignOptions(signer, calls),
+    });
+
+    await helper.handlers.personal_sign(["hello", account]);
+
+    assert.deepEqual(calls, [
+      "requestDisplay",
+      `consent:${account}:hello`,
+      "signMessage:hello",
+      "release",
+      "onAuthenticated",
+    ]);
+    assert.equal(releaseCount, 1);
+  });
+
   it("personal_sign: rejects without signing when branding throws", async () => {
     const { wallet, signer, chainId, calls, getHideCount } = createMocks();
 
