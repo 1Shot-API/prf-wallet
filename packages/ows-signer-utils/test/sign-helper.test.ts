@@ -285,6 +285,56 @@ describe("SignHelper", () => {
     assert.ok(calls.includes("hide"));
   });
 
+  it("eth_sendTransaction: onAuthenticated runs after display release", async () => {
+    const { signer, chainId, calls } = createMocks({
+      cachedAddress: account,
+    });
+    let releaseCount = 0;
+    const walletWithRelease: SignHelperWallet = {
+      async requestDisplay() {
+        calls.push("requestDisplay");
+        return {
+          release() {
+            releaseCount += 1;
+            calls.push("release");
+          },
+          async hide() {
+            calls.push("hide");
+          },
+        };
+      },
+    };
+
+    const helper = new SignHelper(signer, walletWithRelease, {
+      getChainId: () => chainId,
+      onAuthenticated: async () => {
+        calls.push("onAuthenticated");
+      },
+      ...brandingSignOptions(signer, calls, {
+        approveAndSignTransaction: async () => {
+          calls.push("approveAndSign");
+          return TX_HASH;
+        },
+      }),
+    });
+
+    await helper.handlers.eth_sendTransaction([
+      {
+        from: account,
+        to: "0x2222222222222222222222222222222222222222",
+        data: "0x",
+      },
+    ]);
+
+    assert.deepEqual(calls, [
+      "requestDisplay",
+      "approveAndSign",
+      "release",
+      "onAuthenticated",
+    ]);
+    assert.equal(releaseCount, 1);
+  });
+
   it("eth_sendTransaction: propagates branding rejection", async () => {
     const { wallet, signer, chainId, calls } = createMocks({
       cachedAddress: account,
