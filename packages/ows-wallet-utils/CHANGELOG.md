@@ -1,5 +1,14 @@
 # @1shotapi/ows-wallet-utils
 
+## 0.5.2
+
+### Patch Changes
+
+- 61ea18f: Fix flyout retention after personal_sign / typed-data (including SIWE): run optional `onAuthenticated` after display release, and harden `DisplayChildClient.releaseSession` so stale display IDs still decrement the live session instead of silently no-oping.
+- 61ea18f: Add Zod 4 schemas on branded primitives (and `EChainTechnology`), with viem checksum / `@scure/base` address checks. Split AES-256 into `AES256CipherText` (raw hex) and `AES256CipherTextEnvelope` (`ows-aes1:…`). Wallet-utils EIP-1193 and credential composites now import the shared primitive schemas.
+- Updated dependencies [61ea18f]
+  - @1shotapi/ows-types@0.11.0
+
 ## 0.5.1
 
 ### Patch Changes

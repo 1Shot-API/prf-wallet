@@ -1,5 +1,11 @@
 # @1shotapi/ows-types
 
+## 0.11.0
+
+### Minor Changes
+
+- 61ea18f: Add Zod 4 schemas on branded primitives (and `EChainTechnology`), with viem checksum / `@scure/base` address checks. Split AES-256 into `AES256CipherText` (raw hex) and `AES256CipherTextEnvelope` (`ows-aes1:…`). Wallet-utils EIP-1193 and credential composites now import the shared primitive schemas.
+
 ## 0.10.0
 
 ### Minor Changes
