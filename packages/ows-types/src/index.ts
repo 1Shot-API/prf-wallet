@@ -143,6 +143,7 @@ export {
   type EIP1193RequestArgsFor,
   type EIP1193Requests,
   type KnownEIP1193Method,
+  IEVMTransactionRequestSchema,
   type IEVMTransactionRequest,
   type IExecutionPermission,
   type IExecutionPermissionDependency,

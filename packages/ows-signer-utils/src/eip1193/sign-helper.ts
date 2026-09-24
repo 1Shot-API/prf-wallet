@@ -1,11 +1,12 @@
 import {
   CredentialId,
   EVMAccountAddress,
-  EVMChainId,
   EVMSignatureHex,
   EVMTransactionHash,
   HexString,
+  IEVMTransactionRequestSchema,
   OwsInvalidParamsError,
+  type EVMChainId,
   type IEVMTransactionRequest,
   type RequestDisplayParams,
 } from "@1shotapi/ows-types";
@@ -183,13 +184,10 @@ export class SignHelper {
   ): Promise<EVMTransactionHash> {
     const tx = parseTransactionRequest(params[0]);
     const chainId = this.options.getChainId();
-    if (tx.chainId !== undefined) {
-      const requested = normalizeChainId(tx.chainId);
-      if (requested !== chainId) {
-        throw new OwsInvalidParamsError(
-          `eth_sendTransaction chainId ${requested} does not match active chain ${chainId}`,
-        );
-      }
+    if (tx.chainId !== undefined && tx.chainId !== chainId) {
+      throw new OwsInvalidParamsError(
+        `eth_sendTransaction chainId ${tx.chainId} does not match active chain ${chainId}`,
+      );
     }
 
     const hash = await this.withDisplay(async () => {
@@ -200,12 +198,9 @@ export class SignHelper {
         );
       }
 
-      const to =
-        tx.to === undefined || tx.to === null
-          ? null
-          : EVMAccountAddress(tx.to as `0x${string}`);
-      const data = HexString((tx.data ?? EMPTY_DATA) as `0x${string}`);
-      const value = HexString((tx.value ?? ZERO_VALUE) as `0x${string}`);
+      const to = tx.to === undefined || tx.to === null ? null : tx.to;
+      const data = tx.data ?? EMPTY_DATA;
+      const value = tx.value ?? ZERO_VALUE;
       const transaction: IEVMTransactionRequest = {
         ...tx,
         from: address,
@@ -275,86 +270,14 @@ export function parseTypedData(
 }
 
 function parseTransactionRequest(value: unknown): IEVMTransactionRequest {
-  if (value === null || typeof value !== "object" || Array.isArray(value)) {
+  const parsed = IEVMTransactionRequestSchema.safeParse(value);
+  if (!parsed.success) {
+    const detail = parsed.error.issues[0]?.message ?? "invalid transaction";
     throw new OwsInvalidParamsError(
-      "eth_sendTransaction requires a transaction object",
+      `eth_sendTransaction requires a valid transaction object (${detail})`,
     );
   }
-  const raw = value as Record<string, unknown>;
-  const tx: IEVMTransactionRequest = {};
-
-  if (raw.from !== undefined) {
-    if (typeof raw.from !== "string") {
-      throw new OwsInvalidParamsError("Invalid transaction from");
-    }
-    tx.from = EVMAccountAddress(raw.from as `0x${string}`);
-  }
-  if (raw.to !== undefined && raw.to !== null) {
-    if (typeof raw.to !== "string") {
-      throw new OwsInvalidParamsError("Invalid transaction to");
-    }
-    tx.to = EVMAccountAddress(raw.to as `0x${string}`);
-  } else if (raw.to === null) {
-    tx.to = null;
-  }
-  if (raw.data !== undefined) {
-    tx.data = asHexField(raw.data, "data");
-  }
-  if (raw.value !== undefined) {
-    tx.value = asHexField(raw.value, "value");
-  }
-  if (raw.gas !== undefined) {
-    tx.gas = asHexField(raw.gas, "gas");
-  }
-  if (raw.gasPrice !== undefined) {
-    tx.gasPrice = asHexField(raw.gasPrice, "gasPrice");
-  }
-  if (raw.maxFeePerGas !== undefined) {
-    tx.maxFeePerGas = asHexField(raw.maxFeePerGas, "maxFeePerGas");
-  }
-  if (raw.maxPriorityFeePerGas !== undefined) {
-    tx.maxPriorityFeePerGas = asHexField(
-      raw.maxPriorityFeePerGas,
-      "maxPriorityFeePerGas",
-    );
-  }
-  if (raw.nonce !== undefined) {
-    tx.nonce = asHexField(raw.nonce, "nonce");
-  }
-  if (raw.chainId !== undefined) {
-    if (typeof raw.chainId !== "string") {
-      throw new OwsInvalidParamsError("Invalid transaction chainId");
-    }
-    tx.chainId = normalizeChainId(raw.chainId);
-  }
-  if (raw.type !== undefined) {
-    if (typeof raw.type !== "string") {
-      throw new OwsInvalidParamsError("Invalid transaction type");
-    }
-    tx.type = raw.type;
-  }
-  if (raw.accessList !== undefined) {
-    if (!Array.isArray(raw.accessList)) {
-      throw new OwsInvalidParamsError("Invalid transaction accessList");
-    }
-    tx.accessList = raw.accessList;
-  }
-  return tx;
-}
-
-function asHexField(value: unknown, field: string): HexString {
-  if (typeof value !== "string" || !/^0x[0-9a-fA-F]*$/.test(value)) {
-    throw new OwsInvalidParamsError(`Invalid transaction ${field}`);
-  }
-  return HexString(value as `0x${string}`);
-}
-
-function normalizeChainId(value: string): EVMChainId {
-  const raw = value.trim().toLowerCase();
-  if (!/^0x[0-9a-f]+$/.test(raw)) {
-    throw new OwsInvalidParamsError(`Invalid chainId: ${value}`);
-  }
-  return EVMChainId(`0x${BigInt(raw).toString(16)}`);
+  return parsed.data;
 }
 
 function sameAddress(a: string, b: string): boolean {

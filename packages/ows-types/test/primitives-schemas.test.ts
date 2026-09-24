@@ -24,8 +24,9 @@ describe("primitive Zod schemas", () => {
     assert.equal(parsed, getAddress(raw));
   });
 
-  it("normalizes EVMChainId leading zeros", () => {
+  it("normalizes EVMChainId leading zeros and case", () => {
     assert.equal(EVMChainIdSchema.parse("0x01"), "0x1");
+    assert.equal(EVMChainIdSchema.parse("0xAA"), "0xaa");
     assert.equal(EVMChainIdSchema.parse("0x13b2"), "0x13b2");
   });
 

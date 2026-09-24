@@ -7,6 +7,7 @@ import {
   ChainUtils,
   EChainTechnology,
   EVMChainId,
+  OwsInvalidParamsError,
   SOLANA_DEVNET_CHAIN_ID,
   SOLANA_MAINNET_CHAIN_ID,
 } from "../src/index.js";
@@ -27,9 +28,46 @@ describe("ChainUtils", () => {
   it("narrows EVM hex chain ids", () => {
     assert.equal(ChainUtils.isEVMChainId("0x2105"), true);
     assert.equal(ChainUtils.isEVMChainId("Bitcoin"), false);
+    assert.equal(ChainUtils.isEVMChainId(" 0x2105"), false);
     assert.equal(ChainUtils.asEVMChainId("0x2105"), EVMChainId("0x2105"));
     assert.equal(ChainUtils.asEVMChainId("0xAa"), EVMChainId("0xaa"));
-    assert.throws(() => ChainUtils.asEVMChainId("Bitcoin"), /Invalid EVMChainId/);
+    assert.equal(ChainUtils.asEVMChainId("0x01"), EVMChainId("0x1"));
+    assert.throws(
+      () => ChainUtils.asEVMChainId("Bitcoin"),
+      (error: unknown) => error instanceof OwsInvalidParamsError,
+    );
+  });
+
+  it("normalizes number, bigint, decimal, and hex chain ids", () => {
+    assert.equal(ChainUtils.asEVMChainId(8453), EVMChainId("0x2105"));
+    assert.equal(ChainUtils.asEVMChainId(8453n), EVMChainId("0x2105"));
+    assert.equal(ChainUtils.asEVMChainId("8453"), EVMChainId("0x2105"));
+    assert.equal(ChainUtils.asEVMChainId("0x0aa36a7"), EVMChainId("0xaa36a7"));
+    assert.equal(ChainUtils.asEVMChainId("11155111"), EVMChainId("0xaa36a7"));
+  });
+
+  it("trims whitespace before normalizing", () => {
+    assert.equal(ChainUtils.asEVMChainId("  0x2105  "), EVMChainId("0x2105"));
+    assert.equal(ChainUtils.asEVMChainId("\t8453\n"), EVMChainId("0x2105"));
+  });
+
+  it("rejects invalid EVM chain ids", () => {
+    assert.throws(
+      () => ChainUtils.asEVMChainId(-1),
+      (error: unknown) => error instanceof OwsInvalidParamsError,
+    );
+    assert.throws(
+      () => ChainUtils.asEVMChainId(1.5),
+      (error: unknown) => error instanceof OwsInvalidParamsError,
+    );
+    assert.throws(
+      () => ChainUtils.asEVMChainId(-1n),
+      (error: unknown) => error instanceof OwsInvalidParamsError,
+    );
+    assert.throws(
+      () => ChainUtils.asEVMChainId(""),
+      (error: unknown) => error instanceof OwsInvalidParamsError,
+    );
   });
 
   it("narrows Solana sentinels", () => {

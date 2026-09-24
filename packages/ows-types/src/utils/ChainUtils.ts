@@ -1,4 +1,5 @@
 import { EChainTechnology } from "../enums/EChainTechnology.js";
+import { OwsInvalidParamsError } from "../errors/rpc.js";
 import {
   BITCOIN_CAIP2,
   BITCOIN_MAINNET_CHAIN_ID,
@@ -6,7 +7,7 @@ import {
   type BitcoinChainId as BitcoinChainIdType,
 } from "../primitives/BitcoinChainId.js";
 import {
-  EVMChainId,
+  EVMChainIdSchema,
   type EVMChainId as EVMChainIdType,
 } from "../primitives/EVMChainId.js";
 import type { OWSChainId } from "../primitives/OWSChainId.js";
@@ -42,12 +43,43 @@ export class ChainUtils {
     return typeof chainId === "string" && EVM_CHAIN_ID_RE.test(chainId);
   }
 
-  /** Brand a hex EIP-155 chain id, or throw. */
-  static asEVMChainId(chainId: unknown): EVMChainIdType {
-    if (typeof chainId !== "string" || !EVM_CHAIN_ID_RE.test(chainId)) {
-      throw new Error(`Invalid EVMChainId: ${String(chainId)}`);
+  /**
+   * Normalize an EIP-155 chain id into a branded {@link EVMChainId}
+   * (`0x` + lowercase hex, no leading zeros).
+   *
+   * Accepts hex strings (`0x01`, `0XAA`), decimal strings (`8453`),
+   * numbers, and bigints. Trims string input. Prefer this at validation /
+   * derivation boundaries so branded ids compare with `===`.
+   *
+   * @throws {OwsInvalidParamsError} when `value` is not a valid chain id
+   */
+  static asEVMChainId(value: number | string | bigint): EVMChainIdType {
+    try {
+      if (typeof value === "number") {
+        if (!Number.isFinite(value) || !Number.isInteger(value) || value < 0) {
+          throw new OwsInvalidParamsError(`Invalid chainId: ${String(value)}`);
+        }
+        return EVMChainIdSchema.parse(`0x${BigInt(value).toString(16)}`);
+      }
+      if (typeof value === "bigint") {
+        if (value < 0n) {
+          throw new OwsInvalidParamsError(`Invalid chainId: ${String(value)}`);
+        }
+        return EVMChainIdSchema.parse(`0x${value.toString(16)}`);
+      }
+      const trimmed = value.trim();
+      if (/^0x[0-9a-fA-F]+$/i.test(trimmed)) {
+        // Schema requires a lowercase `0x` prefix; hex body case is normalized by BigInt.
+        return EVMChainIdSchema.parse(`0x${trimmed.slice(2)}`);
+      }
+      if (/^[0-9]+$/.test(trimmed)) {
+        return EVMChainIdSchema.parse(`0x${BigInt(trimmed).toString(16)}`);
+      }
+      throw new OwsInvalidParamsError(`Invalid chainId: ${String(value)}`);
+    } catch (error) {
+      if (error instanceof OwsInvalidParamsError) throw error;
+      throw new OwsInvalidParamsError(`Invalid chainId: ${String(value)}`);
     }
-    return EVMChainId(chainId.toLowerCase() as `0x${string}`);
   }
 
   static isSolanaChainId(chainId: unknown): chainId is SolanaChainIdType {

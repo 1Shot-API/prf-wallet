@@ -1,4 +1,5 @@
 import {
+  ChainUtils,
   EIP1193_READ_METHODS,
   EIP1193_UNRECOGNIZED_CHAIN_ID,
   EVMChainId,
@@ -235,7 +236,7 @@ export class RpcHelper {
 
   /** Same logic as the EIP-1193 `wallet_switchEthereumChain` handler. */
   async switchChain(chainIdInput: EVMChainId | string): Promise<null> {
-    const chainId = normalizeChainId(chainIdInput);
+    const chainId = ChainUtils.asEVMChainId(chainIdInput);
     if (!this.providers.has(chainId)) {
       throw new OwsRpcError(
         `Unrecognized chain ID: ${chainId}`,
@@ -310,7 +311,7 @@ function normalizeProviders(
 ): Map<EVMChainId, string> {
   const out = new Map<EVMChainId, string>();
   for (const [chainId, url] of providers) {
-    const id = normalizeChainId(chainId);
+    const id = ChainUtils.asEVMChainId(chainId);
     const trimmed = url.trim();
     if (!trimmed) {
       throw new Error(`RpcHelper: empty URL for chain ${id}`);
@@ -325,7 +326,7 @@ function resolveDefaultChainId(
   defaultChainId?: EVMChainId,
 ): EVMChainId {
   if (defaultChainId !== undefined) {
-    const id = normalizeChainId(defaultChainId);
+    const id = ChainUtils.asEVMChainId(defaultChainId);
     if (!providers.has(id)) {
       throw new Error(`RpcHelper: defaultChainId ${id} is not in providers`);
     }
@@ -336,15 +337,6 @@ function resolveDefaultChainId(
     throw new Error("RpcHelper: providers map must not be empty");
   }
   return first;
-}
-
-/** Canonical hex chain id (`0x01` → `0x1`). */
-export function normalizeChainId(value: string): EVMChainId {
-  const raw = value.trim().toLowerCase();
-  if (!/^0x[0-9a-f]+$/.test(raw)) {
-    throw new OwsInvalidParamsError(`Invalid chainId: ${value}`);
-  }
-  return EVMChainId(`0x${BigInt(raw).toString(16)}`);
 }
 
 function readSwitchChainId(params: unknown[]): string {

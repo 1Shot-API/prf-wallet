@@ -1,5 +1,11 @@
 # @1shotapi/ows-types
 
+## 0.12.0
+
+### Minor Changes
+
+- 6cd2357: Add `ChainUtils.asEVMChainId` (throws `OwsInvalidParamsError`) to normalize EIP-155 chain ids from number/string/bigint (with trim), and use it from signer/wallet EIP-1193 helpers instead of local `normalizeChainId` wrappers. Add `IEVMTransactionRequestSchema` and parse `eth_sendTransaction` params with Zod.
+
 ## 0.11.0
 
 ### Minor Changes
