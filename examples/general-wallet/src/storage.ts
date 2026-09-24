@@ -1,7 +1,8 @@
 import {
-  CredentialId,
+  CredentialIdSchema,
   EVMAccountAddress,
   SolanaAccountAddress,
+  type CredentialId,
 } from "@1shotapi/ows-types";
 import { getAddress, isAddress } from "viem";
 
@@ -18,7 +19,11 @@ export function isWalletCreated(): boolean {
 
 export function loadCredentialId(): CredentialId | undefined {
   const storedCredentialId = localStorage.getItem(CREDENTIAL_ID_KEY);
-  return storedCredentialId != null ? CredentialId(storedCredentialId) : undefined;
+  if (storedCredentialId == null) {
+    return undefined;
+  }
+  const parsed = CredentialIdSchema.safeParse(storedCredentialId);
+  return parsed.success ? parsed.data : undefined;
 }
 
 export function saveWalletCreated(credentialId: string): void {
