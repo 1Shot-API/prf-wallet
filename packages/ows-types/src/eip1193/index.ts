@@ -14,7 +14,7 @@ export type {
   KnownEIP1193Method,
 } from "./requests.js";
 
-export type { IEVMTransactionRequest } from "./transaction.js";
+export { IEVMTransactionRequestSchema, type IEVMTransactionRequest } from "./transaction.js";
 
 export type {
   IExecutionPermission,

@@ -10,7 +10,6 @@ import {
   OwsRpcError,
 } from "@1shotapi/ows-types";
 import {
-  normalizeChainId,
   RpcHelper,
   type Eip1193Handler,
   type RpcHelperWallet,
@@ -33,19 +32,6 @@ function createMockWallet(): {
 
 const SEPOLIA = EVMChainId("0xaa36a7");
 const BASE_SEPOLIA = EVMChainId("0x14a34");
-
-describe("normalizeChainId", () => {
-  it("canonicalizes leading zeros", () => {
-    assert.equal(normalizeChainId("0x0aa36a7"), SEPOLIA);
-  });
-
-  it("rejects non-hex", () => {
-    assert.throws(
-      () => normalizeChainId("11155111"),
-      (error: unknown) => error instanceof OwsInvalidParamsError,
-    );
-  });
-});
 
 describe("RpcHelper", () => {
   it("registers eth_chainId, switch, and read methods", () => {

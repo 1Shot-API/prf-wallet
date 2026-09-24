@@ -14,7 +14,6 @@ export { EIP1193_PARAM_SCHEMAS, getEip1193ParamSchema } from "./eip1193/schemas.
 export {
   RpcHelper,
   RpcHelperEventEmitter,
-  normalizeChainId,
 } from "./eip1193/rpc-helper.js";
 export type {
   RpcHelperEventMap,
