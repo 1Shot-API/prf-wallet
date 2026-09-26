@@ -1,5 +1,11 @@
 # @1shotapi/ows-signer-utils
 
+## 0.6.6
+
+### Patch Changes
+
+- Fix stale address cache after Change Account: always overwrite EVM/Solana/BTC caches from derived keys, and reject in-flight signer RPCs in `clearSession` so late `KeyDerived` events cannot refill the previous account.
+
 ## 0.6.5
 
 ### Patch Changes
