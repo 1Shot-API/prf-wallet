@@ -196,6 +196,41 @@ describe("SignerRpcClient", () => {
     client.destroy();
   });
 
+  it("rejectAllPending rejects in-flight requests and ignores later events", async () => {
+    const { iframe, emit, posted } = setupDomMocks();
+    const client = new SignerRpcClient(iframe, SIGNER_ORIGIN, 5_000);
+
+    const promise = client.request("getPublicKey", undefined, {
+      terminalEvent: "PublicKey",
+      onIntermediate: () => {
+        assert.fail("late KeyDerived must not call onIntermediate after reject");
+      },
+    });
+
+    client.rejectAllPending("session cleared");
+    await assert.rejects(promise, /session cleared/);
+
+    const cancel = posted.find(
+      (entry) =>
+        entry.message &&
+        typeof entry.message === "object" &&
+        (entry.message as { kind?: string }).kind === "cancel",
+    );
+    assert.ok(cancel, "rejectAllPending should post cancel");
+
+    emit("KeyDerived", {
+      secp256k1PublicKey: "0x" + "04".repeat(65),
+      ed25519PublicKey: "0x" + "55".repeat(32),
+    });
+    emit("PublicKey", {
+      cosePublicKey: null,
+      secp256k1PublicKey: "0x" + "04".repeat(65),
+      ed25519PublicKey: "0x" + "55".repeat(32),
+    });
+
+    client.destroy();
+  });
+
   it("ignores messages from wrong origin", async () => {
     const { iframe, dispatch, emit } = setupDomMocks();
     const client = new SignerRpcClient(iframe, SIGNER_ORIGIN, 5_000);

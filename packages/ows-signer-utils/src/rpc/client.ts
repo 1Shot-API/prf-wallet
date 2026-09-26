@@ -118,17 +118,26 @@ export class SignerRpcClient {
     });
   }
 
-  destroy(): void {
-    window.removeEventListener("message", this.listener);
+  /**
+   * Reject every in-flight RPC and cancel the signer ceremony panel.
+   * Used by {@link destroy} and branding `clearSession` so late `KeyDerived`
+   * events for abandoned correlation ids are ignored.
+   */
+  rejectAllPending(reason: string): void {
     this.postCancel();
     for (const [id, pending] of this.pending) {
       clearTimeout(pending.timeoutId);
       if (pending.alsoWaitForTimeoutId) {
         clearTimeout(pending.alsoWaitForTimeoutId);
       }
-      pending.reject(new Error("SignerRpcClient destroyed"));
+      pending.reject(new Error(reason));
       this.pending.delete(id);
     }
+  }
+
+  destroy(): void {
+    window.removeEventListener("message", this.listener);
+    this.rejectAllPending("SignerRpcClient destroyed");
   }
 
   /** Tell the signer to drop a stuck Confirm wait / ceremony lock. */

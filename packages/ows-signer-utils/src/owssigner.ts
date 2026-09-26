@@ -167,9 +167,11 @@ export class OWSSigner implements IOWSSigner {
 
   /**
    * Drop session credential id and address cache (e.g. branding “change account”).
+   * Cancels in-flight signer RPCs so late `KeyDerived` cannot refill caches.
    * Does not clear Branding Layer localStorage — callers clear that separately.
    */
   clearSession(): void {
+    this.rpc.rejectAllPending("OWSSigner session cleared");
     this.credentialId = undefined;
     this.cachedAddress = undefined;
     this.cachedSolanaAddress = undefined;
@@ -243,45 +245,33 @@ export class OWSSigner implements IOWSSigner {
     secp256k1PublicKey: SECP256K1PublicKey,
     ed25519PublicKey: ED25519PublicKey,
   ): void {
-    if (!this.cachedAddress) {
-      this.cachedAddress = EVMAccountAddress(
-        publicKeyToAddress(secp256k1PublicKey),
-      );
-    }
-    if (!this.cachedSolanaAddress) {
-      this.cachedSolanaAddress =
-        addressFromEd25519PublicKey(ed25519PublicKey);
-    }
-    if (!this.cachedBitcoinMainnetAddress) {
-      this.cachedBitcoinMainnetAddress = addressFromSecp256k1PublicKey(
-        secp256k1PublicKey,
-        BITCOIN_MAINNET_CHAIN_ID,
-      );
-    }
-    if (!this.cachedBitcoinTestnetAddress) {
-      this.cachedBitcoinTestnetAddress = addressFromSecp256k1PublicKey(
-        secp256k1PublicKey,
-        BITCOIN_TESTNET_CHAIN_ID,
-      );
-    }
+    // Always overwrite — derived keys are the source of truth. Write-once
+    // left a stale EVM/Solana/BTC cache after Change Account when a late
+    // KeyDerived refilled the cache before a new getPublicKey.
+    this.cachedAddress = EVMAccountAddress(
+      publicKeyToAddress(secp256k1PublicKey),
+    );
+    this.cachedSolanaAddress = addressFromEd25519PublicKey(ed25519PublicKey);
+    this.cachedBitcoinMainnetAddress = addressFromSecp256k1PublicKey(
+      secp256k1PublicKey,
+      BITCOIN_MAINNET_CHAIN_ID,
+    );
+    this.cachedBitcoinTestnetAddress = addressFromSecp256k1PublicKey(
+      secp256k1PublicKey,
+      BITCOIN_TESTNET_CHAIN_ID,
+    );
   }
 
   private cacheAddressFromPublicKey(publicKey: SECP256K1PublicKey): void {
-    if (!this.cachedAddress) {
-      this.cachedAddress = EVMAccountAddress(publicKeyToAddress(publicKey));
-    }
-    if (!this.cachedBitcoinMainnetAddress) {
-      this.cachedBitcoinMainnetAddress = addressFromSecp256k1PublicKey(
-        publicKey,
-        BITCOIN_MAINNET_CHAIN_ID,
-      );
-    }
-    if (!this.cachedBitcoinTestnetAddress) {
-      this.cachedBitcoinTestnetAddress = addressFromSecp256k1PublicKey(
-        publicKey,
-        BITCOIN_TESTNET_CHAIN_ID,
-      );
-    }
+    this.cachedAddress = EVMAccountAddress(publicKeyToAddress(publicKey));
+    this.cachedBitcoinMainnetAddress = addressFromSecp256k1PublicKey(
+      publicKey,
+      BITCOIN_MAINNET_CHAIN_ID,
+    );
+    this.cachedBitcoinTestnetAddress = addressFromSecp256k1PublicKey(
+      publicKey,
+      BITCOIN_TESTNET_CHAIN_ID,
+    );
   }
 
   private async withCeremonyPanel<T>(run: () => Promise<T>): Promise<T> {
