@@ -51,6 +51,8 @@ export type OWSSignerOptions = {
   credentialId?: CredentialId;
   hidden?: boolean;
   rpcTimeoutMs?: number;
+  /** Fired when the branding ceremony host strip opens or closes. */
+  onCeremonyPanel?: (open: boolean) => void;
 };
 
 const DEFAULT_CEREMONY_UI: Required<CeremonyUiParams> = {
@@ -131,6 +133,7 @@ export class OWSSigner implements IOWSSigner {
   private cachedBitcoinMainnetAddress?: BitcoinSegwitAccountAddress;
   private cachedBitcoinTestnetAddress?: BitcoinSegwitAccountAddress;
   private lastPublicKeyData?: PublicKeyData;
+  private readonly onCeremonyPanel?: (open: boolean) => void;
 
   private constructor(
     private readonly iframe: HTMLIFrameElement,
@@ -139,6 +142,7 @@ export class OWSSigner implements IOWSSigner {
   ) {
     this.rpc = rpc;
     this.credentialId = options?.credentialId;
+    this.onCeremonyPanel = options?.onCeremonyPanel;
     this.evm = new EvmSigner(this);
     this.solana = new SolanaSigner(this);
     this.bitcoin = new BitcoinSigner(this);
@@ -276,10 +280,12 @@ export class OWSSigner implements IOWSSigner {
 
   private async withCeremonyPanel<T>(run: () => Promise<T>): Promise<T> {
     const restore = showSignerCeremonyPanel(this.iframe);
+    this.onCeremonyPanel?.(true);
     try {
       return await run();
     } finally {
       restore();
+      this.onCeremonyPanel?.(false);
     }
   }
 

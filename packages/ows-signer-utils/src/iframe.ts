@@ -75,7 +75,7 @@ function focusIframe(iframe: HTMLIFrameElement): void {
 }
 
 /**
- * Make the nested custody signer iframe a visible centered panel for ceremonies
+ * Make the nested custody signer iframe a visible bottom strip for ceremonies
  * (passkey Confirm UI, passphrase, reveal key). Call synchronously immediately
  * before a signer RPC that needs signer DOM or WebAuthn.
  */
@@ -88,21 +88,23 @@ export function showSignerCeremonyPanel(
     containerStyle: container ? captureInlineStyles(container) : null,
   };
 
-  const panelWidth = "min(22rem, 92vw)";
-  /** Tall enough for default Confirm copy + buttons without an outer scrollbar. */
-  const panelMinHeight = "18rem";
+  /** Compact sheet: default copy + stacked Continue/Cancel. */
+  const panelMinHeight = "12rem";
+  const panelMaxHeight = "min(50vh, 24rem)";
   const zIndex = "10001";
 
   if (container) {
     setImportantStyle(container, "display", "block");
     setImportantStyle(container, "position", "fixed");
-    setImportantStyle(container, "top", "50%");
-    setImportantStyle(container, "left", "50%");
-    setImportantStyle(container, "transform", "translate(-50%, -50%)");
-    setImportantStyle(container, "width", panelWidth);
-    setImportantStyle(container, "height", panelMinHeight);
+    setImportantStyle(container, "top", "auto");
+    setImportantStyle(container, "left", "0");
+    setImportantStyle(container, "right", "0");
+    setImportantStyle(container, "bottom", "0");
+    setImportantStyle(container, "transform", "none");
+    setImportantStyle(container, "width", "100%");
+    setImportantStyle(container, "height", "auto");
     setImportantStyle(container, "min-height", panelMinHeight);
-    setImportantStyle(container, "max-height", "90vh");
+    setImportantStyle(container, "max-height", panelMaxHeight);
     setImportantStyle(container, "clip-path", "none");
     setImportantStyle(container, "overflow", "hidden");
     setImportantStyle(container, "opacity", "1");
@@ -110,9 +112,9 @@ export function showSignerCeremonyPanel(
     setImportantStyle(container, "z-index", zIndex);
     setImportantStyle(container, "margin", "0");
     setImportantStyle(container, "padding", "0");
-    setImportantStyle(container, "background", "Canvas");
-    setImportantStyle(container, "border-radius", "8px");
-    setImportantStyle(container, "box-shadow", "0 8px 32px #0006");
+    setImportantStyle(container, "background", "transparent");
+    setImportantStyle(container, "border-radius", "0");
+    setImportantStyle(container, "box-shadow", "none");
   }
 
   setImportantStyle(iframe, "display", "block");
