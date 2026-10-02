@@ -88,9 +88,8 @@ export function showSignerCeremonyPanel(
     containerStyle: container ? captureInlineStyles(container) : null,
   };
 
-  /** Compact sheet: default copy + stacked Continue/Cancel. */
-  const panelMinHeight = "12rem";
-  const panelMaxHeight = "min(50vh, 24rem)";
+  /** Half the branding viewport — room for title, description, and actions. */
+  const panelHeight = "50dvh";
   const zIndex = "10001";
 
   if (container) {
@@ -102,9 +101,9 @@ export function showSignerCeremonyPanel(
     setImportantStyle(container, "bottom", "0");
     setImportantStyle(container, "transform", "none");
     setImportantStyle(container, "width", "100%");
-    setImportantStyle(container, "height", "auto");
-    setImportantStyle(container, "min-height", panelMinHeight);
-    setImportantStyle(container, "max-height", panelMaxHeight);
+    setImportantStyle(container, "height", panelHeight);
+    setImportantStyle(container, "min-height", "");
+    setImportantStyle(container, "max-height", "");
     setImportantStyle(container, "clip-path", "none");
     setImportantStyle(container, "overflow", "hidden");
     setImportantStyle(container, "opacity", "1");
@@ -123,7 +122,7 @@ export function showSignerCeremonyPanel(
   setImportantStyle(iframe, "left", "auto");
   setImportantStyle(iframe, "width", "100%");
   setImportantStyle(iframe, "height", "100%");
-  setImportantStyle(iframe, "min-height", panelMinHeight);
+  setImportantStyle(iframe, "min-height", "100%");
   setImportantStyle(iframe, "clip-path", "none");
   setImportantStyle(iframe, "overflow", "hidden");
   setImportantStyle(iframe, "opacity", "1");

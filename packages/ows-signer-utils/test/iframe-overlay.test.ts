@@ -120,7 +120,7 @@ describe("showSignerCeremonyPanel", () => {
     assert.equal(home.style.getPropertyValue("background"), "transparent");
     assert.equal(home.style.getPropertyValue("box-shadow"), "none");
     assert.equal(iframe.style.getPropertyValue("opacity"), "1");
-    assert.equal(home.style.getPropertyValue("min-height"), "12rem");
+    assert.equal(home.style.getPropertyValue("height"), "50dvh");
     assert.equal(home.style.getPropertyValue("overflow"), "hidden");
     assert.equal(iframe.style.getPropertyValue("height"), "100%");
 

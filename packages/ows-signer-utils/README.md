@@ -61,7 +61,7 @@ Inbound events: validate `event.origin === signerOrigin` and `event.source === i
 
 ### Signer display (passkey Confirm / passphrase)
 
-`OWSSigner` automatically shows a bottom full-width ceremony strip (`showSignerCeremonyPanel`) for WebAuthn Confirm UI and recovery passphrase/reveal. Callers do **not** need a 1×1 invisible focus layer.
+`OWSSigner` automatically shows a bottom full-width ceremony strip (`showSignerCeremonyPanel`) for WebAuthn Confirm UI and recovery passphrase/reveal. The strip is **half the branding viewport height** (`50dvh`). Callers do **not** need a 1×1 invisible focus layer.
 
 | Helper | Purpose |
 |--------|---------|

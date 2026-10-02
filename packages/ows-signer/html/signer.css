@@ -67,8 +67,11 @@ body.ows-ceremony-open {
   margin: 0;
   width: 100%;
   max-width: none;
+  height: 100%;
   max-height: 100%;
-  padding: 0 20px 0;
+  min-height: 0;
+  padding: 12px 20px 0;
+  justify-content: flex-start;
   overflow: hidden;
   border: 1px solid var(--ows-border);
   border-bottom: none;
@@ -91,18 +94,28 @@ body.ows-ceremony-open {
   flex: 0 0 auto;
   width: 2.5rem;
   height: 0.25rem;
-  margin: 10px auto 4px;
   border-radius: 999px;
   background: color-mix(in srgb, var(--ows-text-muted) 35%, transparent);
 }
 
+.ows-signer-ui--ceremony .ows-ceremony-grab {
+  margin: 0 auto 12px;
+}
+
 .ows-signer-ui--ceremony .ows-ceremony-header {
-  padding: 4px 0 0;
+  flex-shrink: 0;
+  padding: 0;
+  margin: 0 0 8px;
   text-align: left;
 }
 
 .ows-signer-ui--ceremony .ows-ceremony-body {
+  flex: 0 0 auto;
+  flex-shrink: 0;
+  min-height: auto;
+  overflow: visible;
   padding: 0 0 4px;
+  margin-bottom: 12px;
   text-align: left;
 }
 
