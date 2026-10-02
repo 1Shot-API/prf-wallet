@@ -1,5 +1,11 @@
 # @1shotapi/ows-signer-utils
 
+## 0.6.7
+
+### Patch Changes
+
+- Passkey ceremony UI uses a compact bottom sheet inside a transparent bottom-anchored host strip instead of a centered floating panel with outer shadow.
+
 ## 0.6.6
 
 ### Patch Changes

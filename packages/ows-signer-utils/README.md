@@ -61,11 +61,12 @@ Inbound events: validate `event.origin === signerOrigin` and `event.source === i
 
 ### Signer display (passkey Confirm / passphrase)
 
-`OWSSigner` automatically shows a centered visible ceremony panel (`showSignerCeremonyPanel`) for WebAuthn Confirm UI and recovery passphrase/reveal. Callers do **not** need a 1×1 invisible focus layer.
+`OWSSigner` automatically shows a bottom full-width ceremony strip (`showSignerCeremonyPanel`) for WebAuthn Confirm UI and recovery passphrase/reveal. The strip is **half the branding viewport height** (`50dvh`). Callers do **not** need a 1×1 invisible focus layer.
 
 | Helper | Purpose |
 |--------|---------|
-| `showSignerCeremonyPanel(iframe)` | Centered visible panel (used internally by `OWSSigner`). Returns a restore function. |
+| `showSignerCeremonyPanel(iframe)` | Bottom-anchored transparent host for the signer iframe (used internally by `OWSSigner`). Returns a restore function. |
+| `OWSSignerOptions.onCeremonyPanel` | Optional `(open: boolean)` when the ceremony host strip opens/closes (e.g. branding scrim). |
 | `overlaySignerIframe(iframe, slot, options?)` | Optional slot-aligned overlay if you still need to pin the iframe over a specific element (prefer the auto panel for new code). |
 
 Pass optional `explanationHeader` / `explanationText` / `confirmButtonText` / `denyButtonText` on ceremony RPCs. Cancel emits `SignDenied` → `OwsSignDeniedError`.

@@ -66,7 +66,14 @@ export function initUi(container) {
   root.className = "ows-signer-ui";
 }
 
+function setCeremonyOpen(open) {
+  if (typeof document !== "undefined" && document.body) {
+    document.body.classList.toggle("ows-ceremony-open", open);
+  }
+}
+
 export function clearUi() {
+  setCeremonyOpen(false);
   if (root) {
     root.innerHTML = "";
     root.className = "ows-signer-ui";
@@ -170,10 +177,15 @@ export function promptCeremonyConfirm(fields, runOnConfirm) {
   cancelPendingCeremonyConfirm();
   clearUi();
   root.className = "ows-signer-ui ows-signer-ui--ceremony";
+  setCeremonyOpen(true);
   const ui = resolveCeremonyUi(fields);
 
   return new Promise((resolve, reject) => {
     pendingConfirmReject = reject;
+
+    const grab = document.createElement("div");
+    grab.className = "ows-ceremony-grab";
+    grab.setAttribute("aria-hidden", "true");
 
     const header = document.createElement("h2");
     header.className = "ows-ceremony-header";
@@ -238,7 +250,7 @@ export function promptCeremonyConfirm(fields, runOnConfirm) {
     });
 
     actions.append(confirmBtn, denyBtn);
-    root.append(header, body, actions);
+    root.append(grab, header, body, actions);
   });
 }
 

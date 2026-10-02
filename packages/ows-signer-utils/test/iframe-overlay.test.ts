@@ -100,7 +100,7 @@ describe("overlaySignerIframe", () => {
 });
 
 describe("showSignerCeremonyPanel", () => {
-  it("shows a visible centered panel and restores styles", () => {
+  it("shows a bottom full-width transparent strip and restores styles", () => {
     const home = createStyleableElement("div");
     home.style.setProperty("opacity", "0");
 
@@ -112,9 +112,15 @@ describe("showSignerCeremonyPanel", () => {
     assert.equal(home.style.getPropertyValue("opacity"), "1");
     assert.equal(home.style.getPropertyValue("position"), "fixed");
     assert.equal(home.style.getPropertyValue("pointer-events"), "auto");
+    assert.equal(home.style.getPropertyValue("left"), "0");
+    assert.equal(home.style.getPropertyValue("right"), "0");
+    assert.equal(home.style.getPropertyValue("bottom"), "0");
+    assert.equal(home.style.getPropertyValue("top"), "auto");
+    assert.equal(home.style.getPropertyValue("width"), "100%");
+    assert.equal(home.style.getPropertyValue("background"), "transparent");
+    assert.equal(home.style.getPropertyValue("box-shadow"), "none");
     assert.equal(iframe.style.getPropertyValue("opacity"), "1");
-    assert.match(home.style.getPropertyValue("width"), /22rem|92vw/);
-    assert.equal(home.style.getPropertyValue("height"), "18rem");
+    assert.equal(home.style.getPropertyValue("height"), "50dvh");
     assert.equal(home.style.getPropertyValue("overflow"), "hidden");
     assert.equal(iframe.style.getPropertyValue("height"), "100%");
 

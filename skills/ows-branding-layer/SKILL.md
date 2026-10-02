@@ -153,7 +153,7 @@ Restore-backup must use **`awaitSignerReady` only** — calling `ensureReady` fi
 3. Prefer **methods on objects** over free helpers when logic belongs to one class.
 4. Set iframe `allow` for WebAuthn/clipboard **before** navigation (`OWSSigner` / host `OWSProxy` already do this).
 5. Do not vendor Postmate — use the `postmate` package (transitive).
-6. Do **not** reparent the signer iframe. Passphrase / Confirm UI is shown by `OWSSigner` via `showSignerCeremonyPanel` (centered panel). Prefer that over manual `overlaySignerIframe`.
+6. Do **not** reparent the signer iframe. Passphrase / Confirm UI is shown by `OWSSigner` via `showSignerCeremonyPanel` (bottom ceremony strip). Prefer that over manual `overlaySignerIframe`.
 7. Prefer Vite `/signer/` at **origin root** even if the branding app uses a subpath `base` (e.g. `/wallet/`).
 
 ## Reference implementation
