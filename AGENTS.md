@@ -100,10 +100,11 @@ Bootstrapped; OWS signer logic and SDKs not yet implemented.
 
 ## Agent Skills
 
-Branding Layer scaffolding skill (install in a consumer repo):
+First-party integrator skills live in [1Shot-API/skills](https://github.com/1Shot-API/skills) (not in this repo). Install globally for local Cursor:
 
 ```bash
-npx skills add 1Shot-API/open-wallet@ows-branding-layer
+npm run skills:install
+# ows-branding-layer + 1shot-wallet → ~/.cursor/skills
 ```
 
-See [skills/ows-branding-layer](skills/ows-branding-layer/).
+When you change OWS packages, Branding/Signing protocol, or Host integration surfaces in a way that affects integrators, update the matching skill in `1Shot-API/skills` (`ows-branding-layer`, and `1shot-wallet` when Host-facing guidance must change) in the same effort.
