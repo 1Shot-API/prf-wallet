@@ -90,13 +90,12 @@ npm run release            # build + publish to npm
 
 ## Agent Skills
 
-Build a Branding Layer in another repository with the published skill:
+Build a Branding Layer in another repository with the published skill from [1Shot-API/skills](https://github.com/1Shot-API/skills):
 
 ```bash
-npx skills add 1Shot-API/open-wallet@ows-branding-layer
+npx skills add 1Shot-API/skills/ows-branding-layer -g -a cursor -y
+# or from this monorepo: npm run skills:install
 ```
-
-Source: [skills/ows-branding-layer](skills/ows-branding-layer/).
 
 ## License
 

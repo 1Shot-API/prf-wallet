@@ -17,7 +17,8 @@
     "changeset": "changeset",
     "version-packages": "changeset version",
     "release": "npm run build && changeset publish",
-    "doctor": "npx react-doctor@latest"
+    "doctor": "npx react-doctor@latest",
+    "skills:install": "npx skills add 1Shot-API/skills --skill ows-branding-layer --skill 1shot-wallet -g -a cursor -y"
   },
   "devDependencies": {
     "@changesets/cli": "^2.29.0",
