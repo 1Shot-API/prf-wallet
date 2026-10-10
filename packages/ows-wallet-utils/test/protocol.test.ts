@@ -36,6 +36,92 @@ describe("eip1193/schemas", () => {
     const result = schema.safeParse(["hello"]);
     assert.equal(result.success, false);
   });
+
+  it("preserves wallet_requestExecutionPermissions rules", () => {
+    const schema = getEip1193ParamSchema("wallet_requestExecutionPermissions");
+    const target = "0x3e6a2f0CBA03d293B54c9fCF354948903007a798";
+    const result = schema.safeParse([
+      {
+        chainId: "0x2105",
+        to: "0x1111111111111111111111111111111111111111",
+        permission: {
+          type: "erc20-token-periodic",
+          isAdjustmentAllowed: true,
+          data: { tokenAddress: "0x2222222222222222222222222222222222222222" },
+        },
+        rules: [
+          {
+            type: "allowedTargets",
+            data: { targets: [target] },
+          },
+        ],
+      },
+    ]);
+    assert.equal(result.success, true);
+    if (!result.success) return;
+    const [entry] = result.data as Array<{
+      rules?: Array<{ type: string; data: Record<string, unknown> }>;
+      caveats?: unknown;
+    }>;
+    assert.equal(entry?.rules?.length, 1);
+    assert.equal(entry?.rules?.[0]?.type, "allowedTargets");
+    assert.deepEqual(entry?.rules?.[0]?.data, { targets: [target] });
+    assert.equal("caveats" in (entry ?? {}), false);
+  });
+
+  it("normalizes legacy caveats into rules", () => {
+    const schema = getEip1193ParamSchema("wallet_requestExecutionPermissions");
+    const target = "0x3e6a2f0CBA03d293B54c9fCF354948903007a798";
+    const result = schema.safeParse([
+      {
+        chainId: "0x2105",
+        to: "0x1111111111111111111111111111111111111111",
+        permission: {
+          type: "erc20-token-periodic",
+          isAdjustmentAllowed: true,
+          data: {},
+        },
+        caveats: [
+          {
+            type: "allowedTargets",
+            data: { targets: [target] },
+          },
+        ],
+      },
+    ]);
+    assert.equal(result.success, true);
+    if (!result.success) return;
+    const [entry] = result.data as Array<{
+      rules?: Array<{ type: string; data: Record<string, unknown> }>;
+      caveats?: unknown;
+    }>;
+    assert.equal(entry?.rules?.length, 1);
+    assert.equal(entry?.rules?.[0]?.type, "allowedTargets");
+    assert.equal("caveats" in (entry ?? {}), false);
+  });
+
+  it("prefers rules when both rules and caveats are present", () => {
+    const schema = getEip1193ParamSchema("wallet_requestExecutionPermissions");
+    const result = schema.safeParse([
+      {
+        chainId: "0x2105",
+        to: "0x1111111111111111111111111111111111111111",
+        permission: {
+          type: "erc20-token-periodic",
+          isAdjustmentAllowed: true,
+          data: {},
+        },
+        rules: [{ type: "limitedCalls", data: { limit: 1 } }],
+        caveats: [{ type: "allowedTargets", data: { targets: [] } }],
+      },
+    ]);
+    assert.equal(result.success, true);
+    if (!result.success) return;
+    const [entry] = result.data as Array<{
+      rules?: Array<{ type: string }>;
+    }>;
+    assert.equal(entry?.rules?.[0]?.type, "limitedCalls");
+  });
 });
 
 describe("rpc/handler", () => {

@@ -1,5 +1,11 @@
 # @1shotapi/ows-types
 
+## 0.13.0
+
+### Minor Changes
+
+- Standardize EIP-7715 host stacking on `IExecutionPermissionRequest.rules` (not a parallel `caveats` field). `IAppendedCaveatConfiguration` is now a type alias of `IExecutionPermissionRule` for wallet DF mapping call sites. Hosts that previously sent `caveats` should send `rules` with the same `{ type, data }` shape; `@1shotapi/ows-wallet-utils` still accepts a short-lived `caveats` wire alias and normalizes it into `rules`.
+
 ## 0.12.0
 
 ### Minor Changes

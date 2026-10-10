@@ -15,30 +15,28 @@ export interface IExecutionPermission {
   data: Record<string, unknown>;
 }
 
-/** EIP-7715 rule constraining a permission (e.g. expiry). */
+/**
+ * EIP-7715 rule constraining a permission (e.g. expiry, allowedTargets).
+ *
+ * Host-stacked enforcers on `wallet_requestExecutionPermissions` use optional
+ * top-level `rules[]` with this shape. At sign time the wallet maps each entry
+ * via `builder.addCaveat(type, data)` / `createDelegation({ scope, caveats })`
+ * — MetaMask kit “caveats” are the on-delegation concept after that mapping.
+ *
+ * `type` matches a kit `CaveatType` (or a wallet-allowlisted custom enforcer such
+ * as `chainlink-price-rule`). `data` carries the builder config for that type
+ * (e.g. `{ targets: address[] }` for `allowedTargets`).
+ */
 export interface IExecutionPermissionRule {
   type: string;
   data: Record<string, unknown>;
 }
 
 /**
- * One appended caveat on an EIP-7715 permission request.
- *
- * The wire shape nests the caveat's config under `data` (consistent with
- * `IExecutionPermission.data`), rather than the spread form
- * `@metamask/smart-accounts-kit`'s `CoreCaveatConfiguration` uses internally
- * (`{ type, ...config }`). At sign time the wallet maps `data` to the kit's
- * caveat config via `builder.addCaveat(type, data)` and merges the result onto
- * the top-level scope through `createDelegation({ scope, caveats })`.
- *
- * `type` matches a `CaveatType` value from `@metamask/smart-accounts-kit`.
- * `data` carries the config for that caveat's builder (e.g.
- * `{ startIndex: 4, value: "0x..." }` for `allowedCalldata`).
+ * Alias for {@link IExecutionPermissionRule} used at wallet DF mapping call sites
+ * that still speak “appended caveats” after host `rules` → `addCaveat`.
  */
-export interface IAppendedCaveatConfiguration {
-  type: string;
-  data: Record<string, unknown>;
-}
+export type IAppendedCaveatConfiguration = IExecutionPermissionRule;
 
 /**
  * One entry in `wallet_requestExecutionPermissions` params.
@@ -51,14 +49,12 @@ export interface IExecutionPermissionRequest {
   /** Session / delegatee account that receives the permission. */
   to: EVMAccountAddress;
   permission: IExecutionPermission;
-  rules?: IExecutionPermissionRule[];
   /**
-   * Appended caveats merged onto the top-level `permission` scope at sign time,
-   * mirroring `createDelegation({ scope, caveats })` in
-   * `@metamask/smart-accounts-kit`. Optional + additive: omitting it keeps the
-   * legacy single-scope behaviour.
+   * Host-stacked enforcer configs (EIP-7715 `rules`), AND-ed onto the
+   * top-level `permission` scope at sign time. Optional + additive: omitting
+   * it keeps single-scope behaviour.
    */
-  caveats?: IAppendedCaveatConfiguration[];
+  rules?: IExecutionPermissionRule[];
 }
 
 /** ERC-4337 factory dependency required before redeeming a permission. */

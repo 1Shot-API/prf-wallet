@@ -87,14 +87,28 @@ const executionPermissionRuleSchema = z.object({
   data: z.record(z.string(), z.unknown()),
 });
 
-/** Single EIP-7715 permission request object. */
-const executionPermissionRequestSchema = z.object({
-  chainId: EVMChainIdSchema,
-  from: EVMAccountAddressSchema.optional(),
-  to: EVMAccountAddressSchema,
-  permission: executionPermissionSchema,
-  rules: z.array(executionPermissionRuleSchema).optional(),
-});
+/**
+ * Single EIP-7715 permission request object.
+ *
+ * Wire field is EIP-7715 `rules`. Legacy host `caveats` (same `{ type, data }`
+ * shape) is accepted and normalized into `rules` so stacked restrictions are
+ * not stripped by Zod’s unknown-key strip.
+ */
+const executionPermissionRequestSchema = z
+  .object({
+    chainId: EVMChainIdSchema,
+    from: EVMAccountAddressSchema.optional(),
+    to: EVMAccountAddressSchema,
+    permission: executionPermissionSchema,
+    rules: z.array(executionPermissionRuleSchema).optional(),
+    caveats: z.array(executionPermissionRuleSchema).optional(),
+  })
+  .transform(({ caveats, rules, ...rest }) => {
+    const normalized = rules ?? caveats;
+    return normalized !== undefined
+      ? { ...rest, rules: normalized }
+      : rest;
+  });
 
 /**
  * EIP-7715: `params` is the permission request array itself

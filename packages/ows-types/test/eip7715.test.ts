@@ -5,10 +5,11 @@ import type {
   EVMAccountAddress,
   IAppendedCaveatConfiguration,
   IExecutionPermissionRequest,
+  IExecutionPermissionRule,
 } from "../src/index.ts";
 
-describe("IExecutionPermissionRequest caveats", () => {
-  it("accepts an optional caveats array of IAppendedCaveatConfiguration", () => {
+describe("IExecutionPermissionRequest rules", () => {
+  it("accepts an optional rules array of IExecutionPermissionRule", () => {
     const request: IExecutionPermissionRequest = {
       chainId: "0x2105" as EVMChainId,
       to: "0x1111111111111111111111111111111111111111" as EVMAccountAddress,
@@ -17,7 +18,7 @@ describe("IExecutionPermissionRequest caveats", () => {
         isAdjustmentAllowed: false,
         data: {},
       },
-      caveats: [
+      rules: [
         {
           type: "allowedCalldata",
           data: { startIndex: 4, value: "0xdeadbeef" },
@@ -28,11 +29,11 @@ describe("IExecutionPermissionRequest caveats", () => {
         },
       ],
     };
-    assert.equal(request.caveats?.length, 2);
-    assert.equal(request.caveats?.[0]?.type, "allowedCalldata");
+    assert.equal(request.rules?.length, 2);
+    assert.equal(request.rules?.[0]?.type, "allowedCalldata");
   });
 
-  it("is valid without caveats (backwards compatible)", () => {
+  it("is valid without rules", () => {
     const request: IExecutionPermissionRequest = {
       chainId: "0x2105" as EVMChainId,
       to: "0x1111111111111111111111111111111111111111" as EVMAccountAddress,
@@ -42,14 +43,15 @@ describe("IExecutionPermissionRequest caveats", () => {
         data: {},
       },
     };
-    assert.equal(request.caveats, undefined);
+    assert.equal(request.rules, undefined);
   });
 
-  it("IAppendedCaveatConfiguration carries type + data", () => {
-    const caveat: IAppendedCaveatConfiguration = {
+  it("IAppendedCaveatConfiguration is the same shape as IExecutionPermissionRule", () => {
+    const rule: IExecutionPermissionRule = {
       type: "redeemer",
       data: { redeemers: ["0x" + "2".repeat(40)] },
     };
+    const caveat: IAppendedCaveatConfiguration = rule;
     assert.equal(caveat.type, "redeemer");
     assert.ok(typeof caveat.data === "object");
   });

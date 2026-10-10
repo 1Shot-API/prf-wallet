@@ -1,5 +1,13 @@
 # @1shotapi/ows-wallet-utils
 
+## 0.6.0
+
+### Minor Changes
+
+- Accept EIP-7715 `rules` on `wallet_requestExecutionPermissions` and keep a short-lived `caveats` wire alias that normalizes into `rules` (Zod no longer strips stacked host restrictions). Prefer `rules` when both are present.
+- Updated dependencies
+  - @1shotapi/ows-types@0.13.0
+
 ## 0.5.3
 
 ### Patch Changes
