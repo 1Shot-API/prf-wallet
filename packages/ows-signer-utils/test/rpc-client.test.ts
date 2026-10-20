@@ -4,7 +4,6 @@ import {
   OwsInvalidRequestError,
   OwsNotAllowedError,
   OwsSignDeniedError,
-  OwsTimeoutError,
 } from "../src/errors.ts";
 import {
   SignerRpcClient,
@@ -79,7 +78,7 @@ describe("SignerRpcClient", () => {
 
   it("posts correlated requests to the signer origin", async () => {
     const { iframe, posted, emit } = setupDomMocks();
-    const client = new SignerRpcClient(iframe, SIGNER_ORIGIN, 5_000);
+    const client = new SignerRpcClient(iframe, SIGNER_ORIGIN);
 
     const promise = client.request("getVersion", undefined, {
       terminalEvent: "Version",
@@ -113,7 +112,7 @@ describe("SignerRpcClient", () => {
 
   it("rejects NotAllowed, SignDenied, and InvalidRequest terminal errors", async () => {
     const { iframe, emit } = setupDomMocks();
-    const client = new SignerRpcClient(iframe, SIGNER_ORIGIN, 5_000);
+    const client = new SignerRpcClient(iframe, SIGNER_ORIGIN);
 
     const notAllowed = client.request("signDigest", { digestData: "0x" + "11".repeat(32) }, {
       terminalEvent: "DigestSigned",
@@ -136,32 +135,38 @@ describe("SignerRpcClient", () => {
     client.destroy();
   });
 
-  it("times out when no terminal event arrives", async () => {
-    const { iframe, posted } = setupDomMocks();
-    const client = new SignerRpcClient(iframe, SIGNER_ORIGIN, 20);
+  it("stays pending until a late terminal event (no RPC timeout)", async () => {
+    const { iframe, emit } = setupDomMocks();
+    const client = new SignerRpcClient(iframe, SIGNER_ORIGIN);
 
-    await assert.rejects(
-      client.request("getVersion", undefined, {
-        terminalEvent: "Version",
-        timeoutMs: 20,
-      }),
-      OwsTimeoutError,
+    const promise = client.request("getVersion", undefined, {
+      terminalEvent: "Version",
+    });
+    let settled = false;
+    void promise.then(
+      () => {
+        settled = true;
+      },
+      () => {
+        settled = true;
+      },
     );
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    assert.equal(settled, false);
 
-    const cancel = posted.find(
-      (entry) =>
-        entry.message &&
-        typeof entry.message === "object" &&
-        (entry.message as { kind?: string }).kind === "cancel",
-    );
-    assert.ok(cancel, "timeout should post a cancel to the signer");
-
+    emit("Version", {
+      apiVersion: 1,
+      signerVersion: "0.1.0",
+      recoverySessionActive: false,
+    });
+    const result = await promise;
+    assert.equal(result.signerVersion, "0.1.0");
     client.destroy();
   });
 
   it("merges alsoWaitFor events after terminal PublicKey", async () => {
     const { iframe, emit } = setupDomMocks();
-    const client = new SignerRpcClient(iframe, SIGNER_ORIGIN, 5_000);
+    const client = new SignerRpcClient(iframe, SIGNER_ORIGIN);
 
     const promise = client.request("getPublicKey", { challenge: "0x" + "aa".repeat(32) }, {
       terminalEvent: "PublicKey",
@@ -198,7 +203,7 @@ describe("SignerRpcClient", () => {
 
   it("rejectAllPending rejects in-flight requests and ignores later events", async () => {
     const { iframe, emit, posted } = setupDomMocks();
-    const client = new SignerRpcClient(iframe, SIGNER_ORIGIN, 5_000);
+    const client = new SignerRpcClient(iframe, SIGNER_ORIGIN);
 
     const promise = client.request("getPublicKey", undefined, {
       terminalEvent: "PublicKey",
@@ -233,7 +238,7 @@ describe("SignerRpcClient", () => {
 
   it("ignores messages from wrong origin", async () => {
     const { iframe, dispatch, emit } = setupDomMocks();
-    const client = new SignerRpcClient(iframe, SIGNER_ORIGIN, 5_000);
+    const client = new SignerRpcClient(iframe, SIGNER_ORIGIN);
 
     const promise = client.request("getVersion", undefined, {
       terminalEvent: "Version",

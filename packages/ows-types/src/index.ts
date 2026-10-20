@@ -5,7 +5,6 @@ export {
   OwsUnimplementedError,
   OwsInvalidParamsError,
   OwsUserRejectedError,
-  OwsRpcTimeoutError,
 } from "./errors/rpc.js";
 
 export {
@@ -13,12 +12,10 @@ export {
   OwsNotAllowedError,
   OwsSignDeniedError,
   OwsInvalidRequestError,
-  OwsTimeoutError,
 } from "./errors/signer.js";
 
 export {
   OWS_RPC_CALLBACK_EVENT,
-  DEFAULT_RPC_TIMEOUT_MS,
   RPC_ERROR_UNIMPLEMENTED,
   RPC_ERROR_INVALID_PARAMS,
   RPC_ERROR_USER_REJECTED,

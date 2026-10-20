@@ -3,8 +3,6 @@ import { RPCCallId } from "../primitives/index.js";
 /** Postmate emit event name for async RPC callbacks (child → host). */
 export const OWS_RPC_CALLBACK_EVENT = "ows:rpcCallback" as const;
 
-export const DEFAULT_RPC_TIMEOUT_MS = 120_000;
-
 /** JSON-RPC method not found */
 export const RPC_ERROR_UNIMPLEMENTED = -32_601;
 

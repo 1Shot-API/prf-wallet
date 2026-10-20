@@ -100,8 +100,6 @@ Keep branding consent views mounted until the signer ceremony finishes. Export `
 |--------|-------------|
 | `credentialId` | Existing WebAuthn credential id |
 | `hidden` | Hide iframe (default `true`) |
-| `rpcTimeoutMs` | RPC timeout (default 120s) |
-
 ### Root methods (Signing Layer passthrough)
 
 | Method | Description |
@@ -153,8 +151,8 @@ Accepts optional `{ credentialId, explanationHeader, … }` per ceremony.
 - `OwsNotAllowedError` — WebAuthn cancelled or policy blocked
 - `OwsSignDeniedError` — user cancelled Signing Layer Confirm UI (before WebAuthn)
 - `OwsInvalidRequestError` — bad params
-- `OwsTimeoutError` — RPC timeout
 
+Signer RPC has no client-imposed timeout: requests stay pending through the Confirm UI / WebAuthn until the Signing Layer replies, or reject on session clear / destroy.
 ## Related packages
 
 | Package | Role |

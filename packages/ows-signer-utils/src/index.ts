@@ -30,7 +30,6 @@ export {
   OwsInvalidRequestError,
   OwsNotAllowedError,
   OwsSignDeniedError,
-  OwsTimeoutError,
 } from "./errors.js";
 export { EvmSigner, type EvmCallOptions } from "./evm/namespace.js";
 export {

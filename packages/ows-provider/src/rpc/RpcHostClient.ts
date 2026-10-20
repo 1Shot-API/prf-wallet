@@ -1,9 +1,7 @@
 import Postmate from "postmate";
 import {
-  DEFAULT_RPC_TIMEOUT_MS,
   deserializeRpcResponse,
   OwsRpcError,
-  OwsRpcTimeoutError,
   OWS_RPC_CALLBACK_EVENT,
   serializeRpc,
   type RpcRequestEnvelope,
@@ -14,7 +12,6 @@ import {
 type PendingRpc = {
   resolve: (value: unknown) => void;
   reject: (error: Error) => void;
-  timeoutId: ReturnType<typeof setTimeout>;
 };
 
 export type RpcHostLifecycle = {
@@ -22,13 +19,23 @@ export type RpcHostLifecycle = {
   afterRequest?: () => void;
 };
 
+/**
+ * Host → Branding RPC over Postmate.
+ *
+ * No provider-imposed timeout: many methods (`personal_sign`,
+ * `eth_sendTransaction`, `wallet_requestExecutionPermissions`, …) wait on
+ * user deliberation, which has no deadline in EIP-1193. A pending request
+ * settles when the Branding Layer emits its callback, or rejects when
+ * {@link RpcHostClient.destroy} runs (e.g. `OWSProxy.destroy()`).
+ * Hosts that need a bound on a specific non-interactive call should apply
+ * their own `Promise.race` / abort at the call site.
+ */
 export class RpcHostClient {
   private nextCallId = RPCCallId(1);
   private readonly pending = new Map<RPCCallId, PendingRpc>();
 
   constructor(
     private readonly child: Postmate.ParentAPI,
-    private readonly defaultTimeoutMs = DEFAULT_RPC_TIMEOUT_MS,
     private readonly lifecycle?: RpcHostLifecycle,
   ) {
     child.on(OWS_RPC_CALLBACK_EVENT, (data: unknown) => {
@@ -36,23 +43,12 @@ export class RpcHostClient {
     });
   }
 
-  request<T = unknown>(
-    method: string,
-    params: unknown,
-    timeoutMs?: number,
-  ): Promise<T> {
+  request<T = unknown>(method: string, params: unknown): Promise<T> {
     const callId = RPCCallId(this.nextCallId++);
-    const timeout = timeoutMs ?? this.defaultTimeoutMs;
 
     this.lifecycle?.beforeRequest?.();
 
     return new Promise<T>((resolve, reject) => {
-      const timeoutId = setTimeout(() => {
-        this.pending.delete(callId);
-        this.lifecycle?.afterRequest?.();
-        reject(new OwsRpcTimeoutError(`RPC timed out: ${method}`, method, callId));
-      }, timeout);
-
       this.pending.set(callId, {
         resolve: (value) => {
           this.lifecycle?.afterRequest?.();
@@ -62,7 +58,6 @@ export class RpcHostClient {
           this.lifecycle?.afterRequest?.();
           reject(error);
         },
-        timeoutId,
       });
 
       this.child.call(method, this.createRpcRequest(callId, method, params));
@@ -71,7 +66,6 @@ export class RpcHostClient {
 
   destroy(): void {
     for (const pending of this.pending.values()) {
-      clearTimeout(pending.timeoutId);
       pending.reject(new Error("RpcHostClient destroyed"));
     }
     this.pending.clear();
@@ -90,7 +84,6 @@ export class RpcHostClient {
       return;
     }
 
-    clearTimeout(pending.timeoutId);
     this.pending.delete(envelope.callId);
 
     if (!envelope.success) {

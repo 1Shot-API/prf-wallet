@@ -63,7 +63,6 @@ OWS does not ship Google Analytics or define a product event catalog.
 |--------|-------------|
 | `name` | iframe `name` attribute (default `ows-wallet`) |
 | `classList` | CSS classes on iframe at creation |
-| `rpcTimeoutMs` | RPC timeout (default 120s) |
 | `walletSizeX` / `walletSizeY` | Preferred visible panel size in CSS pixels (default 360×600). Branding scales to this; it does not request its own size. |
 | `presentationMode` | `flyout` (default) or `inline` — fixed for this proxy instance |
 | `allowLocalAccess` | When true, add `local-network-access` / `loopback-network` to iframe `allow` (default `false`) |
@@ -95,6 +94,8 @@ const inline = await OWSProxy.create(previewSlot, walletUrl, {
 |------|-----------|-------------|
 | `flyout` | Usually off-page / body child | Wide viewport → lower-right flyout; narrow → full-screen drawer wipe; hide collapses |
 | `inline` | Page slot (sidebar, preview) | Show = fill; hide = no-op |
+
+RPC requests have **no provider-imposed timeout**: user-paced methods (`personal_sign`, `eth_sendTransaction`, `wallet_requestExecutionPermissions`, …) stay pending until the Branding Layer responds or `proxy.destroy()` rejects them. Hosts that need a bound on a specific non-interactive call should apply their own `Promise.race` / abort at the call site.
 
 ### `proxy.ethereum`
 

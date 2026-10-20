@@ -1,4 +1,3 @@
-import { RPCCallId } from "../primitives/RPCCallId.js";
 import {
   RPC_ERROR_INVALID_PARAMS,
   RPC_ERROR_UNIMPLEMENTED,
@@ -57,16 +56,5 @@ export class OwsUserRejectedError extends OwsRpcError {
   constructor(message = "User rejected the request", data?: unknown) {
     super(message, RPC_ERROR_USER_REJECTED, data);
     this.name = "OwsUserRejectedError";
-  }
-}
-
-export class OwsRpcTimeoutError extends OwsRpcError {
-  constructor(
-    message: string,
-    readonly method: string,
-    readonly callId: RPCCallId,
-  ) {
-    super(message, -32_603, { method, callId });
-    this.name = "OwsRpcTimeoutError";
   }
 }

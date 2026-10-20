@@ -50,7 +50,6 @@ import {
 export type OWSSignerOptions = {
   credentialId?: CredentialId;
   hidden?: boolean;
-  rpcTimeoutMs?: number;
   /** Fired when the branding ceremony host strip opens or closes. */
   onCeremonyPanel?: (open: boolean) => void;
 };
@@ -157,11 +156,7 @@ export class OWSSigner implements IOWSSigner {
       hidden: options?.hidden,
     });
     const signerOrigin = getSignerOrigin(signerUrl);
-    const rpc = new SignerRpcClient(
-      iframe,
-      signerOrigin,
-      options?.rpcTimeoutMs,
-    );
+    const rpc = new SignerRpcClient(iframe, signerOrigin);
     return new OWSSigner(iframe, rpc, options);
   }
 
