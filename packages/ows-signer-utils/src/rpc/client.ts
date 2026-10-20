@@ -2,7 +2,6 @@ import {
   OwsInvalidRequestError,
   OwsNotAllowedError,
   OwsSignDeniedError,
-  OwsTimeoutError,
 } from "../errors.js";
 import {
   API_VERSION,
@@ -23,7 +22,6 @@ export type RequestOptions = {
   /** After terminalEvent, wait briefly for these events and merge their data. */
   alsoWaitFor?: SignerEvent[];
   alsoWaitForTimeoutMs?: number;
-  timeoutMs?: number;
   onIntermediate?: (event: SignerEvent, data: Record<string, unknown>) => void;
 };
 
@@ -37,13 +35,19 @@ type PendingRequest<TData extends Record<string, unknown>> = {
   resolve: (data: TData) => void;
   reject: (error: Error) => void;
   onIntermediate?: RequestOptions["onIntermediate"];
-  timeoutId: ReturnType<typeof setTimeout>;
   alsoWaitForTimeoutId?: ReturnType<typeof setTimeout>;
   waitingForAlsoWaitFor: boolean;
 };
 
-const DEFAULT_TIMEOUT_MS = 120_000;
-
+/**
+ * Branding → Signing RPC over `postMessage`.
+ *
+ * No client-imposed timeout: requests wait on the signer Confirm UI and
+ * WebAuthn, which are user-paced. A pending request settles on its terminal
+ * event, or rejects via {@link SignerRpcClient.rejectAllPending} /
+ * {@link SignerRpcClient.destroy} (session clear, teardown, or a superseding
+ * request's cancel).
+ */
 export class SignerRpcClient {
   private nextCorrelationId = 1;
   private readonly pending = new Map<string, PendingRequest<Record<string, unknown>>>();
@@ -52,7 +56,6 @@ export class SignerRpcClient {
   constructor(
     private readonly iframe: HTMLIFrameElement,
     readonly signerOrigin: string,
-    private readonly defaultTimeoutMs = DEFAULT_TIMEOUT_MS,
   ) {
     this.listener = (event: MessageEvent) => {
       this.handleMessage(event);
@@ -66,23 +69,10 @@ export class SignerRpcClient {
     options: RequestOptions,
   ): Promise<TData> {
     const correlationId = String(this.nextCorrelationId++);
-    const timeoutMs = options.timeoutMs ?? this.defaultTimeoutMs;
 
     return new Promise<TData>((resolve, reject) => {
-      // Supersede any stuck Confirm / WebAuthn from a prior timed-out RPC.
+      // Supersede any stuck Confirm / WebAuthn from a prior RPC.
       this.postCancel();
-
-      const timeoutId = setTimeout(() => {
-        this.pending.delete(correlationId);
-        this.postCancel();
-        reject(
-          new OwsTimeoutError(
-            `Signer RPC timed out: ${method}`,
-            method,
-            correlationId,
-          ),
-        );
-      }, timeoutMs);
 
       this.pending.set(correlationId, {
         method,
@@ -94,7 +84,6 @@ export class SignerRpcClient {
         resolve: resolve as (data: Record<string, unknown>) => void,
         reject,
         onIntermediate: options.onIntermediate,
-        timeoutId,
         waitingForAlsoWaitFor: false,
       });
 
@@ -108,7 +97,6 @@ export class SignerRpcClient {
 
       const target = this.iframe.contentWindow;
       if (!target) {
-        clearTimeout(timeoutId);
         this.pending.delete(correlationId);
         reject(new Error("Signer iframe contentWindow unavailable"));
         return;
@@ -126,7 +114,6 @@ export class SignerRpcClient {
   rejectAllPending(reason: string): void {
     this.postCancel();
     for (const [id, pending] of this.pending) {
-      clearTimeout(pending.timeoutId);
       if (pending.alsoWaitForTimeoutId) {
         clearTimeout(pending.alsoWaitForTimeoutId);
       }
@@ -252,7 +239,6 @@ export class SignerRpcClient {
     error?: Error,
     data?: Record<string, unknown>,
   ): void {
-    clearTimeout(pending.timeoutId);
     if (pending.alsoWaitForTimeoutId) {
       clearTimeout(pending.alsoWaitForTimeoutId);
     }

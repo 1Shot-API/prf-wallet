@@ -1,5 +1,4 @@
 import Postmate from "postmate";
-import { DEFAULT_RPC_TIMEOUT_MS } from "@1shotapi/ows-types";
 import { RpcHostClient } from "./rpc/RpcHostClient.js";
 import { EIP1193Provider } from "./eip1193/EIP1193Provider.js";
 import {
@@ -21,7 +20,6 @@ export type OWSProxyOptions = {
   name?: string;
   /** CSS classes applied to the iframe at creation time. */
   classList?: string[];
-  rpcTimeoutMs?: number;
   /**
    * Preferred wallet panel width in CSS pixels (flyout mode).
    * Default: {@link DEFAULT_WALLET_SIZE_X} (360).
@@ -178,14 +176,10 @@ export class OWSProxy {
     } else {
       displayHandler.initializeHidden();
     }
-    const rpcClient = new RpcHostClient(
-      parent,
-      options?.rpcTimeoutMs ?? DEFAULT_RPC_TIMEOUT_MS,
-      {
-        beforeRequest: () => displayHandler.prepareForRpcAccess(),
-        afterRequest: () => displayHandler.completeRpcAccess(),
-      },
-    );
+    const rpcClient = new RpcHostClient(parent, {
+      beforeRequest: () => displayHandler.prepareForRpcAccess(),
+      afterRequest: () => displayHandler.completeRpcAccess(),
+    });
     const analyticsHandler = new AnalyticsHostHandler(parent);
 
     return new OWSProxy(parent, rpcClient, displayHandler, analyticsHandler);

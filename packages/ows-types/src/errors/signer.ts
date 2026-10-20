@@ -41,14 +41,3 @@ export class OwsInvalidRequestError extends OwsSignerError {
     this.name = "OwsInvalidRequestError";
   }
 }
-
-export class OwsTimeoutError extends OwsSignerError {
-  constructor(
-    message: string,
-    readonly method: string,
-    readonly correlationId: string,
-  ) {
-    super(message);
-    this.name = "OwsTimeoutError";
-  }
-}

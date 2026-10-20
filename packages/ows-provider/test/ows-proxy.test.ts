@@ -27,7 +27,7 @@ describe("RpcHostClient", () => {
       },
     };
 
-    const client = new RpcHostClient(child as never, 5_000);
+    const client = new RpcHostClient(child as never);
     const result = await client.request("customMethod", { foo: 1 });
     assert.deepEqual(result, { method: "customMethod", params: { foo: 1 } });
     client.destroy();
@@ -51,12 +51,62 @@ describe("RpcHostClient", () => {
       },
     };
 
-    const client = new RpcHostClient(child as never, 5_000);
+    const client = new RpcHostClient(child as never);
     await assert.rejects(
       client.request("missing", null),
       (error: Error) => error.name === "OwsUnimplementedError",
     );
     client.destroy();
+  });
+
+  it("stays pending until a late callback resolves it (no RPC timeout)", async () => {
+    const listeners = new Map<string, (data: unknown) => void>();
+    let respond: (() => void) | undefined;
+    const child = {
+      on(event: string, cb: (data: unknown) => void) {
+        listeners.set(event, cb);
+      },
+      call(_method: string, data: string) {
+        const request = JSON.parse(data) as { callId: RPCCallId };
+        respond = () => {
+          listeners.get(OWS_RPC_CALLBACK_EVENT)?.(
+            JSON.stringify({
+              callId: request.callId,
+              success: true,
+              result: "late-ok",
+            }),
+          );
+        };
+      },
+    };
+
+    const client = new RpcHostClient(child as never);
+    const promise = client.request<string>("personal_sign", ["0x6869"]);
+    let settled = false;
+    void promise.then(
+      () => {
+        settled = true;
+      },
+      () => {
+        settled = true;
+      },
+    );
+    await new Promise((resolve) => setTimeout(resolve, 30));
+    assert.equal(settled, false);
+    respond?.();
+    assert.equal(await promise, "late-ok");
+    client.destroy();
+  });
+
+  it("destroy rejects pending requests", async () => {
+    const child = {
+      on() {},
+      call() {},
+    };
+    const client = new RpcHostClient(child as never);
+    const promise = client.request("personal_sign", ["0x6869"]);
+    client.destroy();
+    await assert.rejects(promise, /RpcHostClient destroyed/);
   });
 });
 
