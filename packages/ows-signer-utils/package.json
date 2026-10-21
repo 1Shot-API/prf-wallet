@@ -29,9 +29,11 @@
     "@scure/btc-signer": "^2.4.1"
   },
   "peerDependencies": {
+    "@solana/kit": "^8.5.0",
     "viem": "^2.0.0"
   },
   "devDependencies": {
+    "@solana/kit": "^8.5.0",
     "tsx": "^4.19.0",
     "viem": "^2.52.0"
   },

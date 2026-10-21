@@ -43,6 +43,7 @@
     "@scure/base": "^2.4.0",
     "@sd-jwt/core": "^0.20.0",
     "@sd-jwt/sd-jwt-vc": "^0.20.0",
+    "@solana/addresses": "^8.5.0",
     "ts-brand": "^0.2.0",
     "viem": "^2.52.0",
     "zod": "^4.6.5"

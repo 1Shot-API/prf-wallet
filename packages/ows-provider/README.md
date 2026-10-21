@@ -105,6 +105,10 @@ RPC requests have **no provider-imposed timeout**: user-paced methods (`personal
 
 `BitcoinHostClient` — Reown / BIP-122 static-wallet pattern helper (`proxy.bitcoin.getAccountAddresses(params?)`).
 
+### `proxy.solana`
+
+`SolanaHostClient` — Solana Host↔Branding wire (`getAccountAddress`, `signMessage`, `signTransaction`, `signAndSendTransaction`, `signIn`). Wallet Standard `registerSolanaWallet()` is a later phase; Branding must `wallet.solana.register(provider)` for these methods to resolve.
+
 ### `proxy.rpc(method, params?)`
 
 Extension RPC for wallet-specific methods (non–EIP-1193).

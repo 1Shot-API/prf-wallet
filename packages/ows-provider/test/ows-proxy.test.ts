@@ -160,7 +160,9 @@ describe("EIP1193Provider", () => {
 
 describe("BitcoinHostClient", () => {
   it("forwards getAccountAddresses through RpcHostClient with namespaced wire method", async () => {
-    const { BitcoinHostClient } = await import("../src/bitcoin/host-client.ts");
+    const { BitcoinHostClient } = await import(
+      "../src/bitcoin/BitcoinHostClient.ts"
+    );
     const sentCalls: Array<{ method: string; params: unknown }> = [];
     const mockRpcClient = {
       request: async <T>(method: string, params: unknown): Promise<T> => {
@@ -182,5 +184,28 @@ describe("BitcoinHostClient", () => {
     assert.deepEqual(sentCalls[0]?.params, {});
     assert.equal(result.length, 1);
     assert.equal(result[0]?.address, "bc1qw508d6qejxtdg4y5r3zarvary0c5xw7kv8f3t4");
+  });
+});
+
+describe("SolanaHostClient", () => {
+  it("forwards getAccountAddress through RpcHostClient with namespaced wire method", async () => {
+    const { SolanaHostClient } = await import(
+      "../src/solana/SolanaHostClient.ts"
+    );
+    const sentCalls: Array<{ method: string; params: unknown }> = [];
+    const mockRpcClient = {
+      request: async <T>(method: string, params: unknown): Promise<T> => {
+        sentCalls.push({ method, params });
+        return "11111111111111111111111111111111" as T;
+      },
+    };
+
+    const client = new SolanaHostClient(mockRpcClient as never);
+    const result = await client.getAccountAddress();
+
+    assert.equal(sentCalls.length, 1);
+    assert.equal(sentCalls[0]?.method, "solana.getAccountAddress");
+    assert.deepEqual(sentCalls[0]?.params, {});
+    assert.equal(result, "11111111111111111111111111111111");
   });
 });

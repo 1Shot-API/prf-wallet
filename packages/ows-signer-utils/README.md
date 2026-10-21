@@ -134,8 +134,20 @@ All EVM batch methods accept optional `{ credentialId, explanationHeader, … }`
 | Method | Description |
 |--------|-------------|
 | `getAccountAddress()` | Solana address (base58 ed25519 public key) |
+| `signMessage(messages[], options?)` | Ed25519 over raw message bytes (batch) → base58 `SolanaSignature` |
+| `signTransaction(txs[], options?)` | Ed25519 over compiled tx **message** bytes (batch) |
 
-Accepts optional `{ credentialId }` per call.
+Host / Wallet Standard mapping (Branding implements consent + wire handlers later):
+
+| Surface | Wire / signer |
+|---------|----------------|
+| `solana:signMessage` | `solana.signMessage` → `signMessage` |
+| `solana:signIn` (SIWS) | Branding formats message → `signMessage` |
+| `solana:signTransaction` / sign-and-send | `signTransaction` then Branding submits |
+
+`toKitPartialSigner(signer)` builds a Kit `MessagePartialSigner` + `TransactionPartialSigner` that delegates to these methods (peer `@solana/kit`).
+
+Accepts optional `{ credentialId, explanationHeader, … }` per ceremony.
 
 ### `signer.bitcoin`
 

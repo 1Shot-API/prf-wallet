@@ -36,8 +36,24 @@ export {
   toViemLocalAccount,
   type ToViemLocalAccountOptions,
 } from "./evm/to-viem-account.js";
-export { SolanaSigner, type SolanaCallOptions } from "./solana/namespace.js";
+export {
+  SolanaSigner,
+  type SolanaCallOptions,
+  type ISolanaSignTransactionInput,
+  type ISolanaSignedTransaction,
+} from "./solana/namespace.js";
 export { addressFromEd25519PublicKey } from "./solana/address.js";
+export {
+  toKitPartialSigner,
+  type ToKitPartialSignerOptions,
+  type OwsKitPartialSigner,
+} from "./solana/to-kit-signer.js";
+export {
+  digestDataForSolanaBytes,
+  solanaSignatureFromHex,
+  solanaSignatureToBytes,
+  SOLANA_SIGN_SCHEME,
+} from "./solana/marshal.js";
 export { BitcoinSigner, type BitcoinCallOptions } from "./bitcoin/namespace.js";
 export {
   addressFromSecp256k1PublicKey,

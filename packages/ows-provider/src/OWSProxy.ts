@@ -11,6 +11,7 @@ import {
 } from "./display/DisplayHostHandler.js";
 import { CredentialHostClient } from "./credentials/CredentialsHostClient.js";
 import { BitcoinHostClient } from "./bitcoin/BitcoinHostClient.js";
+import { SolanaHostClient } from "./solana/SolanaHostClient.js";
 import { AnalyticsHostHandler } from "./analytics/AnalyticsHostHandler.js";
 import type { AnalyticsListener } from "./analytics/AnalyticsHostHandler.js";
 import { Eip1193EventHostHandler } from "./eip1193/Eip1193EventHostHandler.js";
@@ -88,6 +89,7 @@ export class OWSProxy {
   public readonly ethereum: EIP1193Provider;
   public readonly credentials: CredentialHostClient;
   public readonly bitcoin: BitcoinHostClient;
+  public readonly solana: SolanaHostClient;
 
   /**
    * Branding→Host analytics notifications (`ows:analytics`).
@@ -117,6 +119,7 @@ export class OWSProxy {
     this.analyticsHandler = analyticsHandler;
     this.credentials = new CredentialHostClient(rpcClient);
     this.bitcoin = new BitcoinHostClient(rpcClient);
+    this.solana = new SolanaHostClient(rpcClient);
     this.ethereum = new EIP1193Provider((method, params) =>
       this.rpc(method, params),
     );

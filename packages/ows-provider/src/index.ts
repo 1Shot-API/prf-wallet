@@ -12,6 +12,7 @@ export { Eip1193EventHostHandler } from "./eip1193/Eip1193EventHostHandler.js";
 
 export { CredentialHostClient } from "./credentials/CredentialsHostClient.js";
 export { BitcoinHostClient } from "./bitcoin/BitcoinHostClient.js";
+export { SolanaHostClient } from "./solana/SolanaHostClient.js";
 export {
   AnalyticsHostHandler,
   type AnalyticsListener,
