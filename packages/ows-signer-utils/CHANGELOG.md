@@ -1,5 +1,16 @@
 # @1shotapi/ows-signer-utils
 
+## 0.8.0
+
+### Minor Changes
+
+- 972fd3b: Solana Phase 1: CAIP-2 `SolanaChainId` (`solana:mainnet` / `devnet` / `testnet`), branded program/mint/signature primitives, `SolanaSigner.signMessage` / `signTransaction` + Kit partial signer, and Host/Branding `solana.*` wire methods (`proxy.solana` / `wallet.solana.register`).
+
+### Patch Changes
+
+- Updated dependencies [972fd3b]
+  - @1shotapi/ows-types@0.14.0
+
 ## 0.7.0
 
 ### Minor Changes

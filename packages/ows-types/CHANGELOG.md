@@ -1,5 +1,11 @@
 # @1shotapi/ows-types
 
+## 0.14.0
+
+### Minor Changes
+
+- 972fd3b: Solana Phase 1: CAIP-2 `SolanaChainId` (`solana:mainnet` / `devnet` / `testnet`), branded program/mint/signature primitives, `SolanaSigner.signMessage` / `signTransaction` + Kit partial signer, and Host/Branding `solana.*` wire methods (`proxy.solana` / `wallet.solana.register`).
+
 ## 0.13.0
 
 ### Minor Changes
