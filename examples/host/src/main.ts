@@ -4,6 +4,7 @@ import {
   EVMChainId,
   HexString,
 } from "@1shotapi/ows-types";
+import { getWallets } from "@wallet-standard/app";
 import {
   createPublicClient,
   custom,
@@ -162,20 +163,12 @@ async function main(): Promise<void> {
 
   // Opt-in Wallet Standard discovery (Solana Adapter / getWallets).
   proxy.solana.registerSolanaWallet();
-  try {
-    const { getWallets } = await import("@wallet-standard/app");
-    console.info(
-      "[ows-example-host] Wallet Standard wallets",
-      getWallets()
-        .get()
-        .map((w) => w.name),
-    );
-  } catch (error) {
-    console.warn(
-      "[ows-example-host] @wallet-standard/app not available for getWallets()",
-      error,
-    );
-  }
+  console.info(
+    "[ows-example-host] Wallet Standard wallets",
+    getWallets()
+      .get()
+      .map((w) => w.name),
+  );
 
   const analyticsLines: string[] = [];
   proxy.analytics.on((event) => {
