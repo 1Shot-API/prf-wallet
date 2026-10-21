@@ -105,7 +105,7 @@ export class OWSWallet {
     },
   };
 
-  /** Namespaced Solana handlers (Wallet Standard features land in Phase 2). */
+  /** Namespaced Solana handlers (Host Standard wallet uses these via Postmate). */
   readonly solana = {
     register: (provider: IOpenWalletSolanaProvider): void => {
       this.assertNotConnected();

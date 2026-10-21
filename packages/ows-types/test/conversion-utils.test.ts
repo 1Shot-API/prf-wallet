@@ -58,3 +58,12 @@ describe("ConversionUtils hex roundtrip", () => {
     assert.deepEqual(ConversionUtils.hexToBytes(hex), bytes);
   });
 });
+
+describe("ConversionUtils base64 roundtrip", () => {
+  it("bytesToBase64 / base64ToBytes", () => {
+    const bytes = new TextEncoder().encode("Hello World");
+    const encoded = ConversionUtils.bytesToBase64(bytes);
+    assert.equal(encoded, "SGVsbG8gV29ybGQ=");
+    assert.deepEqual(ConversionUtils.base64ToBytes(encoded), bytes);
+  });
+});

@@ -212,6 +212,7 @@ export class OWSProxy {
   }
 
   destroy(): void {
+    this.solana.destroy();
     this.eip1193EventHandler.destroy();
     this.analyticsHandler.destroy();
     this.displayHandler.destroy();

@@ -1,8 +1,9 @@
+import { Base64String } from "../primitives/Base64String.js";
 import { Base64UrlEncodedString } from "../primitives/Base64UrlEncodedString.js";
 import { HexString } from "../primitives/HexString.js";
 
 /**
- * Shared branded encoding/decoding helpers (hex, UTF-8, base64url).
+ * Shared branded encoding/decoding helpers (hex, UTF-8, base64, base64url).
  * Prefer these over local copies outside `@1shotapi/ows-signer`.
  */
 export class ConversionUtils {
@@ -61,6 +62,25 @@ export class ConversionUtils {
   /** UTF-8 encode a string, then {@link bytesToHex}. */
   static utf8ToHex(value: string): HexString {
     return ConversionUtils.bytesToHex(new TextEncoder().encode(value));
+  }
+
+  /** Encode bytes as standard base64 ({@link Base64String}). */
+  static bytesToBase64(bytes: Uint8Array): Base64String {
+    let binary = "";
+    for (const byte of bytes) {
+      binary += String.fromCharCode(byte);
+    }
+    return Base64String(btoa(binary));
+  }
+
+  /** Decode standard base64 ({@link Base64String}) to bytes. */
+  static base64ToBytes(value: Base64String): Uint8Array {
+    const binary = atob(value);
+    const out = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+      out[i] = binary.charCodeAt(i);
+    }
+    return out;
   }
 
   /** Encode bytes as unpadded base64url. */

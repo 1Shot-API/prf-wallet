@@ -160,6 +160,23 @@ async function main(): Promise<void> {
 
   const proxy = await OWSProxy.create(walletContainer, __WALLET_IFRAME_URL__);
 
+  // Opt-in Wallet Standard discovery (Solana Adapter / getWallets).
+  proxy.solana.registerSolanaWallet();
+  try {
+    const { getWallets } = await import("@wallet-standard/app");
+    console.info(
+      "[ows-example-host] Wallet Standard wallets",
+      getWallets()
+        .get()
+        .map((w) => w.name),
+    );
+  } catch (error) {
+    console.warn(
+      "[ows-example-host] @wallet-standard/app not available for getWallets()",
+      error,
+    );
+  }
+
   const analyticsLines: string[] = [];
   proxy.analytics.on((event) => {
     analyticsLines.unshift(
