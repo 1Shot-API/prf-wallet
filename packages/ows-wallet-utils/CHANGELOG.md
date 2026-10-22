@@ -1,5 +1,11 @@
 # @1shotapi/ows-wallet-utils
 
+## 0.7.0
+
+### Minor Changes
+
+- **ows-wallet-utils:** Publish Branding-side `wallet.solana.register()` (Solana Phase 1 wire). Local `0.6.0` already had this API, but npm `@1shotapi/ows-wallet-utils@0.6.0` was released earlier without Solana — consumers need a new minor so Docker/npm installs get `OWSWallet.solana`.
+
 ## 0.6.0
 
 ### Minor Changes
