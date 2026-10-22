@@ -43,4 +43,5 @@ export * from "./SolanaProgramAddress.js";
 export * from "./SolanaMintAddress.js";
 export * from "./SolanaATAAddress.js";
 export * from "./SolanaSignature.js";
-export * from "./SolanaTransactionSignature.js";
+export * from "./SolanaTransactionHash.js";
+export * from "./TransactionHash.js";

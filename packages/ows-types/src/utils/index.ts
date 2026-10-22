@@ -1,5 +1,9 @@
 export { ChainUtils } from "./ChainUtils.js";
-export { ConversionUtils } from "./ConversionUtils.js";
+export {
+  ConversionUtils,
+  type EVMAddressLike,
+  type SolanaPubkeyLike,
+} from "./ConversionUtils.js";
 export { SolanaAddressUtils } from "./SolanaAddressUtils.js";
 export {
   CredentialCryptoUtils,

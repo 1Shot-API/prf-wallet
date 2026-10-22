@@ -3,7 +3,10 @@ import assert from "node:assert/strict";
 import {
   ConversionUtils,
   EVMAccountAddress,
+  EVMContractAddress,
   HexString,
+  SolanaAccountAddress,
+  SolanaATAAddress,
 } from "../src/index.js";
 
 describe("ConversionUtils.addressToBytes32Hex", () => {
@@ -32,6 +35,19 @@ describe("ConversionUtils.addressToBytes32Hex", () => {
     );
   });
 
+  it("accepts EVMContractAddress", () => {
+    const contract = EVMContractAddress(
+      "0x4200000000000000000000000000000000000006",
+    );
+    const result = ConversionUtils.addressToBytes32Hex(contract);
+    assert.equal(
+      result,
+      HexString(
+        "0x0000000000000000000000004200000000000000000000000000000000000006",
+      ),
+    );
+  });
+
   it("rejects non-20-byte hex", () => {
     assert.throws(
       () => ConversionUtils.addressToBytes32Hex("0x1234" as `0x${string}`),
@@ -46,6 +62,41 @@ describe("ConversionUtils.addressToBytes32Hex", () => {
           "4200000000000000000000000000000000000006" as `0x${string}`,
         ),
       /20-byte/,
+    );
+  });
+});
+
+describe("ConversionUtils.addressToSolanaPubkeyBytes", () => {
+  it("left-pads an EVM address into 32 pubkey bytes", () => {
+    const address = EVMAccountAddress(
+      "0x4200000000000000000000000000000000000006",
+    );
+    const bytes = ConversionUtils.addressToSolanaPubkeyBytes(address);
+    assert.equal(bytes.length, 32);
+    assert.deepEqual(
+      bytes,
+      ConversionUtils.hexToBytes(
+        HexString(
+          "0x0000000000000000000000004200000000000000000000000000000000000006",
+        ),
+      ),
+    );
+  });
+});
+
+describe("ConversionUtils.solanaAccountToBytes32", () => {
+  it("encodes a Solana account as bytes32 hex", () => {
+    const account = SolanaAccountAddress(
+      "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+    );
+    const hex = ConversionUtils.solanaAccountToBytes32(account);
+    assert.equal((String(hex).length - 2) / 2, 32);
+    const ata = SolanaATAAddress(
+      "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+    );
+    assert.equal(
+      ConversionUtils.solanaAccountToBytes32(ata),
+      hex,
     );
   });
 });

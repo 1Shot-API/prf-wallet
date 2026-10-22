@@ -4,7 +4,7 @@ import type { ISO8601DateTime } from "../primitives/ISO8601DateTime.js";
 import type { SolanaAccountAddress } from "../primitives/SolanaAccountAddress.js";
 import type { SolanaChainId } from "../primitives/SolanaChainId.js";
 import type { SolanaSignature } from "../primitives/SolanaSignature.js";
-import type { SolanaTransactionSignature } from "../primitives/SolanaTransactionSignature.js";
+import type { SolanaTransactionHash } from "../primitives/SolanaTransactionHash.js";
 import type { UriString } from "../primitives/UriString.js";
 
 /**
@@ -62,7 +62,7 @@ export interface ISolanaSignAndSendTransactionParams {
 }
 
 export interface ISolanaSignAndSendTransactionResult {
-  signature: SolanaTransactionSignature;
+  signature: SolanaTransactionHash;
 }
 
 /**
