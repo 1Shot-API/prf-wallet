@@ -2,6 +2,8 @@ import { address, type Address } from "@solana/addresses";
 
 import type { SolanaAccountAddress } from "../primitives/SolanaAccountAddress.js";
 import { SolanaAccountAddress as makeSolanaAccountAddress } from "../primitives/SolanaAccountAddress.js";
+import type { SolanaATAAddress } from "../primitives/SolanaATAAddress.js";
+import { SolanaATAAddress as makeSolanaATAAddress } from "../primitives/SolanaATAAddress.js";
 import type { SolanaMintAddress } from "../primitives/SolanaMintAddress.js";
 import { SolanaMintAddress as makeSolanaMintAddress } from "../primitives/SolanaMintAddress.js";
 import type { SolanaProgramAddress } from "../primitives/SolanaProgramAddress.js";
@@ -17,6 +19,7 @@ export class SolanaAddressUtils {
       | SolanaAccountAddress
       | SolanaProgramAddress
       | SolanaMintAddress
+      | SolanaATAAddress
       | string,
   ): Address {
     return address(typeof value === "string" ? value : String(value));
@@ -32,5 +35,9 @@ export class SolanaAddressUtils {
 
   static asMintAddress(value: Address | string): SolanaMintAddress {
     return makeSolanaMintAddress(address(String(value)) as string);
+  }
+
+  static asAtaAddress(value: Address | string): SolanaATAAddress {
+    return makeSolanaATAAddress(address(String(value)) as string);
   }
 }
