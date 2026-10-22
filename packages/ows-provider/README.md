@@ -105,6 +105,24 @@ RPC requests have **no provider-imposed timeout**: user-paced methods (`personal
 
 `BitcoinHostClient` — Reown / BIP-122 static-wallet pattern helper (`proxy.bitcoin.getAccountAddresses(params?)`).
 
+### `proxy.solana`
+
+`SolanaHostClient` — Solana Host↔Branding wire (`getAccountAddress`, `signMessage`, `signTransaction`, `signAndSendTransaction`, `signIn`). Branding must `wallet.solana.register(provider)` for these methods to resolve.
+
+Opt-in Wallet Standard discovery (never auto-registered in `OWSProxy.create`):
+
+```ts
+import { getWallets } from "@wallet-standard/app";
+
+proxy.solana.registerSolanaWallet(); // optional { name?, icon? }
+console.log(getWallets().get()); // includes "1Shot Wallet"
+
+// later / on destroy:
+proxy.solana.unregisterSolanaWallet();
+```
+
+Advertised features: `standard:connect` / `disconnect` / `events`, `solana:signMessage`, `solana:signIn`, `solana:signTransaction`, `solana:signAndSendTransaction` on chains `solana:mainnet` and `solana:devnet`. Connect uses `getAccountAddress`. Signing features call the wire; unimplemented Branding handlers surface as RPC errors (features stay discoverable). Full serialized transactions are split/merged with `@solana/transactions` inside the Host Standard adapter — Branding still receives message bytes.
+
 ### `proxy.rpc(method, params?)`
 
 Extension RPC for wallet-specific methods (non–EIP-1193).

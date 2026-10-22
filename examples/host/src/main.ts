@@ -1,9 +1,14 @@
 import { OWSProxy } from "@1shotapi/ows-provider";
 import {
+  ChainUtils,
   EVMAccountAddress,
   EVMChainId,
   HexString,
+  SOLANA_DEVNET_CHAIN_ID,
+  SOLANA_MAINNET_CHAIN_ID,
+  type OWSChainId,
 } from "@1shotapi/ows-types";
+import { getWallets } from "@wallet-standard/app";
 import {
   createPublicClient,
   custom,
@@ -20,7 +25,12 @@ import "./styles.css";
 
 const USDC_DECIMALS = 6;
 
-const HOST_CHAINS = [
+const HOST_CHAINS: ReadonlyArray<{
+  chainId: OWSChainId;
+  label: string;
+  usdc: EVMAccountAddress | null;
+  blockExplorerUrl: string;
+}> = [
   {
     chainId: EVMChainId("0xaa36a7"),
     label: "Sepolia",
@@ -39,7 +49,19 @@ const HOST_CHAINS = [
     usdc: EVMAccountAddress("0x3600000000000000000000000000000000000000"),
     blockExplorerUrl: "https://testnet.arcscan.app",
   },
-] as const;
+  {
+    chainId: SOLANA_MAINNET_CHAIN_ID,
+    label: "Solana",
+    usdc: null,
+    blockExplorerUrl: "https://explorer.solana.com",
+  },
+  {
+    chainId: SOLANA_DEVNET_CHAIN_ID,
+    label: "Solana Devnet",
+    usdc: null,
+    blockExplorerUrl: "https://explorer.solana.com/?cluster=devnet",
+  },
+];
 
 type UsdcMode = "balance" | "send";
 
@@ -84,11 +106,11 @@ function normalizeChainIdHex(value: string): EVMChainId {
   return EVMChainId(`0x${BigInt(value).toString(16)}`);
 }
 
-function chainMeta(chainId: EVMChainId) {
+function chainMeta(chainId: OWSChainId) {
   return HOST_CHAINS.find((chain) => chain.chainId === chainId) ?? null;
 }
 
-function setChainSelectValue(chainId: EVMChainId): void {
+function setChainSelectValue(chainId: OWSChainId): void {
   const value = String(chainId);
   if ([...chainSelect.options].some((option) => option.value === value)) {
     chainSelect.value = value;
@@ -108,22 +130,31 @@ function clearUsdcOutputs(): void {
   usdcTxLink.textContent = "";
 }
 
+function selectedChainId(): OWSChainId {
+  const value = chainSelect.value;
+  if (ChainUtils.isSolanaChainId(value)) {
+    return value;
+  }
+  return EVMChainId(value as `0x${string}`);
+}
+
 function syncUsdcUi(): void {
   const mode = usdcModeSelect.value as UsdcMode;
-  const meta = chainMeta(EVMChainId(chainSelect.value as `0x${string}`));
+  const meta = chainMeta(selectedChainId());
   usdcSendFields.hidden = mode !== "send";
   usdcActionButton.textContent =
     mode === "send" ? "Send USDC" : "Check Balance";
-  usdcContractEl.textContent = meta
+  usdcContractEl.textContent = meta?.usdc
     ? `USDC: ${meta.usdc}`
     : "USDC: unsupported chain";
   clearUsdcOutputs();
 }
 
-async function refreshChainFromWallet(proxy: OWSProxy): Promise<EVMChainId> {
-  const chainId = normalizeChainIdHex(
-    await proxy.ethereum.request({ method: "eth_chainId" }),
-  );
+async function refreshChainFromWallet(proxy: OWSProxy): Promise<OWSChainId> {
+  const raw = await proxy.ethereum.request({ method: "eth_chainId" });
+  const chainId = ChainUtils.isSolanaChainId(raw)
+    ? raw
+    : normalizeChainIdHex(String(raw));
   setChainSelectValue(chainId);
   syncUsdcUi();
   return chainId;
@@ -159,6 +190,15 @@ async function main(): Promise<void> {
   console.info("[ows-example-host] embedding Branding Layer", __WALLET_IFRAME_URL__);
 
   const proxy = await OWSProxy.create(walletContainer, __WALLET_IFRAME_URL__);
+
+  // Opt-in Wallet Standard discovery (Solana Adapter / getWallets).
+  proxy.solana.registerSolanaWallet();
+  console.info(
+    "[ows-example-host] Wallet Standard wallets",
+    getWallets()
+      .get()
+      .map((w) => w.name),
+  );
 
   const analyticsLines: string[] = [];
   proxy.analytics.on((event) => {
@@ -196,14 +236,18 @@ async function main(): Promise<void> {
 
   chainSelect.addEventListener("change", () => {
     void (async () => {
-      const selected = EVMChainId(chainSelect.value as `0x${string}`);
+      const selected = selectedChainId();
       chainSelect.disabled = true;
       clearUsdcOutputs();
       try {
-        await proxy.ethereum.request({
-          method: "wallet_switchEthereumChain",
-          params: [{ chainId: selected }],
-        });
+        if (ChainUtils.isSolanaChainId(selected)) {
+          await proxy.rpc("switchChain", { chainId: selected });
+        } else {
+          await proxy.ethereum.request({
+            method: "wallet_switchEthereumChain",
+            params: [{ chainId: selected as EVMChainId }],
+          });
+        }
         syncUsdcUi();
         setStatus(`Switched to ${selected}`);
       } catch (error) {
@@ -292,9 +336,9 @@ async function handleSign(proxy: OWSProxy): Promise<void> {
 }
 
 async function handleCheckUsdcBalance(proxy: OWSProxy): Promise<void> {
-  const chainId = normalizeChainIdHex(chainSelect.value);
+  const chainId = selectedChainId();
   const meta = chainMeta(chainId);
-  if (!meta) {
+  if (!meta?.usdc || !ChainUtils.isEVMChainId(chainId)) {
     setStatus("USDC is not configured for this chain.", true);
     clearUsdcOutputs();
     return;
@@ -355,9 +399,9 @@ async function handleCheckUsdcBalance(proxy: OWSProxy): Promise<void> {
 }
 
 async function handleSendUsdc(proxy: OWSProxy): Promise<void> {
-  const chainId = normalizeChainIdHex(chainSelect.value);
+  const chainId = selectedChainId();
   const meta = chainMeta(chainId);
-  if (!meta) {
+  if (!meta?.usdc || !ChainUtils.isEVMChainId(chainId)) {
     setStatus("USDC is not configured for this chain.", true);
     clearUsdcOutputs();
     return;

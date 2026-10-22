@@ -13,6 +13,15 @@ export { Eip1193EventHostHandler } from "./eip1193/Eip1193EventHostHandler.js";
 export { CredentialHostClient } from "./credentials/CredentialsHostClient.js";
 export { BitcoinHostClient } from "./bitcoin/BitcoinHostClient.js";
 export {
+  SolanaHostClient,
+  type RegisterSolanaWalletOptions,
+} from "./solana/SolanaHostClient.js";
+export {
+  OwsSolanaStandardWallet,
+  SOLANA_STANDARD_CHAINS,
+  type OwsSolanaStandardWalletOptions,
+} from "./solana/standard-wallet.js";
+export {
   AnalyticsHostHandler,
   type AnalyticsListener,
 } from "./analytics/AnalyticsHostHandler.js";

@@ -1,6 +1,7 @@
 export * from "./AES256CipherText.js";
 export * from "./AES256CipherTextEnvelope.js";
 export * from "./AnalyticsEventId.js";
+export * from "./Base64String.js";
 export * from "./Base64UrlEncodedString.js";
 export * from "./BitcoinSegwitAccountAddress.js";
 export * from "./BitcoinSignatureHex.js";
@@ -38,3 +39,9 @@ export * from "./RelayerTransactionId.js";
 export * from "./SdJwtVcPresentationString.js";
 export * from "./SECP256K1PublicKey.js";
 export * from "./SolanaAccountAddress.js";
+export * from "./SolanaProgramAddress.js";
+export * from "./SolanaMintAddress.js";
+export * from "./SolanaATAAddress.js";
+export * from "./SolanaSignature.js";
+export * from "./SolanaTransactionHash.js";
+export * from "./TransactionHash.js";

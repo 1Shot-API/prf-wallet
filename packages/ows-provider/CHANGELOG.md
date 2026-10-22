@@ -1,5 +1,34 @@
 # @1shotapi/ows-provider
 
+## 0.8.0
+
+### Minor Changes
+
+- 17fe471: **ows-provider:** Add Wallet Standard discovery on `proxy.solana.registerSolanaWallet()` / `unregisterSolanaWallet()`, forwarding connect and Solana features to the existing Branding wire. Host-side `@solana/transactions` helpers split/merge full serialized transactions for `signTransaction` / `signAndSendTransaction`.
+
+  **ows-types:** Solana Phase 2 primitives and utils for Branding/Host:
+
+  - Add `SolanaATAAddress` + `SolanaAddressUtils.asAtaAddress`
+  - Rename `SolanaTransactionSignature` → `SolanaTransactionHash` (breaking rename; use the new export)
+  - Add `TransactionHash` union (`EVMTransactionHash | SolanaTransactionHash`) and `parseTransactionHash`
+  - Add `ConversionUtils.bytesToBase64` / `base64ToBytes` (standard base64 as `Base64String`) for Host↔Branding wire payloads
+
+### Patch Changes
+
+- Updated dependencies [17fe471]
+  - @1shotapi/ows-types@0.15.0
+
+## 0.7.0
+
+### Minor Changes
+
+- 972fd3b: Solana Phase 1: CAIP-2 `SolanaChainId` (`solana:mainnet` / `devnet` / `testnet`), branded program/mint/signature primitives, `SolanaSigner.signMessage` / `signTransaction` + Kit partial signer, and Host/Branding `solana.*` wire methods (`proxy.solana` / `wallet.solana.register`).
+
+### Patch Changes
+
+- Updated dependencies [972fd3b]
+  - @1shotapi/ows-types@0.14.0
+
 ## 0.6.0
 
 ### Minor Changes

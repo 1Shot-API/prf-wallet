@@ -8,9 +8,10 @@ import { z } from "zod";
 
 /**
  * Union of supported chain ID types across all chain technologies.
- * EVM uses EIP-155 hex (`0x…`); Bitcoin / Solana use descriptive string sentinels.
+ * EVM uses EIP-155 hex (`0x…`); Bitcoin uses descriptive sentinels;
+ * Solana uses Wallet Standard / CAIP-2 (`solana:mainnet`, …).
  *
- * Example: `"0x1"` | `"Bitcoin"` | `"Solana"`
+ * Example: `"0x1"` | `"Bitcoin"` | `"solana:mainnet"`
  */
 export type OWSChainId = EVMChainId | BitcoinChainId | SolanaChainId;
 

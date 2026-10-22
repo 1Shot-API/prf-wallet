@@ -12,6 +12,7 @@ import {
 } from "../primitives/EVMChainId.js";
 import type { OWSChainId } from "../primitives/OWSChainId.js";
 import {
+  SOLANA_CAIP2,
   SOLANA_DEVNET_CHAIN_ID,
   SOLANA_MAINNET_CHAIN_ID,
   SOLANA_TESTNET_CHAIN_ID,
@@ -90,7 +91,7 @@ export class ChainUtils {
     );
   }
 
-  /** Brand a known Solana sentinel, or throw. */
+  /** Brand a known Solana CAIP-2 sentinel, or throw. */
   static asSolanaChainId(chainId: unknown): SolanaChainIdType {
     if (ChainUtils.isSolanaChainId(chainId)) {
       return chainId;
@@ -120,6 +121,18 @@ export class ChainUtils {
   ): BitcoinChainIdType | undefined {
     if (caip2 === BITCOIN_CAIP2.MAINNET) return BITCOIN_MAINNET_CHAIN_ID;
     if (caip2 === BITCOIN_CAIP2.TESTNET) return BITCOIN_TESTNET_CHAIN_ID;
+    return undefined;
+  }
+
+  /** Solana branded ids are already CAIP-2 / Wallet Standard strings. */
+  static solanaChainIdToCaip2(chainId: SolanaChainIdType): string {
+    return chainId;
+  }
+
+  static caip2ToSolanaChainId(caip2: string): SolanaChainIdType | undefined {
+    if (caip2 === SOLANA_CAIP2.MAINNET) return SOLANA_MAINNET_CHAIN_ID;
+    if (caip2 === SOLANA_CAIP2.DEVNET) return SOLANA_DEVNET_CHAIN_ID;
+    if (caip2 === SOLANA_CAIP2.TESTNET) return SOLANA_TESTNET_CHAIN_ID;
     return undefined;
   }
 }

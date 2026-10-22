@@ -123,6 +123,21 @@ export {
   type IOpenWalletBitcoinProvider,
 } from "./protocol/bitcoin.js";
 
+export {
+  SOLANA_WIRE_METHODS,
+  type SolanaWireMethod,
+  type ISolanaGetAccountAddressParams,
+  type ISolanaSignMessageParams,
+  type ISolanaSignMessageResult,
+  type ISolanaSignTransactionParams,
+  type ISolanaSignTransactionResult,
+  type ISolanaSignAndSendTransactionParams,
+  type ISolanaSignAndSendTransactionResult,
+  type ISolanaSignInParams,
+  type ISolanaSignInResult,
+  type IOpenWalletSolanaProvider,
+} from "./protocol/solana.js";
+
 export * from "./credentials/index.js";
 
 export * from "./primitives/index.js";
@@ -158,6 +173,7 @@ export {
   PresentationUtils,
   ProofUtils,
   ConversionUtils,
+  SolanaAddressUtils,
   CredentialCryptoUtils,
   type IOwsEd25519HolderSignerDeps,
   type BuildSdJwtVcPresentationInput,

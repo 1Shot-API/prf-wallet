@@ -1,6 +1,6 @@
 {
   "name": "@1shotapi/ows-signer-utils",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "description": "OWS utilities to embed the Signing Layer iframe and communicate via postMessage — chain-specific signing helpers (EVM, etc.)",
   "type": "module",
   "main": "./dist/index.js",
@@ -29,9 +29,11 @@
     "@scure/btc-signer": "^2.4.1"
   },
   "peerDependencies": {
+    "@solana/kit": "^8.5.0",
     "viem": "^2.0.0"
   },
   "devDependencies": {
+    "@solana/kit": "^8.5.0",
     "tsx": "^4.19.0",
     "viem": "^2.52.0"
   },

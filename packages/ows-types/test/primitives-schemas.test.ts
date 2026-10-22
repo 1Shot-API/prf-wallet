@@ -5,6 +5,7 @@ import {
   AES256CipherTextEnvelopeSchema,
   AES256CipherTextSchema,
   AnalyticsEventIdSchema,
+  Base64StringSchema,
   BitcoinChainIdSchema,
   BitcoinSegwitAccountAddressSchema,
   EChainTechnology,
@@ -65,10 +66,15 @@ describe("primitive Zod schemas", () => {
     assert.equal(SolanaAccountAddressSchema.safeParse("not-base58!!!").success, false);
   });
 
+  it("accepts standard Base64String and rejects base64url alphabet", () => {
+    assert.equal(Base64StringSchema.parse("SGVsbG8="), "SGVsbG8=");
+    assert.equal(Base64StringSchema.safeParse("SGVsbG8_").success, false);
+  });
+
   it("OWSChainIdSchema accepts EVM, Bitcoin, and Solana", () => {
     assert.equal(OWSChainIdSchema.parse("0x1"), "0x1");
     assert.equal(OWSChainIdSchema.parse("Bitcoin"), "Bitcoin");
-    assert.equal(OWSChainIdSchema.parse("SolanaDevnet"), "SolanaDevnet");
+    assert.equal(OWSChainIdSchema.parse("solana:devnet"), "solana:devnet");
     assert.equal(BitcoinChainIdSchema.parse("BitcoinTestnet"), "BitcoinTestnet");
   });
 

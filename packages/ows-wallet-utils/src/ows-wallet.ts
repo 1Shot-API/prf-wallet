@@ -22,8 +22,10 @@ import { Eip1193EventChildClient } from "./eip1193/event-child-client.js";
 import { debugLog, setOwsWalletDebugFromOptions } from "./debug.js";
 import { CredentialWalletRegistrar } from "./credentials/wallet-registrar.js";
 import { BitcoinWalletRegistrar } from "./bitcoin/wallet-registrar.js";
+import { SolanaWalletRegistrar } from "./solana/wallet-registrar.js";
 import type {
   IOpenWalletBitcoinProvider,
+  IOpenWalletSolanaProvider,
   IOWSAnalyticsEvent,
   OpenWalletCredentialProvider,
 } from "@1shotapi/ows-types";
@@ -60,6 +62,7 @@ export class OWSWallet {
   private readonly customHandlers = new Map<string, RpcHandlerRegistration>();
   private readonly credentialRegistrar = new CredentialWalletRegistrar();
   private readonly bitcoinRegistrar = new BitcoinWalletRegistrar();
+  private readonly solanaRegistrar = new SolanaWalletRegistrar();
   private handshakeStarted = false;
 
   private constructor(options?: OWSWalletOptions) {
@@ -99,6 +102,14 @@ export class OWSWallet {
     register: (provider: IOpenWalletBitcoinProvider): void => {
       this.assertNotConnected();
       this.bitcoinRegistrar.register(provider);
+    },
+  };
+
+  /** Namespaced Solana handlers (Host Standard wallet uses these via Postmate). */
+  readonly solana = {
+    register: (provider: IOpenWalletSolanaProvider): void => {
+      this.assertNotConnected();
+      this.solanaRegistrar.register(provider);
     },
   };
 
@@ -314,6 +325,14 @@ export class OWSWallet {
       }
     }
 
+    for (const wireKey of this.solanaRegistrar.registeredWireMethods()) {
+      if (!(wireKey in model)) {
+        model[wireKey] = async (data) => {
+          await this.dispatchSolana(wireKey, data);
+        };
+      }
+    }
+
     return model;
   }
 
@@ -367,6 +386,37 @@ export class OWSWallet {
           handler: async () => {
             throw new OwsUnimplementedError(
               `Bitcoin handler not registered for wire method: ${wireKey}`,
+            );
+          },
+        },
+        wireKey,
+      );
+      return;
+    }
+
+    await handleRpcModelCall(childApi, data, registration, wireKey);
+  }
+
+  private async dispatchSolana(
+    wireKey: string,
+    data: unknown,
+  ): Promise<void> {
+    const childApi =
+      this.childApi ?? (await this.handshakePromise);
+    if (!childApi) {
+      debugLog("Solana RPC dropped — child API not available", { wireKey });
+      return;
+    }
+
+    const registration = this.solanaRegistrar.getRegistration(wireKey);
+    if (!registration) {
+      await handleRpcModelCall(
+        childApi,
+        data,
+        {
+          handler: async () => {
+            throw new OwsUnimplementedError(
+              `Solana handler not registered for wire method: ${wireKey}`,
             );
           },
         },

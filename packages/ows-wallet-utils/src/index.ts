@@ -50,3 +50,13 @@ export {
   getAccountAddressesParamsSchema,
   BitcoinWalletRegistrar,
 } from "./bitcoin/wallet-registrar.js";
+
+export {
+  SOLANA_PARAM_SCHEMAS,
+  getAccountAddressParamsSchema,
+  signMessageParamsSchema,
+  signTransactionParamsSchema,
+  signAndSendTransactionParamsSchema,
+  signInParamsSchema,
+  SolanaWalletRegistrar,
+} from "./solana/wallet-registrar.js";

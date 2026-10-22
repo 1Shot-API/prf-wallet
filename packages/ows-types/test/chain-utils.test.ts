@@ -8,6 +8,7 @@ import {
   EChainTechnology,
   EVMChainId,
   OwsInvalidParamsError,
+  SOLANA_CAIP2,
   SOLANA_DEVNET_CHAIN_ID,
   SOLANA_MAINNET_CHAIN_ID,
 } from "../src/index.js";
@@ -70,12 +71,13 @@ describe("ChainUtils", () => {
     );
   });
 
-  it("narrows Solana sentinels", () => {
-    assert.equal(ChainUtils.isSolanaChainId("Solana"), true);
+  it("narrows Solana CAIP-2 sentinels", () => {
+    assert.equal(ChainUtils.isSolanaChainId("solana:mainnet"), true);
     assert.equal(ChainUtils.isSolanaChainId(SOLANA_DEVNET_CHAIN_ID), true);
+    assert.equal(ChainUtils.isSolanaChainId("Solana"), false);
     assert.equal(ChainUtils.isSolanaChainId("0x1"), false);
     assert.equal(
-      ChainUtils.asSolanaChainId("Solana"),
+      ChainUtils.asSolanaChainId("solana:mainnet"),
       SOLANA_MAINNET_CHAIN_ID,
     );
     assert.throws(() => ChainUtils.asSolanaChainId("Bitcoin"), /Invalid SolanaChainId/);
@@ -101,6 +103,14 @@ describe("ChainUtils", () => {
     assert.equal(
       ChainUtils.caip2ToBitcoinChainId(BITCOIN_CAIP2.TESTNET),
       BITCOIN_TESTNET_CHAIN_ID,
+    );
+    assert.equal(
+      ChainUtils.solanaChainIdToCaip2(SOLANA_MAINNET_CHAIN_ID),
+      SOLANA_CAIP2.MAINNET,
+    );
+    assert.equal(
+      ChainUtils.caip2ToSolanaChainId(SOLANA_CAIP2.DEVNET),
+      SOLANA_DEVNET_CHAIN_ID,
     );
   });
 });
