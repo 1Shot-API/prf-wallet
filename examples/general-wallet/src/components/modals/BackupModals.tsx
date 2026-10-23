@@ -43,6 +43,9 @@ export function CreateBackupModal({
   const [result, setResult] = useState<RecoveryDataCreatedData | null>(null);
   const [copyLabel, setCopyLabel] = useState("Copy");
   const abortedRef = useRef(false);
+  const copyResetTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null,
+  );
 
   useEffect(() => {
     abortedRef.current = false;
@@ -85,6 +88,10 @@ export function CreateBackupModal({
 
     return () => {
       abortedRef.current = true;
+      if (copyResetTimeoutRef.current !== null) {
+        clearTimeout(copyResetTimeoutRef.current);
+        copyResetTimeoutRef.current = null;
+      }
     };
   }, [ensureReady, getSigner, persistBackup]);
 
@@ -110,10 +117,21 @@ export function CreateBackupModal({
             onClick: () => {
               void navigator.clipboard.writeText(result.encryptedPrivateKey).then(
                 () => {
+                  if (abortedRef.current) return;
                   setCopyLabel("Copied");
-                  setTimeout(() => setCopyLabel("Copy"), 1500);
+                  if (copyResetTimeoutRef.current !== null) {
+                    clearTimeout(copyResetTimeoutRef.current);
+                  }
+                  copyResetTimeoutRef.current = setTimeout(() => {
+                    copyResetTimeoutRef.current = null;
+                    if (!abortedRef.current) {
+                      setCopyLabel("Copy");
+                    }
+                  }, 1500);
                 },
-                () => setCopyLabel("Copy failed"),
+                () => {
+                  if (!abortedRef.current) setCopyLabel("Copy failed");
+                },
               );
             },
           },

@@ -33,9 +33,17 @@ let lastRequest: StoredRequest | null = null;
 const MAX_BODY_BYTES = 1_048_576;
 
 function ensureKeys() {
-  // Cache success *and* failure: clearing on reject would let concurrent
-  // callers race regenerating keypairs via `??=`.
-  encryptionKeysPromise ??= generateVerifierEncryptionKeyPair();
+  // Share one in-flight generation across concurrent callers. Clear only after
+  // a settled rejection so the next call can retry without duplicate parallel
+  // keygens racing mid-flight.
+  if (!encryptionKeysPromise) {
+    encryptionKeysPromise = generateVerifierEncryptionKeyPair().catch(
+      (error: unknown) => {
+        encryptionKeysPromise = null;
+        throw error;
+      },
+    );
+  }
   return encryptionKeysPromise;
 }
 

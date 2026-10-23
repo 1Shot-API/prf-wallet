@@ -23,6 +23,9 @@ export function emitEvent(target, targetOrigin, event, correlationId, data) {
 }
 
 /**
+ * Branding↔Signing must be same origin. Reject cross-origin parents
+ * (e.g. sketchy.ru embedding wallet.1shotapi.com/signer/).
+ *
  * @param {MessageEvent} event
  * @returns {boolean}
  */
@@ -30,6 +33,7 @@ export function isValidParentMessage(event) {
   if (event.source !== window.parent) return false;
   if (window.parent === window.top) return false;
   if (event.source === window) return false;
+  if (event.origin !== window.location.origin) return false;
   return true;
 }
 

@@ -1,0 +1,43 @@
+{
+  "audit": {
+    "id": "2026-10-23-signing-layer",
+    "package": "@1shotapi/ows-signer",
+    "profile": "deep-scoped",
+    "method": "ai-assisted-cursor-security-audit-skill",
+    "human_pen_test": false,
+    "source_ref": "1aa132220ab27a85b88b64b0d6371c197908e317",
+    "date": "2026-10-23"
+  },
+  "findings": [
+    {
+      "fingerprint": "ows-signer:recovery-session-survives-clearSession",
+      "title": "Signing recovery scalar survives OWSSigner.clearSession",
+      "audit_verdict": "confirmed",
+      "severity": "low",
+      "status": "fixed",
+      "remediation": "clearSession awaits clearRecoverySession; Change Account awaits clearSession"
+    },
+    {
+      "fingerprint": "ows-signer/no-branding-identity-binding-any-embedder-full-rpc",
+      "title": "Signing Layer granted full RPC to any embedding Branding origin",
+      "audit_verdict": "needs_validation",
+      "severity": null,
+      "status": "mitigated",
+      "remediation": "same-origin parent gate; create() same-origin check; Confirm shows origin; frame-ancestors 'self'"
+    },
+    {
+      "fingerprint": "ows-signer/ui/reveal-key-clickjack-clipboard-no-visibility-guard",
+      "title": "Reveal-key UI lacked visibility/focus guards",
+      "audit_verdict": "needs_validation",
+      "severity": null,
+      "status": "mitigated",
+      "remediation": "visibility+focus before showPrivateKey and clipboard; framing CSP"
+    }
+  ],
+  "rejected_fingerprints": [
+    "ows-signer/passphrase-import-prompt-survives-cancel",
+    "ows-signer/passphrase-min-length-branding-controlled",
+    "ows-signer/recoverKey-rebind-denied-leaves-recovery-session",
+    "ows-signer/unbound-signer-bytes-no-implemented-integrity-or-in-repo-csp"
+  ]
+}

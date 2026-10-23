@@ -60,8 +60,8 @@ const runReactDoctor = (outputPath) => {
   // array with `shell: true` trips Node's DEP0190. A missing command exits
   // 127 via a POSIX shell (no ENOENT error) and 9009 via cmd.exe, so fall
   // through on those. The local bin is probed with existsSync (its `./`
-  // prefix form is not runnable by cmd.exe at all). With no runner found,
-  // exit 0 silently — stdout is parsed as the hook's JSON.
+  // prefix form is not runnable by cmd.exe at all). Returns `null` when no
+  // runner is available (distinct from exit 0 = clean scan).
   const localBin = process.platform === 'win32'
     ? 'node_modules\\.bin\\react-doctor.cmd'
     : './node_modules/.bin/react-doctor';
@@ -80,10 +80,10 @@ const runReactDoctor = (outputPath) => {
     try {
       writeFileSync(outputPath, (result.stdout || '') + (result.stderr || ''));
     } catch {}
-    return result.status;
+    return result.status ?? 1;
   }
 
-  return 0;
+  return null;
 };
 
 const cleanup = (...paths) => {
@@ -121,6 +121,12 @@ const main = async () => {
   }
 
   const scanResult = runReactDoctor(outputPath);
+  if (scanResult === null) {
+    // Soft skip: do not block the agent, but do not pretend a clean scan ran.
+    cleanup(outputPath);
+    console.error('[react-doctor hook] react-doctor not found; skipping scan');
+    process.exit(0);
+  }
   if (scanResult === 0) {
     cleanup(outputPath);
     process.exit(0);

@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { hashMessage } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { OWSSigner } from "../src/owssigner.ts";
-import { API_VERSION } from "@1shotapi/ows-types";
+import { API_VERSION, CredentialId } from "@1shotapi/ows-types";
 
 const SIGNER_ORIGIN = "https://signer.example";
 const SIGNER_URL = `${SIGNER_ORIGIN}/signer.html`;
@@ -76,6 +76,7 @@ function setupBrowserMocks(options: SetupOptions = {}) {
   } as unknown as Document;
 
   globalThis.window = {
+    location: { origin: SIGNER_ORIGIN, href: SIGNER_URL },
     addEventListener(type: string, listener: MessageListener) {
       if (type === "message") listeners.add(listener);
     },
@@ -128,6 +129,11 @@ function setupBrowserMocks(options: SetupOptions = {}) {
         },
         id,
       );
+      return;
+    }
+
+    if (method === "clearRecoverySession") {
+      reply("RecoverySessionCleared", {}, id);
       return;
     }
 
@@ -217,7 +223,7 @@ describe("OWSSigner", () => {
   it("signDigest and evm.signMessage delegate to RPC", async () => {
     const { container } = setupBrowserMocks();
     const signer = await OWSSigner.create(container, SIGNER_URL, {
-      credentialId: "cred-1",
+      credentialId: CredentialId("cred-1"),
     });
 
     const digestResults = await signer.signDigest([
@@ -236,7 +242,7 @@ describe("OWSSigner", () => {
   it("executeBatch delegates to RPC", async () => {
     const { container } = setupBrowserMocks();
     const signer = await OWSSigner.create(container, SIGNER_URL, {
-      credentialId: "cred-1",
+      credentialId: CredentialId("cred-1"),
     });
 
     const batch = await signer.executeBatch({
@@ -257,7 +263,7 @@ describe("OWSSigner", () => {
   it("caches EVM, Solana, and Bitcoin addresses from getPublicKey", async () => {
     const { container } = setupBrowserMocks();
     const signer = await OWSSigner.create(container, SIGNER_URL, {
-      credentialId: "cred-1",
+      credentialId: CredentialId("cred-1"),
     });
 
     const evm = await signer.evm.getAccountAddress();
@@ -319,13 +325,13 @@ describe("OWSSigner", () => {
       holdGetPublicKey: true,
     });
     const signer = await OWSSigner.create(container, SIGNER_URL, {
-      credentialId: "cred-old",
+      credentialId: CredentialId("cred-old"),
     });
 
-    const pending = signer.getPublicKey({ credentialId: "cred-old" });
+    const pending = signer.getPublicKey({ credentialId: CredentialId("cred-old") });
     const oldId = getLastCorrelationId();
 
-    signer.clearSession();
+    await signer.clearSession();
     await assert.rejects(pending, /session cleared/);
 
     // Late KeyDerived for the abandoned correlation id must be ignored.

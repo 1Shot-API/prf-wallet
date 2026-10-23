@@ -11,9 +11,32 @@ import { DEMO_ISSUER_PUBLIC_JWK } from "../../shared/src/demo/demo-keys.js";
 import { issueDemoSdJwtVc } from "../../shared/src/demo/issuer.js";
 
 const PRE_AUTH_CODE = "ows-demo-preauth-code";
-const ACCESS_TOKENS = new Map<string, { cNonce: string }>();
+/** Access-token lifetime advertised as `expires_in` on `/token`. */
+const ACCESS_TOKEN_TTL_MS = 3600_000;
+type AccessTokenSession = { cNonce: string; expiresAtMs: number };
+const ACCESS_TOKENS = new Map<string, AccessTokenSession>();
 /** Demo endpoints only — reject oversized POSTs before buffering. */
 const MAX_BODY_BYTES = 1_048_576;
+
+function purgeExpiredAccessTokens(nowMs = Date.now()): void {
+  for (const [token, session] of ACCESS_TOKENS) {
+    if (session.expiresAtMs <= nowMs) {
+      ACCESS_TOKENS.delete(token);
+    }
+  }
+}
+
+function getAccessTokenSession(token: string): AccessTokenSession | undefined {
+  const nowMs = Date.now();
+  purgeExpiredAccessTokens(nowMs);
+  const session = ACCESS_TOKENS.get(token);
+  if (!session) return undefined;
+  if (session.expiresAtMs <= nowMs) {
+    ACCESS_TOKENS.delete(token);
+    return undefined;
+  }
+  return session;
+}
 
 function readBody(req: IncomingMessage): Promise<Record<string, unknown>> {
   return new Promise((resolve, reject) => {
@@ -130,11 +153,15 @@ export function oid4vciDemoPlugin(options: { publicOrigin: string }): Plugin {
             }
             const accessToken = `atk_${crypto.randomUUID()}`;
             const cNonce = `cnonce_${crypto.randomUUID()}`;
-            ACCESS_TOKENS.set(accessToken, { cNonce });
+            purgeExpiredAccessTokens();
+            ACCESS_TOKENS.set(accessToken, {
+              cNonce,
+              expiresAtMs: Date.now() + ACCESS_TOKEN_TTL_MS,
+            });
             sendJson(res, 200, {
               access_token: accessToken,
               token_type: "bearer",
-              expires_in: 3600,
+              expires_in: ACCESS_TOKEN_TTL_MS / 1000,
               c_nonce: cNonce,
               c_nonce_expires_in: 300,
             });
@@ -144,7 +171,7 @@ export function oid4vciDemoPlugin(options: { publicOrigin: string }): Plugin {
           if (req.method === "POST" && path === "/credential") {
             const auth = String(req.headers.authorization ?? "");
             const token = auth.startsWith("Bearer ") ? auth.slice(7) : "";
-            const session = ACCESS_TOKENS.get(token);
+            const session = getAccessTokenSession(token);
             if (!session) {
               sendJson(res, 401, { error: "invalid_token" });
               return;
@@ -163,9 +190,13 @@ export function oid4vciDemoPlugin(options: { publicOrigin: string }): Plugin {
               expectedNonce: session.cNonce,
             });
             if (!proofResult.valid || !proofResult.holderPublicKeyJwk) {
+              const reasons = Array.isArray(proofResult.reasons)
+                ? proofResult.reasons
+                : [];
               sendJson(res, 400, {
                 error: "invalid_proof",
-                error_description: proofResult.reasons.join("; "),
+                error_description:
+                  reasons.length > 0 ? reasons.join("; ") : "invalid proof",
               });
               return;
             }

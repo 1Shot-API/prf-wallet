@@ -16,9 +16,10 @@ npm install @1shotapi/ows-signer-utils viem
 import { OWSSigner, toViemLocalAccount } from "@1shotapi/ows-signer-utils";
 
 const container = document.getElementById("signer-slot")!;
+// Signer must be same-origin as this Branding page (e.g. /signer/ on this host).
 const signer = await OWSSigner.create(
   container,
-  "https://your-signer.example/signer.html",
+  new URL("/signer/", window.location.origin).href,
   { credentialId: optionalExistingId },
 );
 
@@ -113,7 +114,8 @@ Keep branding consent views mounted until the signer ceremony finishes. Export `
 | `recoverKey(..., options?)` | Decrypt recovery blob into session |
 | `revealPrivateKey(options?)` | Signer UI to reveal key (stays open until Done) |
 | `importPrivateKey()` | Signer UI to paste hex key → recovery session |
-| `clearRecoverySession()` | End recovery session |
+| `clearSession()` | Drop credential/address cache **and** end recovery session |
+| `clearRecoverySession()` | End recovery session only |
 | `encryptAES256(plaintexts, options?)` | Batch AES-256-GCM seal (`ows-aes1:`) |
 | `decryptAES256(ciphertexts, options?)` | Batch AES-256-GCM unseal |
 
