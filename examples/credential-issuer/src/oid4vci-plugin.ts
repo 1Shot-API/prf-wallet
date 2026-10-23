@@ -163,9 +163,13 @@ export function oid4vciDemoPlugin(options: { publicOrigin: string }): Plugin {
               expectedNonce: session.cNonce,
             });
             if (!proofResult.valid || !proofResult.holderPublicKeyJwk) {
+              const reasons = Array.isArray(proofResult.reasons)
+                ? proofResult.reasons
+                : [];
               sendJson(res, 400, {
                 error: "invalid_proof",
-                error_description: proofResult.reasons.join("; "),
+                error_description:
+                  reasons.length > 0 ? reasons.join("; ") : "invalid proof",
               });
               return;
             }

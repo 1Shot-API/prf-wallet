@@ -15,6 +15,7 @@ import {
   EVMChainId,
   SolanaAccountAddress,
 } from "@1shotapi/ows-types";
+import { LocalStorageCredentialRepository } from "@ows-shared";
 import { DEMO_CHAINS } from "../ows/demoChains";
 import {
   isWalletCreated,
@@ -23,7 +24,7 @@ import {
 } from "../storage";
 import type { ActiveModal } from "./modalTypes";
 import { useModalQueue } from "./useModalQueue";
-import { credentialRepository, useWalletBoot } from "./useWalletBoot";
+import { useWalletBoot } from "./useWalletBoot";
 import { useWalletSession } from "./useWalletSession";
 
 export type WalletContextValue = {
@@ -84,6 +85,14 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   const signerRef = useRef<OWSSigner | null>(null);
   const rpcHelperRef = useRef<RpcHelper | null>(null);
   const awaitSignerRef = useRef<(() => Promise<OWSSigner>) | null>(null);
+  // Single owner for OID4 credential storage — passed into boot + session.
+  const credentialRepositoryRef = useRef<LocalStorageCredentialRepository | null>(
+    null,
+  );
+  if (credentialRepositoryRef.current === null) {
+    credentialRepositoryRef.current = new LocalStorageCredentialRepository();
+  }
+  const credentialRepository = credentialRepositoryRef.current;
 
   const { activeModal, pushModal } = useModalQueue();
 
@@ -108,6 +117,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     rpcHelperRef,
     awaitSignerRef,
     pushModal,
+    credentialRepository,
     ensureReady: session.ensureReady,
     ensureOnboardedForSigning: session.ensureOnboardedForSigning,
     onSigningAuthenticated: session.onSigningAuthenticated,

@@ -45,7 +45,6 @@ import {
 import { createDeferredSigner } from "./deferredSigner";
 import type { ActiveModal } from "./modalTypes";
 
-const credentialRepository = new LocalStorageCredentialRepository();
 const issuerTrust = new InMemoryIssuerTrustRegistry();
 const fetchUtils = new FetchUtils();
 const parseUtils = new ParseUtils();
@@ -64,8 +63,6 @@ const walletStorage = {
   loadCachedEvmAddress,
 };
 
-export { credentialRepository };
-
 type PushModal = <T>(
   build: (handlers: {
     id: string;
@@ -81,6 +78,7 @@ type UseWalletBootArgs = {
   rpcHelperRef: RefObject<RpcHelper | null>;
   awaitSignerRef: RefObject<(() => Promise<OWSSigner>) | null>;
   pushModal: PushModal;
+  credentialRepository: LocalStorageCredentialRepository;
   ensureReady: () => Promise<void>;
   ensureOnboardedForSigning: () => Promise<void>;
   onSigningAuthenticated: () => Promise<void>;
@@ -95,6 +93,7 @@ export function useWalletBoot({
   rpcHelperRef,
   awaitSignerRef,
   pushModal,
+  credentialRepository,
   ensureReady,
   ensureOnboardedForSigning,
   onSigningAuthenticated,
@@ -288,6 +287,7 @@ export function useWalletBoot({
     };
   }, [
     awaitSignerRef,
+    credentialRepository,
     rpcHelperRef,
     signerContainerRef,
     signerRef,
