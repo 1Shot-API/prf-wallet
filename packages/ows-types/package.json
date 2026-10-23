@@ -1,0 +1,51 @@
+{
+  "name": "@1shotapi/ows-types",
+  "version": "0.15.0",
+  "description": "Shared OWS TypeScript types and error classes for host, wallet, and signer SDKs",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\"",
+    "test": "node --import tsx --test test/*.test.ts",
+    "lint": "tsc -p tsconfig.json --noEmit"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0"
+  },
+  "keywords": [
+    "ows",
+    "open-wallet-standard",
+    "types",
+    "errors"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/1Shot-API/open-wallet.git",
+    "directory": "packages/ows-types"
+  },
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "@scure/base": "^2.4.0",
+    "@sd-jwt/core": "^0.20.0",
+    "@sd-jwt/sd-jwt-vc": "^0.20.0",
+    "@solana/addresses": "^8.5.0",
+    "ts-brand": "^0.2.0",
+    "viem": "^2.52.0",
+    "zod": "^4.6.5"
+  }
+}

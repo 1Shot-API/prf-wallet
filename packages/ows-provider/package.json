@@ -1,0 +1,59 @@
+{
+  "name": "@1shotapi/ows-provider",
+  "version": "0.8.0",
+  "description": "OWS EIP-1193 provider for Host Layer applications — embed Branding Layer iframe and use with viem, ethers, etc.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\"",
+    "test": "node --import tsx --test test/*.test.ts",
+    "lint": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@1shotapi/ows-types": "*",
+    "@scure/base": "^1.2.6",
+    "@sd-jwt/sd-jwt-vc": "^0.20.0",
+    "@solana/addresses": "^8.5.0",
+    "@solana/keys": "^8.5.0",
+    "@solana/transactions": "^8.5.0",
+    "@solana/wallet-standard-features": "^1.5.0",
+    "@wallet-standard/base": "^1.1.1",
+    "@wallet-standard/features": "^1.1.1",
+    "@wallet-standard/wallet": "^1.1.1",
+    "postmate": "^1.5.2"
+  },
+  "devDependencies": {
+    "@types/postmate": "^1.5.4",
+    "tsx": "^4.19.0"
+  },
+  "keywords": [
+    "ows",
+    "open-wallet-standard",
+    "eip-1193",
+    "ethereum",
+    "provider",
+    "viem",
+    "ethers"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/1Shot-API/open-wallet.git",
+    "directory": "packages/ows-provider"
+  },
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  }
+}
