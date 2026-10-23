@@ -165,11 +165,12 @@ export class OWSSigner implements IOWSSigner {
   }
 
   /**
-   * Drop session credential id and address cache (e.g. branding “change account”).
-   * Cancels in-flight signer RPCs so late `KeyDerived` cannot refill caches.
+   * Drop session credential id, address cache, and Signing Layer recovery
+   * session (e.g. branding “change account”). Cancels in-flight signer RPCs so
+   * late `KeyDerived` cannot refill caches.
    * Does not clear Branding Layer localStorage — callers clear that separately.
    */
-  clearSession(): void {
+  async clearSession(): Promise<void> {
     this.rpc.rejectAllPending("OWSSigner session cleared");
     this.credentialId = undefined;
     this.cachedAddress = undefined;
@@ -177,6 +178,11 @@ export class OWSSigner implements IOWSSigner {
     this.cachedBitcoinMainnetAddress = undefined;
     this.cachedBitcoinTestnetAddress = undefined;
     this.lastPublicKeyData = undefined;
+    try {
+      await this.clearRecoverySession();
+    } catch {
+      // Iframe may already be gone or recovery already inactive.
+    }
   }
 
   getCachedAddress(): EVMAccountAddress | undefined {

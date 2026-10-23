@@ -1,12 +1,24 @@
 import { handleRequest } from "./handlers.js";
 import {
   abandonCeremony,
+  getTrustedParentOrigin,
   isValidNesting,
   setCancelConfirmHook,
   setTrustedParentOrigin,
 } from "./state.js";
 import { cancelPendingCeremonyConfirm, initUi } from "./ui.js";
 import { isValidParentMessage, parseRequest } from "./rpc.js";
+
+/**
+ * @param {MessageEvent} event
+ * @returns {boolean}
+ */
+function acceptParentMessage(event) {
+  if (!isValidParentMessage(event)) return false;
+  const trusted = getTrustedParentOrigin();
+  if (trusted !== null && event.origin !== trusted) return false;
+  return true;
+}
 
 function bootstrap() {
   const root = document.getElementById("ows-signer-root");
@@ -22,7 +34,7 @@ function bootstrap() {
   }
 
   window.addEventListener("message", (event) => {
-    if (!isValidParentMessage(event)) return;
+    if (!acceptParentMessage(event)) return;
 
     const data = event.data;
     if (

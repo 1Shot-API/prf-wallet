@@ -35,6 +35,42 @@ describe("rpc", () => {
     );
     assert.equal(parseRequest({ v: 2, kind: "request", method: "x" }), false);
   });
+
+  it("isValidParentMessage requires same-origin parent nesting", async () => {
+    const { isValidParentMessage } = await import("../src/rpc.js");
+    const origin = "https://wallet.example";
+    const parent = {};
+    const top = {};
+    const previousWindow = globalThis.window;
+    globalThis.window = {
+      parent,
+      top,
+      location: { origin },
+    };
+    try {
+      assert.equal(
+        isValidParentMessage({
+          source: parent,
+          origin,
+        }),
+        true,
+      );
+      assert.equal(
+        isValidParentMessage({
+          source: parent,
+          origin: "https://sketchy.example",
+        }),
+        false,
+      );
+      globalThis.window = { parent, top: parent, location: { origin } };
+      assert.equal(
+        isValidParentMessage({ source: parent, origin }),
+        false,
+      );
+    } finally {
+      globalThis.window = previousWindow;
+    }
+  });
 });
 
 describe("constants", () => {

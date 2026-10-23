@@ -1,5 +1,20 @@
 import { to0xHex } from "./hex.js";
 import { debugLog, describeCeremonyEnvironment } from "./debug.js";
+import { getTrustedParentOrigin } from "./state.js";
+
+/**
+ * Reveal / clipboard must not run when the signer document is hidden or
+ * unfocused (clickjack / obscured-frame mitigation).
+ * @returns {boolean}
+ */
+export function isSignerDocumentInteractive() {
+  if (typeof document === "undefined") return false;
+  if (document.visibilityState !== "visible") return false;
+  if (typeof document.hasFocus === "function" && !document.hasFocus()) {
+    return false;
+  }
+  return true;
+}
 
 /** @type {HTMLElement | null} */
 let root = null;
@@ -198,6 +213,13 @@ export function promptCeremonyConfirm(fields, runOnConfirm) {
     text.textContent = ui.explanation;
     body.append(text);
 
+    const requesterOrigin =
+      getTrustedParentOrigin() ?? window.location.origin;
+    const originLine = document.createElement("p");
+    originLine.className = "ows-ceremony-origin";
+    originLine.textContent = `Requester: ${requesterOrigin}`;
+    body.append(originLine);
+
     const actions = document.createElement("div");
     actions.className = "ows-ceremony-actions";
 
@@ -258,12 +280,18 @@ export function promptCeremonyConfirm(fields, runOnConfirm) {
  * Show the private key hex with Copy + Done. Resolves when the user clicks Done
  * (or the UI is cleared), so Branding can keep the ceremony panel open.
  *
+ * Requires the signer document to be visible and focused before showing the key
+ * or writing the clipboard.
+ *
  * @param {Uint8Array} privateKey
  * @returns {Promise<void>}
  */
 export function showPrivateKey(privateKey) {
   if (!root) {
     return Promise.reject(new Error("uiNotInitialized"));
+  }
+  if (!isSignerDocumentInteractive()) {
+    return Promise.reject(new Error("signerNotInteractive"));
   }
   cancelPendingCeremonyConfirm();
   clearUi();
@@ -277,6 +305,7 @@ export function showPrivateKey(privateKey) {
     copyBtn.className = "ows-copy";
     copyBtn.textContent = "Copy";
     copyBtn.addEventListener("click", async () => {
+      if (!isSignerDocumentInteractive()) return;
       await navigator.clipboard.writeText(pre.textContent ?? "");
     });
     const doneBtn = document.createElement("button");

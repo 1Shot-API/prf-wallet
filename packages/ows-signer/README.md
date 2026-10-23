@@ -101,15 +101,22 @@ reference/                1ShotPay reference (not published)
 
 Serve the Signing Layer document (and its `/src/*` modules) with a **fail-closed** CSP. The signer has no legitimate network I/O — only same-origin scripts/styles and `postMessage` / WebAuthn / WebCrypto.
 
+**Branding and Signing must share the same origin** (e.g. `https://wallet.example/` + `/signer/`). Cross-origin embeds of a shared CDN/IPFS signer are not supported: a hostile Branding could otherwise drive passkey-gated signing with attacker-written Confirm copy. The Signing Layer rejects parent `postMessage` when `event.origin !== location.origin`, and hosts should set `frame-ancestors 'self'` (optionally `X-Frame-Options: SAMEORIGIN`) so foreign pages cannot frame `/signer/` at all.
+
 Canonical header (single line in production):
 
 ```http
-Content-Security-Policy: default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'none'; img-src 'none'; font-src 'none'; media-src 'none'; object-src 'none'; child-src 'none'; frame-src 'none'; worker-src 'none'; manifest-src 'none'; base-uri 'none'; form-action 'none'; upgrade-insecure-requests
+Content-Security-Policy: default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'none'; img-src 'none'; font-src 'none'; media-src 'none'; object-src 'none'; child-src 'none'; frame-src 'none'; worker-src 'none'; manifest-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'self'; upgrade-insecure-requests
 ```
 
 - Apply on the **Signing Layer origin path** (e.g. nginx `location /signer/`), not on the Branding Layer SPA.
-- **Omit `frame-ancestors`** so arbitrary Branding Layers may embed the signer. Nesting safety remains in JS (`event.source === window.parent`, `window.parent !== window.top`).
+- Nesting safety also remains in JS (`event.source === window.parent`, `window.parent !== window.top`, same-origin parent).
+- Reveal / export UI requires the signer document to be **visible and focused** before showing the key or writing the clipboard (defense against obscured-frame clickjacking).
 - Keep iframe Permissions Policy `allow` for WebAuthn / clipboard (set before `src` in `createSignerIframe`) — that is not CSP.
+
+## Audits
+
+See [audits/](audits/) for scoped security review notes (AI-assisted).
 
 ## On-chain
 

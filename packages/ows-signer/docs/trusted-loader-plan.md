@@ -136,7 +136,7 @@ Signature covers a stable serialization of the manifest (exact encoding TBD at i
 
 ### Phase 3 — Hardening
 
-- Strict CSP on signer document — **baseline shipped** in branding hosts (e.g. 1Shot wallet nginx `/signer/`): `default-src 'none'`, `script-src`/`style-src 'self'`, `connect-src 'none'`, `base-uri 'none'`; **`frame-ancestors` omitted** for permissionless branding embeds. See package README. Future: per-file SRI / hashes when trusted-loader lands.
+- Strict CSP on signer document — **baseline shipped** in branding hosts (e.g. 1Shot wallet nginx `/signer/`): `default-src 'none'`, `script-src`/`style-src 'self'`, `connect-src 'none'`, `base-uri 'none'`, **`frame-ancestors 'self'`** (Branding and Signing same origin only). See package README. Future: per-file SRI / hashes when trusted-loader lands.
 - Display signer fingerprint / version in branding UI during sensitive ops
 - Document Walmart-style proxy: proxy official bytes, still run loader against pinned trust root
 - Explicit “no unverified boot” production default

@@ -169,6 +169,14 @@ body.ows-ceremony-open {
   color: var(--ows-text);
 }
 
+.ows-ceremony-origin {
+  margin: 8px 0 0;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  color: var(--ows-text-muted);
+  word-break: break-all;
+}
+
 .ows-ceremony-body {
   flex: 0 1 auto;
   min-height: 0;

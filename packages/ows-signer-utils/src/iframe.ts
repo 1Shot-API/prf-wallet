@@ -212,6 +212,14 @@ export function createSignerIframe(
   options: CreateSignerIframeOptions = {},
 ): Promise<HTMLIFrameElement> {
   const hidden = options.hidden !== false;
+  const signerOrigin = getSignerOrigin(signerUrl);
+  if (signerOrigin !== window.location.origin) {
+    return Promise.reject(
+      new Error(
+        `OWS signer URL must be same-origin as Branding (got ${signerOrigin}, expected ${window.location.origin})`,
+      ),
+    );
+  }
 
   return new Promise((resolve, reject) => {
     const iframe = document.createElement("iframe");
@@ -249,5 +257,9 @@ export function createSignerIframe(
 }
 
 export function getSignerOrigin(signerUrl: string): string {
-  return new URL(signerUrl).origin;
+  const base =
+    typeof window !== "undefined" && window.location?.href
+      ? window.location.href
+      : undefined;
+  return new URL(signerUrl, base).origin;
 }
