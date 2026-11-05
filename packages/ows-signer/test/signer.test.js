@@ -351,6 +351,56 @@ describe("ceremony UI", () => {
   });
 });
 
+describe("canRevealPrivateKey", () => {
+  it("never reveals a hidden document", async () => {
+    const { canRevealPrivateKey } = await import("../src/ui.js");
+    assert.equal(
+      canRevealPrivateKey({
+        visibilityState: "hidden",
+        hasFocus: true,
+        confirmedWhileInteractive: true,
+      }),
+      false,
+    );
+  });
+
+  it("reveals when the document is visible and focused", async () => {
+    const { canRevealPrivateKey } = await import("../src/ui.js");
+    assert.equal(
+      canRevealPrivateKey({
+        visibilityState: "visible",
+        hasFocus: true,
+        confirmedWhileInteractive: false,
+      }),
+      true,
+    );
+  });
+
+  it("reveals after WebAuthn when Confirm was interactive", async () => {
+    const { canRevealPrivateKey } = await import("../src/ui.js");
+    assert.equal(
+      canRevealPrivateKey({
+        visibilityState: "visible",
+        hasFocus: false,
+        confirmedWhileInteractive: true,
+      }),
+      true,
+    );
+  });
+
+  it("does not reveal when visible, unfocused, and not confirmed", async () => {
+    const { canRevealPrivateKey } = await import("../src/ui.js");
+    assert.equal(
+      canRevealPrivateKey({
+        visibilityState: "visible",
+        hasFocus: false,
+        confirmedWhileInteractive: false,
+      }),
+      false,
+    );
+  });
+});
+
 describe("ceremony lock", () => {
   it("abandonCeremony clears lock after cancel rejects the waiter", async () => {
     const { withCeremony, abandonCeremony } = await import("../src/state.js");
