@@ -1,5 +1,11 @@
 # @1shotapi/ows-signer
 
+## 0.4.6
+
+### Patch Changes
+
+- 99784eb: Show private-key import in the ceremony bottom sheet and ask for an EVM key to recover 1Shot wallet accounts.
+
 ## 0.4.5
 
 ### Patch Changes

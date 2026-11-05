@@ -123,6 +123,20 @@ body.ows-ceremony-open {
   padding-bottom: max(16px, env(safe-area-inset-bottom, 0px));
 }
 
+.ows-signer-ui--key-entry .ows-ceremony-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.ows-signer-ui--key-entry .ows-password {
+  margin-top: 12px;
+}
+
+.ows-signer-ui--key-entry .ows-password + .ows-ceremony-text {
+  margin-top: 8px;
+}
+
 .ows-signer-ui:empty {
   display: none;
 }

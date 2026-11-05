@@ -445,14 +445,24 @@ export function promptPrivateKey() {
   }
   cancelPendingCeremonyConfirm();
   clearUi();
+  root.className =
+    "ows-signer-ui ows-signer-ui--ceremony ows-signer-ui--key-entry";
+  setCeremonyOpen(true);
   return new Promise((resolve, reject) => {
+    const grab = document.createElement("div");
+    grab.className = "ows-ceremony-grab";
+    grab.setAttribute("aria-hidden", "true");
+
     const header = document.createElement("h2");
     header.className = "ows-ceremony-header";
     header.textContent = "Import private key";
-    const body = document.createElement("p");
-    body.className = "ows-ceremony-text";
-    body.textContent =
-      "Paste your secp256k1 private key. It stays in this secure panel and is never sent to the host.";
+
+    const body = document.createElement("div");
+    body.className = "ows-ceremony-body";
+    const text = document.createElement("p");
+    text.className = "ows-ceremony-text";
+    text.textContent =
+      "Paste your EVM private key to recover your 1Shot wallet accounts.";
     const input = document.createElement("input");
     input.type = "password";
     input.className = "ows-password";
@@ -463,6 +473,8 @@ export function promptPrivateKey() {
     errorEl.className = "ows-ceremony-text";
     errorEl.style.color = "tomato";
     errorEl.hidden = true;
+    body.append(text, input, errorEl);
+
     const confirmBtn = document.createElement("button");
     confirmBtn.type = "button";
     confirmBtn.className = "ows-confirm";
@@ -472,7 +484,7 @@ export function promptPrivateKey() {
     denyBtn.className = "ows-deny";
     denyBtn.textContent = "Cancel";
     const actions = document.createElement("div");
-    actions.className = "ows-actions";
+    actions.className = "ows-ceremony-actions";
     actions.append(confirmBtn, denyBtn);
 
     const finish = (fn) => {
@@ -493,7 +505,7 @@ export function promptPrivateKey() {
       finish(() => reject(new CeremonyDeniedError()));
     });
 
-    root.append(header, body, input, errorEl, actions);
+    root.append(grab, header, body, actions);
     input.focus();
   });
 }
