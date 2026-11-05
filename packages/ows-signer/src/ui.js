@@ -3,8 +3,9 @@ import { debugLog, describeCeremonyEnvironment } from "./debug.js";
 import { getTrustedParentOrigin } from "./state.js";
 
 /**
- * Reveal / clipboard must not run when the signer document is hidden or
- * unfocused (clickjack / obscured-frame mitigation).
+ * Clickjack / obscured-frame gate. True when the signer document is visible
+ * and focused. Reveal snapshots this at the Confirm or passphrase click
+ * ({@link canRevealPrivateKey}); clipboard writes check it again on Copy.
  * @returns {boolean}
  */
 export function isSignerDocumentInteractive() {
@@ -14,6 +15,46 @@ export function isSignerDocumentInteractive() {
     return false;
   }
   return true;
+}
+
+/**
+ * Key hex may be shown when the document is visible and either focused now
+ * or this ceremony's Confirm / passphrase click happened while it was.
+ * The passkey sheet blurs the iframe before reveal, so focus at reveal time
+ * alone rejects a ceremony the user just confirmed.
+ * Clipboard writes do not use this helper.
+ *
+ * @param {{
+ *   visibilityState: string,
+ *   hasFocus: boolean,
+ *   confirmedWhileInteractive: boolean,
+ * }} state
+ * @returns {boolean}
+ */
+export function canRevealPrivateKey(state) {
+  if (state.visibilityState !== "visible") return false;
+  return Boolean(state.hasFocus || state.confirmedWhileInteractive);
+}
+
+/**
+ * Set on a Confirm or passphrase click that ran while the signer document
+ * was visible and focused. Consumed by {@link showPrivateKey}.
+ * @type {boolean}
+ */
+let revealConfirmedWhileInteractive = false;
+
+function noteRevealInteraction() {
+  revealConfirmedWhileInteractive = isSignerDocumentInteractive();
+}
+
+function clearRevealInteraction() {
+  revealConfirmedWhileInteractive = false;
+}
+
+function takeRevealInteraction() {
+  const confirmed = revealConfirmedWhileInteractive;
+  revealConfirmedWhileInteractive = false;
+  return confirmed;
 }
 
 /** @type {HTMLElement | null} */
@@ -112,6 +153,7 @@ export class CeremonyDeniedError extends Error {
  */
 export function cancelPendingCeremonyConfirm() {
   if (!pendingConfirmReject) return;
+  clearRevealInteraction();
   const reject = pendingConfirmReject;
   pendingConfirmReject = null;
   clearUi();
@@ -190,6 +232,7 @@ export function promptCeremonyConfirm(fields, runOnConfirm) {
     return Promise.reject(new Error("uiNotInitialized"));
   }
   cancelPendingCeremonyConfirm();
+  clearRevealInteraction();
   clearUi();
   root.className = "ows-signer-ui ows-signer-ui--ceremony";
   setCeremonyOpen(true);
@@ -246,6 +289,7 @@ export function promptCeremonyConfirm(fields, runOnConfirm) {
     };
 
     const settleFailure = (error) => {
+      clearRevealInteraction();
       if (pendingConfirmReject !== reject) return;
       finishWaiting();
       clearUi();
@@ -255,6 +299,9 @@ export function promptCeremonyConfirm(fields, runOnConfirm) {
     confirmBtn.addEventListener("click", () => {
       confirmBtn.disabled = true;
       denyBtn.disabled = true;
+      // Snapshot focus before credentials.get(). The passkey sheet blurs
+      // this iframe, so reveal cannot rely on hasFocus() afterwards.
+      noteRevealInteraction();
       try {
         // Start WebAuthn in the same turn as the click (no prior await).
         // Keep copy visible until the ceremony settles.
@@ -266,6 +313,7 @@ export function promptCeremonyConfirm(fields, runOnConfirm) {
     });
 
     denyBtn.addEventListener("click", () => {
+      clearRevealInteraction();
       finishWaiting();
       clearUi();
       reject(new CeremonyDeniedError());
@@ -280,8 +328,10 @@ export function promptCeremonyConfirm(fields, runOnConfirm) {
  * Show the private key hex with Copy + Done. Resolves when the user clicks Done
  * (or the UI is cleared), so Branding can keep the ceremony panel open.
  *
- * Requires the signer document to be visible and focused before showing the key
- * or writing the clipboard.
+ * The document must be visible. Focus is required unless this ceremony's
+ * Confirm or passphrase click already happened while the signer was
+ * interactive — the passkey sheet blurs the iframe before reveal.
+ * Clipboard writes still require a focused document at the Copy click.
  *
  * @param {Uint8Array} privateKey
  * @returns {Promise<void>}
@@ -290,7 +340,24 @@ export function showPrivateKey(privateKey) {
   if (!root) {
     return Promise.reject(new Error("uiNotInitialized"));
   }
-  if (!isSignerDocumentInteractive()) {
+  try {
+    window.focus();
+  } catch {
+    // Nested iframe focus can be ignored after the passkey sheet.
+  }
+  const visibilityState =
+    typeof document !== "undefined" ? document.visibilityState : "hidden";
+  const hasFocus =
+    typeof document !== "undefined" &&
+    (typeof document.hasFocus !== "function" || document.hasFocus());
+  const confirmedWhileInteractive = takeRevealInteraction();
+  if (
+    !canRevealPrivateKey({
+      visibilityState,
+      hasFocus,
+      confirmedWhileInteractive,
+    })
+  ) {
     return Promise.reject(new Error("signerNotInteractive"));
   }
   cancelPendingCeremonyConfirm();
@@ -334,6 +401,7 @@ export function promptPassphrase(passwordText, buttonText, minPasswordLength) {
     return Promise.reject(new Error("uiNotInitialized"));
   }
   cancelPendingCeremonyConfirm();
+  clearRevealInteraction();
   clearUi();
   const safePlaceholder = sanitizeDisplayText(passwordText, {
     maxLength: MAX_PASSPHRASE_PROMPT_LENGTH,
@@ -352,9 +420,12 @@ export function promptPassphrase(passwordText, buttonText, minPasswordLength) {
     button.textContent = safeButton || "Continue";
     button.addEventListener("click", () => {
       if (input.value.length < minPasswordLength) {
+        clearRevealInteraction();
         reject(new Error("passwordTooShort"));
         return;
       }
+      // recoverKey shows the key after this click's awaits, once focus may be gone.
+      noteRevealInteraction();
       resolve(input.value);
       clearUi();
     });
