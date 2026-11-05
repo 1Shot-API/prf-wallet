@@ -1,0 +1,316 @@
+import Postmate from "postmate";
+import { RpcHostClient } from "./rpc/RpcHostClient.js";
+import { EIP1193Provider } from "./eip1193/EIP1193Provider.js";
+import {
+  applyHiddenWalletContainerStyles,
+  applyHiddenWalletFrameStyles,
+  DEFAULT_WALLET_SIZE_X,
+  DEFAULT_WALLET_SIZE_Y,
+  DisplayHostHandler,
+  EWalletPresentationMode,
+} from "./display/DisplayHostHandler.js";
+import { CredentialHostClient } from "./credentials/CredentialsHostClient.js";
+import { BitcoinHostClient } from "./bitcoin/BitcoinHostClient.js";
+import { SolanaHostClient } from "./solana/SolanaHostClient.js";
+import { AnalyticsHostHandler } from "./analytics/AnalyticsHostHandler.js";
+import type { AnalyticsListener } from "./analytics/AnalyticsHostHandler.js";
+import { Eip1193EventHostHandler } from "./eip1193/Eip1193EventHostHandler.js";
+
+export type OWSProxyOptions = {
+  /** iframe `name` attribute. Default: `ows-wallet` */
+  name?: string;
+  /** CSS classes applied to the iframe at creation time. */
+  classList?: string[];
+  /**
+   * Preferred wallet panel width in CSS pixels (flyout mode).
+   * Default: {@link DEFAULT_WALLET_SIZE_X} (360).
+   * When the viewport is narrower than this width + 32px margin, the panel
+   * opens as a full-screen drawer instead. Branding scales to the iframe;
+   * it does not request its own size.
+   */
+  walletSizeX?: number;
+  /**
+   * Preferred wallet panel height in CSS pixels (flyout mode).
+   * Default: {@link DEFAULT_WALLET_SIZE_Y} (600).
+   * Used for the flyout box size; drawer switching is width-based (see
+   * {@link OWSProxyOptions.walletSizeX}).
+   */
+  walletSizeY?: number;
+  /**
+   * Presentation mode for this proxy (immutable). Default: flyout.
+   * Do not reparent the iframe after create — destroy and recreate with a
+   * different `container` / mode instead (Postmate breaks on reparent).
+   */
+  presentationMode?: EWalletPresentationMode;
+  /**
+   * When true, grant Chrome Local Network Access / loopback Permissions Policy
+   * so the branding iframe may fetch hosts that resolve to the user's LAN or
+   * `127.0.0.1` (still requires a user permission prompt in Chrome 142+).
+   * Default: `false`. Credential issuer/verifier demos set this so the ngrok
+   * branding iframe can fetch local OID4 HTTPS endpoints (Chrome still prompts).
+   */
+  allowLocalAccess?: boolean;
+};
+
+/** Base Permissions Policy for the branding iframe (must be set before navigation). */
+const WALLET_IFRAME_ALLOW_BASE = [
+  "publickey-credentials-get *",
+  "publickey-credentials-create *",
+  // Branding-layer UI (e.g. create-backup copy) and delegation to the signer iframe.
+  "clipboard-write *",
+  // Address QR scan in Send UI (only used when permission already granted).
+  "camera *",
+];
+
+const WALLET_IFRAME_ALLOW_LOCAL = [
+  "local-network-access *",
+  "loopback-network *",
+];
+
+function walletIframeAllow(allowLocalAccess: boolean): string {
+  return (
+    allowLocalAccess
+      ? [...WALLET_IFRAME_ALLOW_BASE, ...WALLET_IFRAME_ALLOW_LOCAL]
+      : WALLET_IFRAME_ALLOW_BASE
+  ).join("; ");
+}
+/** Must match postmate's internal `messageType` (not exported). */
+const POSTMATE_MESSAGE_TYPE = "application/x-postmate-v1+json";
+
+/**
+ * Postmate only retries the parent handshake 5× (~2.5s after iframe `load`).
+ * React branding apps often register `Postmate.Model` slightly later (or after
+ * slow work). Keep pulsing until Postmate resolves or this budget elapses.
+ */
+const EXTENDED_HANDSHAKE_INTERVAL_MS = 500;
+const EXTENDED_HANDSHAKE_BUDGET_MS = 30_000;
+
+export class OWSProxy {
+  public readonly ethereum: EIP1193Provider;
+  public readonly credentials: CredentialHostClient;
+  public readonly bitcoin: BitcoinHostClient;
+  public readonly solana: SolanaHostClient;
+
+  /**
+   * Branding→Host analytics notifications (`ows:analytics`).
+   * Events include the OWS base fields plus branding-owned rich properties.
+   */
+  public readonly analytics: {
+    on(listener: AnalyticsListener): () => void;
+    on(name: string, listener: AnalyticsListener): () => void;
+    off(listener: AnalyticsListener): void;
+  };
+
+  private readonly rpcClient: RpcHostClient;
+  private readonly displayHandler: DisplayHostHandler;
+  private readonly analyticsHandler: AnalyticsHostHandler;
+  private readonly eip1193EventHandler: Eip1193EventHostHandler;
+  private readonly parent: Postmate.ParentAPI;
+
+  private constructor(
+    parent: Postmate.ParentAPI,
+    rpcClient: RpcHostClient,
+    displayHandler: DisplayHostHandler,
+    analyticsHandler: AnalyticsHostHandler,
+  ) {
+    this.parent = parent;
+    this.rpcClient = rpcClient;
+    this.displayHandler = displayHandler;
+    this.analyticsHandler = analyticsHandler;
+    this.credentials = new CredentialHostClient(rpcClient);
+    this.bitcoin = new BitcoinHostClient(rpcClient);
+    this.solana = new SolanaHostClient(rpcClient);
+    this.ethereum = new EIP1193Provider((method, params) =>
+      this.rpc(method, params),
+    );
+    this.eip1193EventHandler = new Eip1193EventHostHandler(
+      parent,
+      this.ethereum,
+    );
+    this.analytics = {
+      on: this.analyticsHandler.on.bind(this.analyticsHandler),
+      off: this.analyticsHandler.off.bind(this.analyticsHandler),
+    };
+  }
+
+  static async create(
+    container: HTMLElement,
+    walletUrl: string,
+    options?: OWSProxyOptions,
+  ): Promise<OWSProxy> {
+    if (typeof window === "undefined") {
+      throw new Error("OWSProxy requires a browser environment");
+    }
+
+    const presentationMode =
+      options?.presentationMode ?? EWalletPresentationMode.Flyout;
+    const inline = presentationMode === EWalletPresentationMode.Inline;
+
+    // Flyout: collapse before handshake so content does not flash.
+    // Inline: leave the host mount alone — iframe stays in this container forever.
+    if (!inline) {
+      applyHiddenWalletContainerStyles(container);
+    }
+
+    // Postmate sets a minimal `allow` then appendChild, then assigns `src`.
+    // Permissions Policy is fixed at navigation — patch allow on append, before src.
+    const parent = await withWalletIframeAllow(
+      container,
+      Boolean(options?.allowLocalAccess),
+      () =>
+        withExtendedPostmateHandshake(container, walletUrl, () =>
+          new Postmate({
+            container,
+            url: walletUrl,
+            name: options?.name ?? "ows-wallet",
+            classListArray: options?.classList ?? [],
+          }),
+        ),
+      { hideFrameOnAppend: !inline },
+    );
+
+    const displayHandler = new DisplayHostHandler(parent, {
+      walletSizeX: options?.walletSizeX ?? DEFAULT_WALLET_SIZE_X,
+      walletSizeY: options?.walletSizeY ?? DEFAULT_WALLET_SIZE_Y,
+      presentationMode,
+    });
+    if (inline) {
+      displayHandler.initializeInlineVisible();
+    } else {
+      displayHandler.initializeHidden();
+    }
+    const rpcClient = new RpcHostClient(parent, {
+      beforeRequest: () => displayHandler.prepareForRpcAccess(),
+      afterRequest: () => displayHandler.completeRpcAccess(),
+    });
+    const analyticsHandler = new AnalyticsHostHandler(parent);
+
+    return new OWSProxy(parent, rpcClient, displayHandler, analyticsHandler);
+  }
+
+  rpc<T = unknown>(method: string, params?: unknown): Promise<T> {
+    return this.rpcClient.request<T>(method, params ?? null);
+  }
+
+  /**
+   * Show the branding iframe (host-initiated).
+   * Flyout mode: lower-right panel, or full-screen drawer with bottom wipe when
+   * the viewport is narrower than {@link OWSProxyOptions.walletSizeX} + 32px.
+   * Inline: ensure the create() container is filled.
+   */
+  showWallet(): void {
+    this.displayHandler.show();
+  }
+
+  /**
+   * Hide a host-initiated panel from {@link showWallet}.
+   * Drawer mode animates a wipe-down before collapse.
+   * No-op in inline presentation (embedded panel stays visible).
+   */
+  hideWallet(): void {
+    this.displayHandler.hide();
+  }
+
+  destroy(): void {
+    this.solana.destroy();
+    this.eip1193EventHandler.destroy();
+    this.analyticsHandler.destroy();
+    this.displayHandler.destroy();
+    this.rpcClient.destroy();
+    this.parent.destroy();
+  }
+}
+
+/**
+ * Postmate creates the iframe, sets a default `allow`, appends it, then sets `src`.
+ * Intercept `appendChild` so our Permissions Policy is in place before navigation.
+ */
+async function withWalletIframeAllow(
+  container: HTMLElement,
+  allowLocalAccess: boolean,
+  create: () => Promise<Postmate.ParentAPI>,
+  options?: { hideFrameOnAppend?: boolean },
+): Promise<Postmate.ParentAPI> {
+  const allow = walletIframeAllow(allowLocalAccess);
+  const hideFrameOnAppend = options?.hideFrameOnAppend !== false;
+  const originalAppend = container.appendChild.bind(container);
+  container.appendChild = (<T extends Node>(node: T): T => {
+    if (node instanceof HTMLIFrameElement) {
+      node.allow = allow;
+      if (hideFrameOnAppend) {
+        applyHiddenWalletFrameStyles(node);
+      }
+    }
+    return originalAppend(node) as T;
+  }) as typeof container.appendChild;
+
+  try {
+    return await create();
+  } finally {
+    container.appendChild = originalAppend;
+  }
+}
+
+/**
+ * Continue Postmate handshake `postMessage`s after stock Postmate stops at 5 tries.
+ * Parent's reply listener stays registered — extra handshakes still complete the Promise.
+ */
+async function withExtendedPostmateHandshake(
+  container: HTMLElement,
+  walletUrl: string,
+  create: () => Promise<Postmate.ParentAPI>,
+): Promise<Postmate.ParentAPI> {
+  let childOrigin: string;
+  try {
+    childOrigin = new URL(walletUrl).origin;
+  } catch {
+    return create();
+  }
+
+  let intervalId: ReturnType<typeof setInterval> | undefined;
+  let stopTimerId: ReturnType<typeof setTimeout> | undefined;
+
+  const stop = () => {
+    if (intervalId !== undefined) {
+      clearInterval(intervalId);
+      intervalId = undefined;
+    }
+    if (stopTimerId !== undefined) {
+      clearTimeout(stopTimerId);
+      stopTimerId = undefined;
+    }
+  };
+
+  const pulse = () => {
+    const iframe = container.querySelector("iframe");
+    const child = iframe?.contentWindow;
+    if (!child) return;
+    child.postMessage(
+      {
+        postmate: "handshake",
+        type: POSTMATE_MESSAGE_TYPE,
+        model: {},
+      },
+      childOrigin,
+    );
+  };
+
+  // Start extending after Postmate's native window (~2.5s) so we don't duplicate
+  // the early attempts heavily; then pulse until connected or budget expires.
+  const startExtending = () => {
+    stopTimerId = setTimeout(stop, EXTENDED_HANDSHAKE_BUDGET_MS);
+    intervalId = setInterval(pulse, EXTENDED_HANDSHAKE_INTERVAL_MS);
+  };
+  const extendDelayId = setTimeout(startExtending, 2_000);
+
+  try {
+    const parent = await create();
+    clearTimeout(extendDelayId);
+    stop();
+    return parent;
+  } catch (error) {
+    clearTimeout(extendDelayId);
+    stop();
+    throw error;
+  }
+}

@@ -1,0 +1,50 @@
+{
+  "name": "open-wallet",
+  "private": true,
+  "description": "1Shot API Open Wallet Standard (OWS) — reference implementation monorepo",
+  "workspaces": [
+    "packages/*",
+    "examples/*"
+  ],
+  "scripts": {
+    "build": "npm run build -w @1shotapi/ows-types && npm run build --workspaces --if-present",
+    "clean": "npm run clean --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "dev:general-wallet": "npm run dev -w @1shotapi/ows-example-general-wallet",
+    "dev:credential-issuer": "npm run dev -w @1shotapi/ows-example-credential-issuer",
+    "dev:credential-verifier": "npm run dev -w @1shotapi/ows-example-credential-verifier",
+    "changeset": "changeset",
+    "version-packages": "changeset version",
+    "release": "npm run build && changeset publish",
+    "doctor": "npx react-doctor@latest",
+    "skills:install": "npx skills add 1Shot-API/skills --skill ows-branding-layer --skill 1shot-wallet -g -a cursor -y"
+  },
+  "devDependencies": {
+    "@changesets/cli": "^2.29.0",
+    "@types/node": "^22.19.0",
+    "react-doctor": "^0.9.1",
+    "typescript": "~5.8.0"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "overrides": {
+    "keyv": "4.5.4",
+    "flat-cache": "4.0.1",
+    "file-entry-cache": "8.0.0",
+    "cacheable": "2.5.0",
+    "cacheable-request": "13.0.19",
+    "@cacheable/memory": "2.2.0",
+    "@cacheable/utils": "2.5.0",
+    "@cacheable/node-cache": "3.1.1",
+    "@cacheable/net": "2.1.0",
+    "cache-manager": "7.2.9",
+    "ecto": "5.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/1Shot-API/open-wallet.git"
+  },
+  "license": "MIT"
+}
