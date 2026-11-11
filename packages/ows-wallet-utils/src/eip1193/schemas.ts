@@ -1,5 +1,6 @@
 import {
   EVMAccountAddressSchema,
+  EVMChainId,
   EVMChainIdSchema,
   HexStringSchema,
   type Eip1193Method,
@@ -7,6 +8,53 @@ import {
 import { z } from "zod";
 
 const hexSchema = z.string().regex(/^0x[0-9a-fA-F]*$/);
+
+/**
+ * EIP-5792 chain id: `0x` + hex, no leading zeros (`0x0` is the only zero form).
+ * `"0x01"` is invalid params, not a synonym of `"0x1"`.
+ */
+const strictHexChainIdSchema = z
+  .string()
+  .regex(/^0x(0|[1-9a-fA-F][0-9a-fA-F]*)$/, {
+    message: "chainId must be 0x-prefixed hex with no leading zeros",
+  })
+  .transform((value) => EVMChainId(`0x${BigInt(value).toString(16)}` as `0x${string}`));
+
+const walletCallCapabilitySchema = z
+  .object({
+    optional: z.boolean().optional(),
+  })
+  .catchall(z.unknown());
+
+const walletCallSchema = z.strictObject({
+  to: EVMAccountAddressSchema,
+  data: hexSchema.optional(),
+  value: hexSchema.optional(),
+  capabilities: z.record(z.string(), walletCallCapabilitySchema).optional(),
+});
+
+const sendCallsParamsSchema = z.tuple([
+  z.strictObject({
+    version: z.literal("2.0.0"),
+    id: z.string().min(1).max(8194).optional(),
+    from: EVMAccountAddressSchema.optional(),
+    chainId: strictHexChainIdSchema,
+    atomicRequired: z.boolean(),
+    calls: z.array(walletCallSchema).min(1),
+    capabilities: z.record(z.string(), walletCallCapabilitySchema).optional(),
+  }),
+]);
+
+const callsBundleIdSchema = z.tuple([z.string().min(1).max(8194)]);
+
+const getCapabilitiesParamsSchema = z.union([
+  z.tuple([]),
+  z.tuple([EVMAccountAddressSchema]),
+  z.tuple([
+    EVMAccountAddressSchema,
+    z.array(strictHexChainIdSchema),
+  ]),
+]);
 
 const transactionObjectSchema = z.object({
   from: EVMAccountAddressSchema.optional(),
@@ -131,6 +179,10 @@ export const EIP1193_PARAM_SCHEMAS: Record<Eip1193Method, z.ZodType> = {
   ]),
   wallet_getSupportedExecutionPermissions: z.tuple([]),
   wallet_getGrantedExecutionPermissions: z.tuple([]),
+  wallet_getCapabilities: getCapabilitiesParamsSchema,
+  wallet_sendCalls: sendCallsParamsSchema,
+  wallet_getCallsStatus: callsBundleIdSchema,
+  wallet_showCallsStatus: callsBundleIdSchema,
 };
 
 export function getEip1193ParamSchema(method: Eip1193Method): z.ZodType {

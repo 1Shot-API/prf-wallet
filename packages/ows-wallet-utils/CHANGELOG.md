@@ -1,5 +1,16 @@
 # @1shotapi/ows-wallet-utils
 
+## 0.8.0
+
+### Minor Changes
+
+- fc78773: Add the EIP-5792 Wallet Call API to the shared protocol surface. `ows-types` exports `wallet_getCapabilities`, `wallet_sendCalls`, `wallet_getCallsStatus`, and `wallet_showCallsStatus`, the `2.0.0` call types, and error codes 5700–5760. `ows-wallet-utils` validates those methods in `EIP1193_PARAM_SCHEMAS`, including the strict chain id.
+
+### Patch Changes
+
+- Updated dependencies [fc78773]
+  - @1shotapi/ows-types@0.16.0
+
 ## 0.7.0
 
 ### Minor Changes

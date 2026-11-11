@@ -16,6 +16,20 @@ export type {
 
 export { IEVMTransactionRequestSchema, type IEVMTransactionRequest } from "./transaction.js";
 
+export {
+  WALLET_CALLS_VERSION,
+  type AtomicCapabilityStatus,
+  type IAtomicCapability,
+  type ICallsReceipt,
+  type ICallsReceiptLog,
+  type IGetCallsStatusResult,
+  type IGetCapabilitiesResult,
+  type ISendCallsParams,
+  type ISendCallsResult,
+  type IWalletCall,
+  type IWalletCallCapability,
+} from "./eip5792.js";
+
 export type {
   IExecutionPermission,
   IExecutionPermissionDependency,

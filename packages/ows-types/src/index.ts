@@ -19,6 +19,14 @@ export {
   RPC_ERROR_UNIMPLEMENTED,
   RPC_ERROR_INVALID_PARAMS,
   RPC_ERROR_USER_REJECTED,
+  RPC_ERROR_UNAUTHORIZED,
+  RPC_ERROR_UNSUPPORTED_CAPABILITY,
+  RPC_ERROR_UNSUPPORTED_CHAIN,
+  RPC_ERROR_DUPLICATE_ID,
+  RPC_ERROR_UNKNOWN_BUNDLE_ID,
+  RPC_ERROR_BUNDLE_TOO_LARGE,
+  RPC_ERROR_ATOMIC_UPGRADE_REJECTED,
+  RPC_ERROR_ATOMICITY_NOT_SUPPORTED,
 } from "./protocol/wallet.js";
 
 export {
@@ -166,6 +174,17 @@ export {
   type IRevokeExecutionPermissionParams,
   type ISupportedExecutionPermissionEntry,
   type SupportedExecutionPermissions,
+  WALLET_CALLS_VERSION,
+  type AtomicCapabilityStatus,
+  type IAtomicCapability,
+  type ICallsReceipt,
+  type ICallsReceiptLog,
+  type IGetCallsStatusResult,
+  type IGetCapabilitiesResult,
+  type ISendCallsParams,
+  type ISendCallsResult,
+  type IWalletCall,
+  type IWalletCallCapability,
 } from "./eip1193/index.js";
 
 export {
