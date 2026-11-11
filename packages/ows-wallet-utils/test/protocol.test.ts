@@ -36,6 +36,71 @@ describe("eip1193/schemas", () => {
     const result = schema.safeParse(["hello"]);
     assert.equal(result.success, false);
   });
+
+  it("rejects a wallet_sendCalls chain id with leading zeros", () => {
+    const schema = getEip1193ParamSchema("wallet_sendCalls");
+    const result = schema.safeParse([
+      {
+        version: "2.0.0",
+        chainId: "0x01",
+        atomicRequired: true,
+        calls: [
+          { to: "0x0000000000000000000000000000000000000001" },
+        ],
+      },
+    ]);
+    assert.equal(result.success, false);
+  });
+
+  it("rejects a wallet_sendCalls version other than 2.0.0", () => {
+    const schema = getEip1193ParamSchema("wallet_sendCalls");
+    const result = schema.safeParse([
+      {
+        version: "1.0",
+        chainId: "0x1",
+        atomicRequired: false,
+        calls: [
+          { to: "0x0000000000000000000000000000000000000001" },
+        ],
+      },
+    ]);
+    assert.equal(result.success, false);
+  });
+
+  it("accepts wallet_sendCalls with an optional capability", () => {
+    const schema = getEip1193ParamSchema("wallet_sendCalls");
+    const result = schema.safeParse([
+      {
+        version: "2.0.0",
+        chainId: "0x1",
+        atomicRequired: true,
+        calls: [
+          {
+            to: "0x0000000000000000000000000000000000000001",
+            data: "0x",
+            value: "0x0",
+          },
+        ],
+        capabilities: {
+          paymasterService: { url: "https://pay.example", optional: true },
+        },
+      },
+    ]);
+    assert.equal(result.success, true);
+    if (result.success) {
+      const params = result.data as [{ chainId: string }];
+      assert.equal(params[0].chainId, "0x1");
+    }
+  });
+
+  it("rejects wallet_getCapabilities chain ids with leading zeros", () => {
+    const schema = getEip1193ParamSchema("wallet_getCapabilities");
+    const result = schema.safeParse([
+      "0x0000000000000000000000000000000000000001",
+      ["0x01"],
+    ]);
+    assert.equal(result.success, false);
+  });
 });
 
 describe("rpc/handler", () => {

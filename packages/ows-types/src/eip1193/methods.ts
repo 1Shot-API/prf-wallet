@@ -22,6 +22,11 @@ export const EIP1193_METHODS = [
   "wallet_revokeExecutionPermission",
   "wallet_getSupportedExecutionPermissions",
   "wallet_getGrantedExecutionPermissions",
+  // EIP-5792 — Wallet Call API
+  "wallet_getCapabilities",
+  "wallet_sendCalls",
+  "wallet_getCallsStatus",
+  "wallet_showCallsStatus",
 ] as const;
 
 export type Eip1193Method = (typeof EIP1193_METHODS)[number];

@@ -10,6 +10,12 @@ import type {
   IRevokeExecutionPermissionParams,
   SupportedExecutionPermissions,
 } from "./eip7715.js";
+import type {
+  IGetCallsStatusResult,
+  IGetCapabilitiesResult,
+  ISendCallsParams,
+  ISendCallsResult,
+} from "./eip5792.js";
 import type { IEVMTransactionRequest } from "./transaction.js";
 
 /**
@@ -59,6 +65,29 @@ export type EIP1193Requests = {
   };
   wallet_getGrantedExecutionPermissions: {
     result: IExecutionPermissionResponse[];
+  };
+  /**
+   * EIP-5792. Address is required once a session exists; chain ids are optional.
+   * An empty tuple is accepted and resolved to the connected account.
+   */
+  wallet_getCapabilities: {
+    params:
+      | readonly []
+      | readonly [address: EVMAccountAddress]
+      | readonly [address: EVMAccountAddress, chainIds: readonly EVMChainId[]];
+    result: IGetCapabilitiesResult;
+  };
+  wallet_sendCalls: {
+    params: readonly [ISendCallsParams];
+    result: ISendCallsResult;
+  };
+  wallet_getCallsStatus: {
+    params: readonly [id: string];
+    result: IGetCallsStatusResult;
+  };
+  wallet_showCallsStatus: {
+    params: readonly [id: string];
+    result: null;
   };
 };
 
