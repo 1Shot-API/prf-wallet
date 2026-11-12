@@ -1,6 +1,6 @@
 {
   "name": "@1shotapi/ows-clear-signing",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "ERC-7730 clear signing for OWS Branding Layers — lookup keys, descriptor verification, calldata / EIP-712 decoding and field formatting",
   "type": "module",
   "main": "./dist/index.js",
