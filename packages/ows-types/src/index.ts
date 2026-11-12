@@ -148,6 +148,8 @@ export {
 
 export * from "./credentials/index.js";
 
+export * from "./clearSigning/index.js";
+
 export * from "./primitives/index.js";
 
 export * from "./enums/index.js";
