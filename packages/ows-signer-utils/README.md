@@ -1,0 +1,180 @@
+# @1shotapi/ows-signer-utils
+
+Typed, browser-only SDK for **Branding Layer** authors: embed the OWS Signing Layer iframe, speak the OWS v1 `postMessage` protocol, and expose `OWSSigner` with passkey/recovery helpers plus a Viem-aligned `signer.evm` namespace.
+
+## Install
+
+```bash
+npm install @1shotapi/ows-signer-utils viem
+```
+
+`viem` is a **peer dependency** (^2.x). This package uses viem for EIP-191/712/transaction/7702 hashing, serialization, and types — not as a wallet client.
+
+## Quick start
+
+```typescript
+import { OWSSigner, toViemLocalAccount } from "@1shotapi/ows-signer-utils";
+
+const container = document.getElementById("signer-slot")!;
+// Signer must be same-origin as this Branding page (e.g. /signer/ on this host).
+const signer = await OWSSigner.create(
+  container,
+  new URL("/signer/", window.location.origin).href,
+  { credentialId: optionalExistingId },
+);
+
+await signer.createCredential("my-wallet", { rpName: "MyBrand" });
+
+const address = await signer.evm.getAccountAddress();
+const [sig] = await signer.evm.signMessage(["hello"]);
+const [typedSig] = await signer.evm.signTypedData([
+  {
+    domain: { name: "App", version: "1", chainId: 1, verifyingContract: "0x…" },
+    types: { … },
+    primaryType: "Mail",
+    message: { … },
+  },
+]);
+
+// Optional: viem LocalAccount for smart-account kits
+const account = await toViemLocalAccount(signer);
+```
+
+## Architecture
+
+```
+Host Layer  →  Branding Layer  →  Signing Layer
+                      ↑
+              @1shotapi/ows-signer-utils
+```
+
+This package runs in the **Branding Layer**. It must not be used from the host page directly — the Signing Layer requires the branding iframe for correct WebAuthn / iframe nesting.
+
+Outbound RPC: `iframe.contentWindow.postMessage(request, signerOrigin)`  
+Inbound events: validate `event.origin === signerOrigin` and `event.source === iframe.contentWindow`.
+
+## Iframe requirements
+
+- Parent page must be a [secure context](https://developer.mozilla.org/en-US/docs/Web/Security/Secure_Contexts) (HTTPS or localhost).
+- The iframe is created with `allow="publickey-credentials-get *"` for passkey ceremonies.
+- Do **not** add a restrictive `sandbox` that blocks WebAuthn.
+- Default iframe size is hidden (`0×0`); pass `{ hidden: false }` to show it.
+
+### Signer display (passkey Confirm / passphrase)
+
+`OWSSigner` automatically shows a bottom full-width ceremony strip (`showSignerCeremonyPanel`) for WebAuthn Confirm UI and recovery passphrase/reveal. The strip is **half the branding viewport height** (`50dvh`). Callers do **not** need a 1×1 invisible focus layer.
+
+| Helper | Purpose |
+|--------|---------|
+| `showSignerCeremonyPanel(iframe)` | Bottom-anchored transparent host for the signer iframe (used internally by `OWSSigner`). Returns a restore function. |
+| `OWSSignerOptions.onCeremonyPanel` | Optional `(open: boolean)` when the ceremony host strip opens/closes (e.g. branding scrim). |
+| `overlaySignerIframe(iframe, slot, options?)` | Optional slot-aligned overlay if you still need to pin the iframe over a specific element (prefer the auto panel for new code). |
+
+Pass optional `explanationHeader` / `explanationText` / `confirmButtonText` / `denyButtonText` on ceremony RPCs. Cancel emits `SignDenied` → `OwsSignDeniedError`.
+
+### EIP-1193 signing (`SignHelper`)
+
+Thin EIP-1193 adapter: parse params, request display, call branding `approveAndSign*` handlers. Does **not** talk to `OWSSigner` for ceremonies — branding owns consent, setup/unlock, and Signing Layer calls. Does not register handlers — the branding app owns order:
+
+```typescript
+import { SignHelper, prepareEvmTransaction } from "@1shotapi/ows-signer-utils";
+
+const signHelper = new SignHelper(signer, wallet, {
+  getChainId: () => rpcHelper.getChainId(),
+  // Branding: ensureReady → consent UI + OWSSigner → onAuthenticated → value
+  approveAndSignPersonalMessage,
+  approveAndSignTypedData,
+  approveAndSignTransaction,
+});
+for (const [method, handler] of Object.entries(signHelper.handlers)) {
+  wallet.registerEip1193(method, handler);
+}
+```
+
+Keep branding consent views mounted until the signer ceremony finishes. Export `prepareEvmTransaction(chainRpc, account, tx)` for branding / relayer submit paths.
+
+## API
+
+### `OWSSigner.create(container, signerUrl, options?)`
+
+| Option | Description |
+|--------|-------------|
+| `credentialId` | Existing WebAuthn credential id |
+| `hidden` | Hide iframe (default `true`) |
+### Root methods (Signing Layer passthrough)
+
+| Method | Description |
+|--------|-------------|
+| `getVersion()` | Signer API/version info |
+| `createCredential(name, options?)` | Register passkey; options include `rpName`, ceremony UI fields |
+| `signDigest(digests[], options?)` | Sign digests under one ceremony (`credentialId` + ceremony UI) |
+| `executeBatch(params)` | Mixed ceremony: digests + AES + public key + optional WebAuthn `challenge` |
+| `getPublicKey(params?)` | Derive keys; optional `challenge` / ceremony UI |
+| `createRecoveryData(..., options?)` | Encrypt recovery blob (ceremony UI + `credentialId`) |
+| `recoverKey(..., options?)` | Decrypt recovery blob into session |
+| `revealPrivateKey(options?)` | Signer UI to reveal key (stays open until Done) |
+| `importPrivateKey()` | Signer UI to paste hex key → recovery session |
+| `clearSession()` | Drop credential/address cache **and** end recovery session |
+| `clearRecoverySession()` | End recovery session only |
+| `encryptAES256(plaintexts, options?)` | Batch AES-256-GCM seal (`ows-aes1:`) |
+| `decryptAES256(ciphertexts, options?)` | Batch AES-256-GCM unseal |
+
+### `signer.evm`
+
+| Method | Description |
+|--------|-------------|
+| `getAccountAddress()` | Ethereum address from secp256k1 public key |
+| `signMessage(messages[], options?)` | EIP-191 personal sign (batch) |
+| `signTypedData(typedDataList[], options?)` | EIP-712 (batch) |
+| `signTransaction(transactions[], options?)` | Signed serialized tx hex (batch) |
+| `signAuthorization(authorizations[], options?)` | EIP-7702 authorization (batch) |
+
+All EVM batch methods accept optional `{ credentialId, explanationHeader, … }` once for the whole batch.
+
+### `signer.solana`
+
+| Method | Description |
+|--------|-------------|
+| `getAccountAddress()` | Solana address (base58 ed25519 public key) |
+| `signMessage(messages[], options?)` | Ed25519 over raw message bytes (batch) → base58 `SolanaSignature` |
+| `signTransaction(txs[], options?)` | Ed25519 over compiled tx **message** bytes (batch) |
+
+Host / Wallet Standard mapping (Branding implements consent + wire handlers later):
+
+| Surface | Wire / signer |
+|---------|----------------|
+| `solana:signMessage` | `solana.signMessage` → `signMessage` |
+| `solana:signIn` (SIWS) | Branding formats message → `signMessage` |
+| `solana:signTransaction` / sign-and-send | `signTransaction` then Branding submits |
+
+`toKitPartialSigner(signer)` builds a Kit `MessagePartialSigner` + `TransactionPartialSigner` that delegates to these methods (peer `@solana/kit`).
+
+Accepts optional `{ credentialId, explanationHeader, … }` per ceremony.
+
+### `signer.bitcoin`
+
+| Method | Description |
+|--------|-------------|
+| `getAccountAddress(chainId?)` | Native SegWit address (P2WPKH: `bc1q…` on Mainnet -1, `tb1q…` on Testnet -2) |
+| `signTransaction(transactions[], options?)` | Sign and finalize P2WPKH transactions via `signDigest` |
+
+Accepts optional `{ credentialId, explanationHeader, … }` per ceremony.
+
+### Errors
+
+- `OwsNotAllowedError` — WebAuthn cancelled or policy blocked
+- `OwsSignDeniedError` — user cancelled Signing Layer Confirm UI (before WebAuthn)
+- `OwsInvalidRequestError` — bad params
+
+Signer RPC has no client-imposed timeout: requests stay pending through the Confirm UI / WebAuthn until the Signing Layer replies, or reject on session clear / destroy.
+## Related packages
+
+| Package | Role |
+|---------|------|
+| `@1shotapi/ows-signer` | Plain JS Signing Layer |
+| `@1shotapi/ows-wallet-utils` | Host Layer ↔ Branding Layer messaging |
+| `@1shotapi/ows-provider` | EIP-1193 provider for Host Layer apps |
+
+## License
+
+MIT

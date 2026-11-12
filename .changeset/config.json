@@ -1,0 +1,17 @@
+{
+  "$schema": "https://unpkg.com/@changesets/config@3.1.1/schema.json",
+  "changelog": "@changesets/cli/changelog",
+  "commit": false,
+  "fixed": [],
+  "linked": [],
+  "access": "public",
+  "baseBranch": "main",
+  "updateInternalDependencies": "patch",
+  "ignore": [
+    "@1shotapi/ows-onchain",
+    "@1shotapi/ows-example-general-wallet",
+    "@1shotapi/ows-example-host",
+    "@1shotapi/ows-example-credential-issuer",
+    "@1shotapi/ows-example-credential-verifier"
+  ]
+}
