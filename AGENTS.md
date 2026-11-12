@@ -13,6 +13,7 @@ packages/ows-signer           Signing Layer (plain JS, zero deps, on-chain)
 packages/ows-signer-utils     Branding Layer ↔ Signing Layer (evm.signMessage, etc.)
 packages/ows-types            Shared types, errors, and cross-layer utils (including SD-JWT VC)
 packages/ows-oid4             Optional credentials add-on (CredentialsHelper, HTTP OID4 clients)
+packages/ows-clear-signing    ERC-7730 clear signing (lookup keys, descriptor verification + rendering)
 packages/ows-wallet-utils     Branding Layer Postmate/RPC wrappers; credentials wire hooks only
 packages/ows-provider         Host Layer EIP-1193 + credentials proxy; SD-JWT verify
 examples/shared               Demo-only OID4 mocks, stores, and fixtures (not published)

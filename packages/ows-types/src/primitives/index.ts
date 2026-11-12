@@ -45,3 +45,8 @@ export * from "./SolanaATAAddress.js";
 export * from "./SolanaSignature.js";
 export * from "./SolanaTransactionHash.js";
 export * from "./TransactionHash.js";
+export * from "./EVMFunctionSelector.js";
+export * from "./EIP712EncodeTypeHash.js";
+export * from "./EIP712TypeName.js";
+export * from "./ClearSigningCanonicalString.js";
+export * from "./ClearSigningRegistrySha.js";

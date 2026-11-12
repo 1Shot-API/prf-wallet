@@ -1,0 +1,51 @@
+{
+  "name": "@1shotapi/ows-clear-signing",
+  "version": "0.1.0",
+  "description": "ERC-7730 clear signing for OWS Branding Layers — lookup keys, descriptor verification, calldata / EIP-712 decoding and field formatting",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "clean": "node -e \"require('fs').rmSync('dist',{recursive:true,force:true})\"",
+    "test": "node --import tsx --test test/*.test.ts",
+    "lint": "tsc -p tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@1shotapi/ows-types": "*"
+  },
+  "peerDependencies": {
+    "viem": "^2.0.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0",
+    "viem": "^2.52.0"
+  },
+  "keywords": [
+    "ows",
+    "open-wallet-standard",
+    "erc-7730",
+    "clear-signing",
+    "evm",
+    "eip-712"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/1Shot-API/open-wallet.git",
+    "directory": "packages/ows-clear-signing"
+  },
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  }
+}
