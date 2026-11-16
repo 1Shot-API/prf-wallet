@@ -13,7 +13,7 @@ export type EVMAccountAddress = Brand<`0x${string}`, "EVMAccountAddress">;
 export const EVMAccountAddress = make<EVMAccountAddress>();
 
 /** Zod schema: 20-byte hex address, normalized to EIP-55 checksum. */
-export const EVMAccountAddressSchema = z
+export const EVMAccountAddressSchema = /* @__PURE__ */ z
   .string()
   .regex(/^0x[0-9a-fA-F]{40}$/, { message: "must be a 20-byte 0x hex address" })
   .transform((s, ctx) => {

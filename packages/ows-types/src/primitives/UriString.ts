@@ -26,7 +26,7 @@ function isUriLike(s: string): boolean {
 }
 
 /** Zod schema: absolute URL or custom-scheme URI. */
-export const UriStringSchema = z
+export const UriStringSchema = /* @__PURE__ */ z
   .string()
   .refine(isUriLike, { message: "must be a valid URI" })
   .transform((s) => UriString(s));

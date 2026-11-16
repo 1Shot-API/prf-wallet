@@ -14,7 +14,7 @@ export type AES256CipherTextEnvelope = Brand<
 export const AES256CipherTextEnvelope = make<AES256CipherTextEnvelope>();
 
 /** Zod schema: `ows-aes1:` prefix + 0x hex payload. */
-export const AES256CipherTextEnvelopeSchema = z
+export const AES256CipherTextEnvelopeSchema = /* @__PURE__ */ z
   .string()
   .regex(/^ows-aes1:0x[0-9a-fA-F]+$/, {
     message: "must be an ows-aes1:0x… AES-256 envelope",

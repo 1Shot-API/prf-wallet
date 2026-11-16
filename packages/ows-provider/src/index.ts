@@ -1,5 +1,6 @@
 export { OWSProxy } from "./OWSProxy.js";
-export type { OWSProxyOptions } from "./OWSProxy.js";
+export { OWSProxyCore } from "./OWSProxyCore.js";
+export type { IOWSProxyConnection, OWSProxyOptions } from "./OWSProxyCore.js";
 export {
   DEFAULT_WALLET_SIZE_X,
   DEFAULT_WALLET_SIZE_Y,

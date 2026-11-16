@@ -11,7 +11,7 @@ export type EVMChainId = Brand<`0x${string}`, "EVMChainId">;
 export const EVMChainId = make<EVMChainId>();
 
 /** Zod schema: 0x hex chain id, normalized (no leading zeros in the hex body). */
-export const EVMChainIdSchema = z
+export const EVMChainIdSchema = /* @__PURE__ */ z
   .string()
   .regex(/^0x[0-9a-fA-F]+$/, { message: "must be a 0x-prefixed hex chain id" })
   .transform((value) =>

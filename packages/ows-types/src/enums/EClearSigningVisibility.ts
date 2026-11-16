@@ -11,7 +11,7 @@ export enum EClearSigningVisibility {
 }
 
 /** Zod schema: {@link EClearSigningVisibility} string values. */
-export const EClearSigningVisibilitySchema = z.enum([
+export const EClearSigningVisibilitySchema = /* @__PURE__ */ z.enum([
   EClearSigningVisibility.Never,
   EClearSigningVisibility.Always,
   EClearSigningVisibility.Optional,

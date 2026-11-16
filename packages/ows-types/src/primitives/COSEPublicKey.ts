@@ -13,7 +13,7 @@ export const COSEPublicKey = make<COSEPublicKey>();
 const BASE64URL_RE = /^[A-Za-z0-9_-]+$/;
 
 /** Zod schema: base64url COSE public key. */
-export const COSEPublicKeySchema = z
+export const COSEPublicKeySchema = /* @__PURE__ */ z
   .string()
   .min(1)
   .refine((s) => BASE64URL_RE.test(s), {

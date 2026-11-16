@@ -12,7 +12,7 @@ export type SECP256K1PublicKey = Brand<`0x${string}`, "SECP256K1PublicKey">;
 export const SECP256K1PublicKey = make<SECP256K1PublicKey>();
 
 /** Zod schema: uncompressed secp256k1 public key (`0x04` + 64 bytes). */
-export const SECP256K1PublicKeySchema = z
+export const SECP256K1PublicKeySchema = /* @__PURE__ */ z
   .string()
   .regex(/^0x04[0-9a-fA-F]{128}$/i, {
     message: "must be uncompressed secp256k1 public key (0x04 + 64 bytes)",

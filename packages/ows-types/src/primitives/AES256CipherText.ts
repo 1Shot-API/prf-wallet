@@ -11,7 +11,7 @@ export type AES256CipherText = Brand<`0x${string}`, "AES256CipherText">;
 export const AES256CipherText = make<AES256CipherText>();
 
 /** Zod schema: non-empty 0x-prefixed hex ciphertext. */
-export const AES256CipherTextSchema = z
+export const AES256CipherTextSchema = /* @__PURE__ */ z
   .string()
   .regex(/^0x[0-9a-fA-F]+$/, {
     message: "must be a non-empty 0x-prefixed hex ciphertext",

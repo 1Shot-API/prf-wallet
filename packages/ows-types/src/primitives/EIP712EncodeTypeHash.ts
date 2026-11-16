@@ -11,7 +11,7 @@ export type EIP712EncodeTypeHash = Brand<`0x${string}`, "EIP712EncodeTypeHash">;
 export const EIP712EncodeTypeHash = make<EIP712EncodeTypeHash>();
 
 /** Zod schema: `0x` + 64 hex digits, normalized to lowercase. */
-export const EIP712EncodeTypeHashSchema = z
+export const EIP712EncodeTypeHashSchema = /* @__PURE__ */ z
   .string()
   .regex(/^0x[0-9a-fA-F]{64}$/, { message: "must be a 32-byte 0x hex hash" })
   .transform((s) => EIP712EncodeTypeHash(s.toLowerCase() as `0x${string}`));

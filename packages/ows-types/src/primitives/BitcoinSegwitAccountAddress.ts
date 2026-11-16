@@ -33,7 +33,7 @@ function isValidSegwitP2wpkh(input: string): boolean {
 }
 
 /** Zod schema: Native SegWit P2WPKH (`bc1q` / `tb1q`), bech32-validated. */
-export const BitcoinSegwitAccountAddressSchema = z
+export const BitcoinSegwitAccountAddressSchema = /* @__PURE__ */ z
   .string()
   .refine(isValidSegwitP2wpkh, {
     message: "must be a Native SegWit P2WPKH address (bc1q / tb1q)",

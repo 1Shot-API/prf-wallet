@@ -23,6 +23,6 @@ export const BITCOIN_CAIP2 = {
 } as const;
 
 /** Zod schema: Bitcoin chain sentinel. */
-export const BitcoinChainIdSchema = z
+export const BitcoinChainIdSchema = /* @__PURE__ */ z
   .enum(["Bitcoin", "BitcoinTestnet"])
   .transform((s) => BitcoinChainId(s));

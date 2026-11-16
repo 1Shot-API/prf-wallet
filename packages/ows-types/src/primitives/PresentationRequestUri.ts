@@ -23,7 +23,7 @@ function isUriLike(s: string): boolean {
 }
 
 /** Zod schema: presentation request URI. */
-export const PresentationRequestUriSchema = z
+export const PresentationRequestUriSchema = /* @__PURE__ */ z
   .string()
   .refine(isUriLike, { message: "must be a valid presentation request URI" })
   .transform((s) => PresentationRequestUri(s));

@@ -7,7 +7,7 @@ import { HexStringSchema } from "../primitives/HexString.js";
  * EIP-1193 `eth_sendTransaction` / `eth_signTransaction` request object.
  * Quantities are hex-encoded per JSON-RPC.
  */
-export const IEVMTransactionRequestSchema = z.object({
+export const IEVMTransactionRequestSchema = /* @__PURE__ */ z.object({
   from: EVMAccountAddressSchema.optional(),
   to: EVMAccountAddressSchema.nullable().optional(),
   gas: HexStringSchema.optional(),

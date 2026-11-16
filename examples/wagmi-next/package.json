@@ -1,0 +1,30 @@
+{
+  "name": "@1shotapi/ows-example-wagmi-next",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Next.js App Router + wagmi app using the 1Shot Wallet connector (@1shotapi/wagmi-connector)",
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "tsc -p tsconfig.json --noEmit",
+    "verify:packed": "node scripts/verify-packed.mjs"
+  },
+  "dependencies": {
+    "@1shotapi/ows-provider": "*",
+    "@1shotapi/wagmi-connector": "*",
+    "@tanstack/react-query": "^5.107.1",
+    "next": "^16.4.6",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "viem": "^2.52.0",
+    "wagmi": "^3.7.11"
+  },
+  "devDependencies": {
+    "@types/node": "^22.19.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "typescript": "^5.9.3"
+  }
+}

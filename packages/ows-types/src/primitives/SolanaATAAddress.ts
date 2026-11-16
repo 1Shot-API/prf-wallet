@@ -12,7 +12,7 @@ export type SolanaATAAddress = Brand<string, "SolanaATAAddress">;
 export const SolanaATAAddress = make<SolanaATAAddress>();
 
 /** Zod schema: Solana ATA address validated via `@solana/addresses`. */
-export const SolanaATAAddressSchema = z.string().transform((s, ctx) => {
+export const SolanaATAAddressSchema = /* @__PURE__ */ z.string().transform((s, ctx) => {
   try {
     return SolanaATAAddress(address(s.trim()) as string);
   } catch {
