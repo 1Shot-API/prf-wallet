@@ -10,7 +10,7 @@ export type JSONString = Brand<string, "JSONString">;
 export const JSONString = make<JSONString>();
 
 /** Zod schema: string that `JSON.parse` accepts. */
-export const JSONStringSchema = z
+export const JSONStringSchema = /* @__PURE__ */ z
   .string()
   .refine(
     (s) => {

@@ -10,7 +10,7 @@ export type CredentialScope = Brand<string, "CredentialScope">;
 export const CredentialScope = make<CredentialScope>();
 
 /** Zod schema: non-empty credential scope. */
-export const CredentialScopeSchema = z
+export const CredentialScopeSchema = /* @__PURE__ */ z
   .string()
   .min(1, { message: "must be a non-empty credential scope" })
   .transform((s) => CredentialScope(s));

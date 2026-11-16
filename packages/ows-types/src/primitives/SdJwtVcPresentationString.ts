@@ -14,7 +14,7 @@ export type SdJwtVcPresentationString = Brand<
 export const SdJwtVcPresentationString = make<SdJwtVcPresentationString>();
 
 /** Zod schema: non-empty SD-JWT VC presentation string. */
-export const SdJwtVcPresentationStringSchema = z
+export const SdJwtVcPresentationStringSchema = /* @__PURE__ */ z
   .string()
   .min(1, { message: "must be a non-empty SD-JWT VC presentation" })
   .transform((s) => SdJwtVcPresentationString(s));

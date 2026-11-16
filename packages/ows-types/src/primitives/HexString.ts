@@ -10,7 +10,7 @@ export type HexString = Brand<`0x${string}`, "HexString">;
 export const HexString = make<HexString>();
 
 /** Zod schema: `0x` + hex digits (may be empty after prefix). */
-export const HexStringSchema = z
+export const HexStringSchema = /* @__PURE__ */ z
   .string()
   .regex(/^0x[0-9a-fA-F]*$/, { message: "must be 0x-prefixed hex" })
   .transform((s) => HexString(s as `0x${string}`));

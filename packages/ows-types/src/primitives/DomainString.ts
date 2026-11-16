@@ -12,7 +12,7 @@ export type DomainString = Brand<string, "DomainString">;
 export const DomainString = make<DomainString>();
 
 /** Zod schema: non-empty hostname / domain (no scheme). */
-export const DomainStringSchema = z
+export const DomainStringSchema = /* @__PURE__ */ z
   .string()
   .min(1, { message: "must be a non-empty domain" })
   .refine((s) => !s.includes("://") && !s.includes("/"), {

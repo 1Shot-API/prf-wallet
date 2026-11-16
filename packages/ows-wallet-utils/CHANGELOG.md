@@ -1,5 +1,17 @@
 # @1shotapi/ows-wallet-utils
 
+## 0.9.0
+
+### Minor Changes
+
+- ba29850: Add EIP-2255 wallet permissions to the shared protocol surface. `ows-types` lists `wallet_requestPermissions`, `wallet_getPermissions`, and `wallet_revokePermissions` in `EIP1193_METHODS`, types them in `EIP1193Requests`, and exports `IRequestedPermissions` / `IWalletPermission`. `ows-wallet-utils` validates their params in `EIP1193_PARAM_SCHEMAS`. Revoking `eth_accounts` is how Hosts (e.g. the wagmi connector) disconnect.
+
+### Patch Changes
+
+- Updated dependencies [ba29850]
+- Updated dependencies [ba29850]
+  - @1shotapi/ows-types@0.18.0
+
 ## 0.8.0
 
 ### Minor Changes

@@ -10,7 +10,7 @@ export type RPCCallId = Brand<number, "RPCCallId">;
 export const RPCCallId = make<RPCCallId>();
 
 /** Zod schema: non-negative integer RPC call id. */
-export const RPCCallIdSchema = z
+export const RPCCallIdSchema = /* @__PURE__ */ z
   .number()
   .int()
   .nonnegative()

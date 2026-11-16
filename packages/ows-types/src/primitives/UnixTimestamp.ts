@@ -10,7 +10,7 @@ export type UnixTimestamp = Brand<number, "UnixTimestamp">;
 export const UnixTimestamp = make<UnixTimestamp>();
 
 /** Zod schema: Unix timestamp in seconds (non-negative integer). */
-export const UnixTimestampSchema = z
+export const UnixTimestampSchema = /* @__PURE__ */ z
   .number()
   .int()
   .nonnegative()

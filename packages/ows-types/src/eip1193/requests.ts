@@ -16,6 +16,7 @@ import type {
   ISendCallsParams,
   ISendCallsResult,
 } from "./eip5792.js";
+import type { IRequestedPermissions, IWalletPermission } from "./eip2255.js";
 import type { IEVMTransactionRequest } from "./transaction.js";
 
 /**
@@ -46,6 +47,18 @@ export type EIP1193Requests = {
   };
   wallet_switchEthereumChain: {
     params: readonly [{ chainId: EVMChainId }];
+    result: null;
+  };
+  wallet_requestPermissions: {
+    params: readonly [IRequestedPermissions];
+    result: IWalletPermission[];
+  };
+  wallet_getPermissions: {
+    result: IWalletPermission[];
+  };
+  /** Revoking `eth_accounts` disconnects the Host: `eth_accounts` returns `[]` afterwards. */
+  wallet_revokePermissions: {
+    params: readonly [IRequestedPermissions];
     result: null;
   };
   /**

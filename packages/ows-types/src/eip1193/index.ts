@@ -31,6 +31,12 @@ export {
 } from "./eip5792.js";
 
 export type {
+  IRequestedPermissions,
+  IWalletPermission,
+  IWalletPermissionCaveat,
+} from "./eip2255.js";
+
+export type {
   IExecutionPermission,
   IExecutionPermissionDependency,
   IExecutionPermissionRequest,

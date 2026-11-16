@@ -10,7 +10,7 @@ export type CredentialIssuer = Brand<string, "CredentialIssuer">;
 export const CredentialIssuer = make<CredentialIssuer>();
 
 /** Zod schema: non-empty credential issuer id. */
-export const CredentialIssuerSchema = z
+export const CredentialIssuerSchema = /* @__PURE__ */ z
   .string()
   .min(1, { message: "must be a non-empty credential issuer" })
   .transform((s) => CredentialIssuer(s));

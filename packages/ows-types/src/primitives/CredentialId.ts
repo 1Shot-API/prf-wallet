@@ -11,7 +11,7 @@ export type CredentialId = Brand<string, "CredentialId">;
 export const CredentialId = make<CredentialId>();
 
 /** Zod schema: non-empty credential id. */
-export const CredentialIdSchema = z
+export const CredentialIdSchema = /* @__PURE__ */ z
   .string()
   .min(1, { message: "must be a non-empty credential id" })
   .transform((s) => CredentialId(s));

@@ -124,6 +124,12 @@ const watchAssetParamsSchema = z.object({
   }),
 });
 
+/** EIP-2255 permission request object, e.g. `{ eth_accounts: {} }`. */
+const requestedPermissionsSchema = z.record(
+  z.string(),
+  z.record(z.string(), z.unknown()),
+);
+
 const executionPermissionSchema = z.object({
   type: z.string().min(1),
   isAdjustmentAllowed: z.boolean(),
@@ -173,6 +179,13 @@ export const EIP1193_PARAM_SCHEMAS: Record<Eip1193Method, z.ZodType> = {
   wallet_switchEthereumChain: z.tuple([switchChainParamsSchema]),
   wallet_addEthereumChain: z.tuple([addChainParamsSchema]),
   wallet_watchAsset: z.tuple([watchAssetParamsSchema]),
+  // Some dApps call this with no params; Branding treats that as `eth_accounts`.
+  wallet_requestPermissions: z.union([
+    z.tuple([]),
+    z.tuple([requestedPermissionsSchema]),
+  ]),
+  wallet_getPermissions: z.tuple([]),
+  wallet_revokePermissions: z.tuple([requestedPermissionsSchema]),
   wallet_requestExecutionPermissions: requestExecutionPermissionsParamsSchema,
   wallet_revokeExecutionPermission: z.tuple([
     revokeExecutionPermissionParamsSchema,

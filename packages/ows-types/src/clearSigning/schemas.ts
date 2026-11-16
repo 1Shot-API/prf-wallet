@@ -12,7 +12,7 @@ import type {
 } from "./types.js";
 
 /** Registry deployments carry decimal chain ids; brand them as hex {@link EVMChainId}. */
-const DeploymentSchema = z.object({
+const DeploymentSchema = /* @__PURE__ */ z.object({
   chainId: z
     .union([z.number().int().positive(), z.string().regex(/^[0-9]+$/)])
     .transform((n) => `0x${BigInt(n).toString(16)}`)
@@ -20,7 +20,7 @@ const DeploymentSchema = z.object({
   address: EVMContractAddressSchema,
 });
 
-const VisibilitySchema = z.union([
+const VisibilitySchema = /* @__PURE__ */ z.union([
   EClearSigningVisibilitySchema,
   z.object({
     ifNotIn: z.array(z.unknown()).optional(),
@@ -28,7 +28,7 @@ const VisibilitySchema = z.union([
   }),
 ]);
 
-const FieldSchema: z.ZodType<IClearSigningField> = z.lazy(() =>
+const FieldSchema: z.ZodType<IClearSigningField> = /* @__PURE__ */ z.lazy(() =>
   z.object({
     path: z.string().optional(),
     value: z.unknown().optional(),
@@ -50,7 +50,7 @@ const FieldSchema: z.ZodType<IClearSigningField> = z.lazy(() =>
 ) as z.ZodType<IClearSigningField>;
 
 /** Zod schema for a Relayer-resolved ERC-7730 descriptor (untrusted network input). */
-export const ClearSigningDescriptorSchema = z.object({
+export const ClearSigningDescriptorSchema = /* @__PURE__ */ z.object({
   context: z.object({
     contract: z
       .object({ deployments: z.array(DeploymentSchema) })
@@ -98,7 +98,7 @@ export const ClearSigningDescriptorSchema = z.object({
 
 /** Zod schema for the Relayer `GET /clear-signing/*` response body. */
 export const ClearSigningLookupResultSchema: z.ZodType<ClearSigningLookupResult> =
-  z.discriminatedUnion("found", [
+  /* @__PURE__ */ z.discriminatedUnion("found", [
     z.object({
       found: z.literal(true),
       registrySha: ClearSigningRegistryShaSchema,

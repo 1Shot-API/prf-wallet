@@ -10,7 +10,7 @@ export type RelayerTransactionId = Brand<`0x${string}`, "RelayerTransactionId">;
 export const RelayerTransactionId = make<RelayerTransactionId>();
 
 /** Zod schema: non-empty 0x-prefixed hex relayer task id. */
-export const RelayerTransactionIdSchema = z
+export const RelayerTransactionIdSchema = /* @__PURE__ */ z
   .string()
   .regex(/^0x[0-9a-fA-F]+$/, {
     message: "must be a non-empty 0x-prefixed hex relayer transaction id",
