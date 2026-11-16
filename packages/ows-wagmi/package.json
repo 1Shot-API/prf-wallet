@@ -1,6 +1,6 @@
 {
   "name": "@1shotapi/wagmi-connector",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "wagmi connector for the 1Shot Embedded Wallet (OWS Branding Layer iframe)",
   "type": "module",
   "sideEffects": false,
