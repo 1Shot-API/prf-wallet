@@ -11,7 +11,7 @@ export type DisplayRequestId = Brand<string, "DisplayRequestId">;
 export const DisplayRequestId = make<DisplayRequestId>();
 
 /** Zod schema: non-empty display request id string. */
-export const DisplayRequestIdSchema = z
+export const DisplayRequestIdSchema = /* @__PURE__ */ z
   .string()
   .min(1, { message: "must be a non-empty display request id" })
   .transform((s) => DisplayRequestId(s));

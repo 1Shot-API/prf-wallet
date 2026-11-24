@@ -1,5 +1,15 @@
 # @1shotapi/ows-types
 
+## 0.18.0
+
+### Minor Changes
+
+- ba29850: Add EIP-2255 wallet permissions to the shared protocol surface. `ows-types` lists `wallet_requestPermissions`, `wallet_getPermissions`, and `wallet_revokePermissions` in `EIP1193_METHODS`, types them in `EIP1193Requests`, and exports `IRequestedPermissions` / `IWalletPermission`. `ows-wallet-utils` validates their params in `EIP1193_PARAM_SCHEMAS`. Revoking `eth_accounts` is how Hosts (e.g. the wagmi connector) disconnect.
+
+### Patch Changes
+
+- ba29850: Add an EVM-only entry point, `@1shotapi/ows-provider/evm`, exporting `OWSProxyCore` (Branding iframe, `ethereum` EIP-1193 provider, `rpc`, display, analytics). `OWSProxy` now extends `OWSProxyCore` and adds the `credentials`, `bitcoin`, and `solana` namespaces; its public API is unchanged. Both packages declare `"sideEffects": false`, and the zod schemas on the Host RPC path in `ows-types` are marked pure, so the `/evm` entry bundles to about 7 KB gzipped instead of about 100 KB.
+
 ## 0.17.0
 
 ### Minor Changes

@@ -10,7 +10,7 @@ export enum EChainTechnology {
 }
 
 /** Zod schema: {@link EChainTechnology} string values. */
-export const EChainTechnologySchema = z.enum([
+export const EChainTechnologySchema = /* @__PURE__ */ z.enum([
   EChainTechnology.Evm,
   EChainTechnology.Solana,
   EChainTechnology.Bitcoin,

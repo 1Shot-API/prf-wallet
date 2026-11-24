@@ -14,7 +14,7 @@ export type EVMContractAddress = Brand<`0x${string}`, "EVMContractAddress">;
 export const EVMContractAddress = make<EVMContractAddress>();
 
 /** Zod schema: 20-byte hex address, normalized to EIP-55 checksum. */
-export const EVMContractAddressSchema = z
+export const EVMContractAddressSchema = /* @__PURE__ */ z
   .string()
   .regex(/^0x[0-9a-fA-F]{40}$/, { message: "must be a 20-byte 0x hex address" })
   .transform((s, ctx) => {

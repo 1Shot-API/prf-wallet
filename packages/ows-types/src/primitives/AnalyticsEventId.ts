@@ -10,6 +10,6 @@ export type AnalyticsEventId = Brand<string, "AnalyticsEventId">;
 export const AnalyticsEventId = make<AnalyticsEventId>();
 
 /** Zod schema: UUID string. */
-export const AnalyticsEventIdSchema = z
+export const AnalyticsEventIdSchema = /* @__PURE__ */ z
   .uuid({ message: "must be a UUID" })
   .transform((s) => AnalyticsEventId(s));

@@ -30,6 +30,6 @@ export const SOLANA_CAIP2 = {
 } as const;
 
 /** Zod schema: Solana CAIP-2 cluster sentinel. */
-export const SolanaChainIdSchema = z
+export const SolanaChainIdSchema = /* @__PURE__ */ z
   .enum(["solana:mainnet", "solana:devnet", "solana:testnet"])
   .transform((s) => SolanaChainId(s));

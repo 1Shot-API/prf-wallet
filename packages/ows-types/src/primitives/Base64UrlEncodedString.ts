@@ -12,7 +12,7 @@ export const Base64UrlEncodedString = make<Base64UrlEncodedString>();
 const BASE64URL_RE = /^[A-Za-z0-9_-]+$/;
 
 /** Zod schema: base64url charset (A–Z, a–z, 0–9, `-`, `_`). */
-export const Base64UrlEncodedStringSchema = z
+export const Base64UrlEncodedStringSchema = /* @__PURE__ */ z
   .string()
   .min(1)
   .refine((s) => BASE64URL_RE.test(s), {

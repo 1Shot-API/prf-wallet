@@ -10,7 +10,7 @@ export type CredentialTypeName = Brand<string, "CredentialTypeName">;
 export const CredentialTypeName = make<CredentialTypeName>();
 
 /** Zod schema: non-empty credential type name. */
-export const CredentialTypeNameSchema = z
+export const CredentialTypeNameSchema = /* @__PURE__ */ z
   .string()
   .min(1, { message: "must be a non-empty credential type name" })
   .transform((s) => CredentialTypeName(s));

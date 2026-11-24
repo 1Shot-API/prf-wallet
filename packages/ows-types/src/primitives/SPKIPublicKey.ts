@@ -14,7 +14,7 @@ export const SPKIPublicKey = make<SPKIPublicKey>();
 const BASE64URL_RE = /^[A-Za-z0-9_-]+$/;
 
 /** Zod schema: base64url SPKI public key. */
-export const SPKIPublicKeySchema = z
+export const SPKIPublicKeySchema = /* @__PURE__ */ z
   .string()
   .min(1)
   .refine((s) => BASE64URL_RE.test(s), {

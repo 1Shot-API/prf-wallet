@@ -11,7 +11,7 @@ export type EVMSignatureHex = Brand<`0x${string}`, "EVMSignatureHex">;
 export const EVMSignatureHex = make<EVMSignatureHex>();
 
 /** Zod schema: 0x-prefixed hex signature (min 65 bytes / length ≥ 132). */
-export const EVMSignatureHexSchema = z
+export const EVMSignatureHexSchema = /* @__PURE__ */ z
   .string()
   .refine((s) => /^0x[0-9a-fA-F]+$/.test(s) && s.length >= 132, {
     message: "must be 0x-prefixed hex signature (min 65 bytes)",

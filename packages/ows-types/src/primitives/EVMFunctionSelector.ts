@@ -10,7 +10,7 @@ export type EVMFunctionSelector = Brand<`0x${string}`, "EVMFunctionSelector">;
 export const EVMFunctionSelector = make<EVMFunctionSelector>();
 
 /** Zod schema: `0x` + 8 hex digits, normalized to lowercase. */
-export const EVMFunctionSelectorSchema = z
+export const EVMFunctionSelectorSchema = /* @__PURE__ */ z
   .string()
   .regex(/^0x[0-9a-fA-F]{8}$/, { message: "must be a 4-byte 0x hex selector" })
   .transform((s) => EVMFunctionSelector(s.toLowerCase() as `0x${string}`));

@@ -20,7 +20,7 @@ function isValidSolanaSignature(input: string): boolean {
 }
 
 /** Zod schema: base58 Ed25519 signature decoding to 64 bytes. */
-export const SolanaSignatureSchema = z
+export const SolanaSignatureSchema = /* @__PURE__ */ z
   .string()
   .refine(isValidSolanaSignature, {
     message: "must be a base58 Solana signature (64-byte ed25519)",

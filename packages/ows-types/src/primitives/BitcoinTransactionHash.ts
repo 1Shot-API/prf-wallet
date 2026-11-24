@@ -11,7 +11,7 @@ export type BitcoinTransactionHash = Brand<string, "BitcoinTransactionHash">;
 export const BitcoinTransactionHash = make<BitcoinTransactionHash>();
 
 /** Zod schema: 64 hex chars, no 0x prefix. */
-export const BitcoinTransactionHashSchema = z
+export const BitcoinTransactionHashSchema = /* @__PURE__ */ z
   .string()
   .regex(/^[0-9a-fA-F]{64}$/, {
     message: "must be a 32-byte hex Bitcoin txid without 0x prefix",
