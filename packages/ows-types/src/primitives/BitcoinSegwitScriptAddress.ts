@@ -12,7 +12,7 @@ export type BitcoinSegwitScriptAddress = Brand<string, "BitcoinSegwitScriptAddre
 export const BitcoinSegwitScriptAddress = make<BitcoinSegwitScriptAddress>();
 
 /** Zod schema: a Native SegWit P2WSH Bitcoin address (bc1q / tb1q, 32-byte program). */
-export const BitcoinSegwitScriptAddressSchema = z
+export const BitcoinSegwitScriptAddressSchema = /* @__PURE__ */ z
   .string()
   .trim()
   .refine((s) => BitcoinAddressUtils.isSegwitProgram(s, 0, 32), {

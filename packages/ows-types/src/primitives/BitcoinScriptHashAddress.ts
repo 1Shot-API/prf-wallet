@@ -12,7 +12,7 @@ export type BitcoinScriptHashAddress = Brand<string, "BitcoinScriptHashAddress">
 export const BitcoinScriptHashAddress = make<BitcoinScriptHashAddress>();
 
 /** Zod schema: a P2SH Bitcoin address (3… / 2…). */
-export const BitcoinScriptHashAddressSchema = z
+export const BitcoinScriptHashAddressSchema = /* @__PURE__ */ z
   .string()
   .trim()
   .refine((s) => BitcoinAddressUtils.isBase58Version(s, BitcoinAddressUtils.P2SH_VERSIONS), {

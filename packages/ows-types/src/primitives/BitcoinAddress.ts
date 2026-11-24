@@ -26,7 +26,7 @@ export type BitcoinAddress =
   | BitcoinScriptHashAddress;
 
 /** Zod schema: any standard Bitcoin address, branded by its type; bech32 lowercased. */
-export const BitcoinAddressSchema = z.union([
+export const BitcoinAddressSchema = /* @__PURE__ */ z.union([
   BitcoinSegwitAccountAddressSchema,
   BitcoinTaprootAccountAddressSchema,
   BitcoinSegwitScriptAddressSchema,

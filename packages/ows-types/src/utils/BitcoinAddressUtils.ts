@@ -13,20 +13,22 @@ export interface IBitcoinBase58Payload {
   hash: Uint8Array;
 }
 
+const P2PKH_VERSIONS: ReadonlySet<number> = /* @__PURE__ */ new Set([0x00, 0x6f]);
+const P2SH_VERSIONS: ReadonlySet<number> = /* @__PURE__ */ new Set([0x05, 0xc4]);
+const SEGWIT_PREFIXES: ReadonlySet<string> = /* @__PURE__ */ new Set(["bc", "tb"]);
+const base58check = /* @__PURE__ */ createBase58check((data: Uint8Array) =>
+  sha256(data, "bytes"),
+);
+
 /**
  * Network-agnostic Bitcoin address decoding (mainnet `bc` / base58 0x00, 0x05;
  * testnet `tb` / base58 0x6f, 0xc4). Backs the Bitcoin address primitive schemas.
  */
 export class BitcoinAddressUtils {
   /** P2PKH version bytes: mainnet, testnet. */
-  static readonly P2PKH_VERSIONS: ReadonlySet<number> = new Set([0x00, 0x6f]);
+  static readonly P2PKH_VERSIONS = P2PKH_VERSIONS;
   /** P2SH version bytes: mainnet, testnet. */
-  static readonly P2SH_VERSIONS: ReadonlySet<number> = new Set([0x05, 0xc4]);
-
-  private static readonly SEGWIT_PREFIXES: ReadonlySet<string> = new Set(["bc", "tb"]);
-  private static readonly base58check = createBase58check((data: Uint8Array) =>
-    sha256(data, "bytes"),
-  );
+  static readonly P2SH_VERSIONS = P2SH_VERSIONS;
 
   /**
    * Decode a mainnet / testnet SegWit address. Enforces single case, the
@@ -44,7 +46,7 @@ export class BitcoinAddressUtils {
       } catch {
         continue;
       }
-      if (!BitcoinAddressUtils.SEGWIT_PREFIXES.has(decoded.prefix)) return undefined;
+      if (!SEGWIT_PREFIXES.has(decoded.prefix)) return undefined;
       const version = decoded.words[0];
       if (version === undefined || version > 16) return undefined;
       if ((version === 0) !== (codec === bech32)) return undefined;
@@ -64,7 +66,7 @@ export class BitcoinAddressUtils {
   static decodeBase58(input: string): IBitcoinBase58Payload | undefined {
     let payload: Uint8Array;
     try {
-      payload = BitcoinAddressUtils.base58check.decode(input);
+      payload = base58check.decode(input);
     } catch {
       return undefined;
     }

@@ -15,7 +15,7 @@ export type SECP256K1CompressedPublicKey = Brand<
 export const SECP256K1CompressedPublicKey = make<SECP256K1CompressedPublicKey>();
 
 /** Zod schema: compressed secp256k1 public key (`0x02` / `0x03` + 32 bytes). */
-export const SECP256K1CompressedPublicKeySchema = z
+export const SECP256K1CompressedPublicKeySchema = /* @__PURE__ */ z
   .string()
   .regex(/^0x0[23][0-9a-fA-F]{64}$/, {
     message: "must be compressed secp256k1 public key (0x02/0x03 + 32 bytes)",

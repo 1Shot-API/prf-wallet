@@ -12,7 +12,7 @@ export type BitcoinLegacyAccountAddress = Brand<string, "BitcoinLegacyAccountAdd
 export const BitcoinLegacyAccountAddress = make<BitcoinLegacyAccountAddress>();
 
 /** Zod schema: a legacy P2PKH Bitcoin address (1… / m… / n…). */
-export const BitcoinLegacyAccountAddressSchema = z
+export const BitcoinLegacyAccountAddressSchema = /* @__PURE__ */ z
   .string()
   .trim()
   .refine((s) => BitcoinAddressUtils.isBase58Version(s, BitcoinAddressUtils.P2PKH_VERSIONS), {

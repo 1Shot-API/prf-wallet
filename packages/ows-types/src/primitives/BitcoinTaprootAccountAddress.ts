@@ -12,7 +12,7 @@ export type BitcoinTaprootAccountAddress = Brand<string, "BitcoinTaprootAccountA
 export const BitcoinTaprootAccountAddress = make<BitcoinTaprootAccountAddress>();
 
 /** Zod schema: a Taproot P2TR Bitcoin address (bc1p / tb1p). */
-export const BitcoinTaprootAccountAddressSchema = z
+export const BitcoinTaprootAccountAddressSchema = /* @__PURE__ */ z
   .string()
   .trim()
   .refine((s) => BitcoinAddressUtils.isSegwitProgram(s, 1, 32), {
