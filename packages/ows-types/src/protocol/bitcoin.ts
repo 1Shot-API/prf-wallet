@@ -1,3 +1,4 @@
+import type { BitcoinAddress } from "../primitives/BitcoinAddress.js";
 import type { BitcoinChainId } from "../primitives/BitcoinChainId.js";
 import type { BitcoinSegwitAccountAddress } from "../primitives/BitcoinSegwitAccountAddress.js";
 
@@ -23,7 +24,8 @@ export interface IBitcoinAccountAddressEntry {
 }
 
 export interface IBitcoinGetAccountAddressesParams {
-  account?: string;
+  /** Restrict to this address; the wallet refuses if it is not its own. */
+  account?: BitcoinAddress;
   intentions?: string[];
   chainId?: BitcoinChainId;
 }

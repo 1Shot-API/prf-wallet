@@ -7,6 +7,7 @@ import {
   HexString,
   SolanaAccountAddress,
   SolanaATAAddress,
+  UnprefixedHexString,
 } from "../src/index.js";
 
 describe("ConversionUtils.addressToBytes32Hex", () => {
@@ -116,5 +117,51 @@ describe("ConversionUtils base64 roundtrip", () => {
     const encoded = ConversionUtils.bytesToBase64(bytes);
     assert.equal(encoded, "SGVsbG8gV29ybGQ=");
     assert.deepEqual(ConversionUtils.base64ToBytes(encoded), bytes);
+  });
+});
+
+describe("ConversionUtils unprefixed hex", () => {
+  it("bytesToUnprefixedHex / unprefixedHexToBytes roundtrip", () => {
+    const bytes = new Uint8Array([0x00, 0x0f, 0xde, 0xad]);
+    const hex = ConversionUtils.bytesToUnprefixedHex(bytes);
+    assert.equal(hex, UnprefixedHexString("000fdead"));
+    assert.deepEqual(ConversionUtils.unprefixedHexToBytes(hex), bytes);
+  });
+
+  it("empty input encodes to an empty string", () => {
+    assert.equal(ConversionUtils.bytesToUnprefixedHex(new Uint8Array()), "");
+    assert.deepEqual(
+      ConversionUtils.unprefixedHexToBytes(UnprefixedHexString("")),
+      new Uint8Array(),
+    );
+  });
+});
+
+describe("ConversionUtils byte helpers", () => {
+  it("concatBytes joins parts in order", () => {
+    assert.deepEqual(
+      ConversionUtils.concatBytes(
+        Uint8Array.of(1, 2),
+        new Uint8Array(),
+        Uint8Array.of(3),
+      ),
+      Uint8Array.of(1, 2, 3),
+    );
+    assert.deepEqual(ConversionUtils.concatBytes(), new Uint8Array());
+  });
+
+  it("bytesEqual compares length and content", () => {
+    assert.equal(
+      ConversionUtils.bytesEqual(Uint8Array.of(1, 2), Uint8Array.of(1, 2)),
+      true,
+    );
+    assert.equal(
+      ConversionUtils.bytesEqual(Uint8Array.of(1, 2), Uint8Array.of(1, 3)),
+      false,
+    );
+    assert.equal(
+      ConversionUtils.bytesEqual(Uint8Array.of(1, 2), Uint8Array.of(1, 2, 3)),
+      false,
+    );
   });
 });

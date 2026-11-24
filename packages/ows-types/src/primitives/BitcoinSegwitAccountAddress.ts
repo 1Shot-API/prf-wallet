@@ -1,6 +1,7 @@
-import { bech32 } from "@scure/base";
 import { type Brand, make } from "ts-brand";
 import { z } from "zod";
+
+import { BitcoinAddressUtils } from "../utils/BitcoinAddressUtils.js";
 
 /**
  * A Bitcoin Native SegWit (P2WPKH) account address.
@@ -14,28 +15,11 @@ export type BitcoinSegwitAccountAddress = Brand<
 >;
 export const BitcoinSegwitAccountAddress = make<BitcoinSegwitAccountAddress>();
 
-function isValidSegwitP2wpkh(input: string): boolean {
-  try {
-    const trimmed = input.trim().toLowerCase();
-    const decoded = bech32.decode(trimmed);
-    if (decoded.prefix !== "bc" && decoded.prefix !== "tb") {
-      return false;
-    }
-    const version = decoded.words[0];
-    if (version !== 0) {
-      return false;
-    }
-    const program = bech32.fromWords(decoded.words.slice(1));
-    return program.length === 20;
-  } catch {
-    return false;
-  }
-}
-
 /** Zod schema: Native SegWit P2WPKH (`bc1q` / `tb1q`), bech32-validated. */
 export const BitcoinSegwitAccountAddressSchema = z
   .string()
-  .refine(isValidSegwitP2wpkh, {
+  .trim()
+  .refine((s) => BitcoinAddressUtils.isSegwitProgram(s, 0, 20), {
     message: "must be a Native SegWit P2WPKH address (bc1q / tb1q)",
   })
-  .transform((s) => BitcoinSegwitAccountAddress(s.trim().toLowerCase()));
+  .transform((s) => BitcoinSegwitAccountAddress(s.toLowerCase()));

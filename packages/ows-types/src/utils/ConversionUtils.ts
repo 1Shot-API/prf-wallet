@@ -8,6 +8,7 @@ import { HexString } from "../primitives/HexString.js";
 import type { SolanaAccountAddress } from "../primitives/SolanaAccountAddress.js";
 import type { SolanaATAAddress } from "../primitives/SolanaATAAddress.js";
 import type { SolanaProgramAddress } from "../primitives/SolanaProgramAddress.js";
+import { UnprefixedHexString } from "../primitives/UnprefixedHexString.js";
 
 import { SolanaAddressUtils } from "./SolanaAddressUtils.js";
 
@@ -54,9 +55,39 @@ export class ConversionUtils {
 
   /** Encode bytes as a `0x`-prefixed {@link HexString}. */
   static bytesToHex(bytes: Uint8Array): HexString {
-    return HexString(
-      `0x${Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("")}`,
+    return HexString(`0x${ConversionUtils.bytesToUnprefixedHex(bytes)}`);
+  }
+
+  /** Encode bytes as lowercase hex without a `0x` prefix (Bitcoin wire convention). */
+  static bytesToUnprefixedHex(bytes: Uint8Array): UnprefixedHexString {
+    return UnprefixedHexString(
+      Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join(""),
     );
+  }
+
+  /** Decode an {@link UnprefixedHexString} to bytes. */
+  static unprefixedHexToBytes(hex: UnprefixedHexString): Uint8Array {
+    return ConversionUtils.hexToBytes(HexString(`0x${hex}`));
+  }
+
+  /** Concatenate byte arrays into one new array. */
+  static concatBytes(...parts: Uint8Array[]): Uint8Array {
+    const out = new Uint8Array(parts.reduce((sum, part) => sum + part.length, 0));
+    let offset = 0;
+    for (const part of parts) {
+      out.set(part, offset);
+      offset += part.length;
+    }
+    return out;
+  }
+
+  /** Byte-for-byte equality. Not constant-time; do not use for secrets. */
+  static bytesEqual(left: Uint8Array, right: Uint8Array): boolean {
+    if (left.length !== right.length) return false;
+    for (let i = 0; i < left.length; i++) {
+      if (left[i] !== right[i]) return false;
+    }
+    return true;
   }
 
   /**

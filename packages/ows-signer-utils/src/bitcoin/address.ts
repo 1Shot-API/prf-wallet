@@ -4,21 +4,15 @@ import {
   HexString,
   type BitcoinChainId,
   BitcoinSegwitAccountAddress,
+  SECP256K1CompressedPublicKey,
   type SECP256K1PublicKey,
 } from "@1shotapi/ows-types";
 import * as btc from "@scure/btc-signer";
 
 export function compressSecp256k1PublicKey(
-  uncompressed: SECP256K1PublicKey | Uint8Array,
-): Uint8Array {
-  const bytes =
-    uncompressed instanceof Uint8Array
-      ? uncompressed
-      : ConversionUtils.hexToBytes(HexString(uncompressed));
-
-  if (bytes.length === 33) {
-    return bytes;
-  }
+  uncompressed: SECP256K1PublicKey,
+): SECP256K1CompressedPublicKey {
+  const bytes = ConversionUtils.hexToBytes(HexString(uncompressed));
 
   if (bytes.length !== 65 || bytes[0] !== 4) {
     throw new Error(
@@ -29,7 +23,7 @@ export function compressSecp256k1PublicKey(
   const compressed = new Uint8Array(33);
   compressed[0] = (bytes[64]! & 1) === 0 ? 2 : 3;
   compressed.set(bytes.subarray(1, 33), 1);
-  return compressed;
+  return SECP256K1CompressedPublicKey(ConversionUtils.bytesToHex(compressed));
 }
 
 export function bitcoinNetworkForChainId(chainId: BitcoinChainId) {
@@ -42,12 +36,12 @@ export function bitcoinNetworkForChainId(chainId: BitcoinChainId) {
  * Derive a Native SegWit (P2WPKH, bc1q/tb1q) address from a secp256k1 public key.
  */
 export function addressFromSecp256k1PublicKey(
-  publicKey: SECP256K1PublicKey | Uint8Array,
+  publicKey: SECP256K1PublicKey,
   chainId: BitcoinChainId = BITCOIN_MAINNET_CHAIN_ID,
 ): BitcoinSegwitAccountAddress {
   const compressed = compressSecp256k1PublicKey(publicKey);
   const network = bitcoinNetworkForChainId(chainId);
-  const p2w = btc.p2wpkh(compressed, network);
+  const p2w = btc.p2wpkh(ConversionUtils.hexToBytes(HexString(compressed)), network);
   if (!p2w.address) {
     throw new Error("Failed to derive P2WPKH address");
   }

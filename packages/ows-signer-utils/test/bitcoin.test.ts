@@ -4,6 +4,7 @@ import {
   BITCOIN_MAINNET_CHAIN_ID,
   BITCOIN_TESTNET_CHAIN_ID,
   BitcoinSegwitAccountAddress,
+  ConversionUtils,
   type SECP256K1PublicKey,
 } from "@1shotapi/ows-types";
 import { secp256k1 } from "@noble/curves/secp256k1.js";
@@ -27,9 +28,8 @@ describe("bitcoin signer utils", () => {
 
   it("compresses 65-byte uncompressed public key correctly", () => {
     const compressed = compressSecp256k1PublicKey(uncompressedPubHex);
-    assert.equal(compressed.length, 33);
     const expected = secp256k1.getPublicKey(privKey, true);
-    assert.deepEqual(Array.from(compressed), Array.from(expected));
+    assert.equal(compressed, ConversionUtils.bytesToHex(expected));
   });
 
   it("derives mainnet and testnet Native SegWit (P2WPKH) addresses", () => {

@@ -4,6 +4,11 @@ export {
   type EVMAddressLike,
   type SolanaPubkeyLike,
 } from "./ConversionUtils.js";
+export {
+  BitcoinAddressUtils,
+  type IBitcoinBase58Payload,
+  type IBitcoinSegwitProgram,
+} from "./BitcoinAddressUtils.js";
 export { SolanaAddressUtils } from "./SolanaAddressUtils.js";
 export {
   CredentialCryptoUtils,
