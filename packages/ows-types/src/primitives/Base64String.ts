@@ -13,7 +13,7 @@ export const Base64String = make<Base64String>();
 const BASE64_RE = /^(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?$/;
 
 /** Zod schema: standard base64 (with optional padding). */
-export const Base64StringSchema = z
+export const Base64StringSchema = /* @__PURE__ */ z
   .string()
   .min(1)
   .refine((s) => BASE64_RE.test(s), {

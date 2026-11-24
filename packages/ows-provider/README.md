@@ -127,6 +127,21 @@ Advertised features: `standard:connect` / `disconnect` / `events`, `solana:signM
 
 Extension RPC for wallet-specific methods (non–EIP-1193).
 
+## EVM-only entry (`@1shotapi/ows-provider/evm`)
+
+EVM-only hosts and wallet connectors can import `OWSProxyCore` from the `/evm` subpath. It has the same `create`, `ethereum`, `analytics`, `rpc`, `showWallet`, `hideWallet` and `destroy` surface as `OWSProxy`, without `solana`, `bitcoin` or `credentials` — so Solana Wallet Standard, `@solana/*` and OID4 code never reach the bundle (~7 KB gzip vs ~119 KB for the root entry).
+
+```ts
+import { OWSProxyCore, EWalletPresentationMode } from "@1shotapi/ows-provider/evm";
+
+const proxy = await OWSProxyCore.create(container, "https://wallet.1shotapi.com/", {
+  presentationMode: EWalletPresentationMode.Flyout,
+});
+const accounts = await proxy.ethereum.request({ method: "eth_requestAccounts" });
+```
+
+`OWSProxy` extends `OWSProxyCore`, so code written against the core type accepts either. wagmi apps should use [`@1shotapi/wagmi-connector`](../ows-wagmi/README.md) (`oneShotWallet()`), which loads this entry lazily.
+
 ## Architecture
 
 ```

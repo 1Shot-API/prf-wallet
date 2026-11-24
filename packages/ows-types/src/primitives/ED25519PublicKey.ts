@@ -10,7 +10,7 @@ export type ED25519PublicKey = Brand<`0x${string}`, "ED25519PublicKey">;
 export const ED25519PublicKey = make<ED25519PublicKey>();
 
 /** Zod schema: 0x-prefixed 32-byte Ed25519 public key. */
-export const ED25519PublicKeySchema = z
+export const ED25519PublicKeySchema = /* @__PURE__ */ z
   .string()
   .regex(/^0x[0-9a-fA-F]{64}$/i, {
     message: "must be a 32-byte 0x hex Ed25519 public key",

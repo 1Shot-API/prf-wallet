@@ -10,7 +10,7 @@ export type BitcoinSignatureHex = Brand<`0x${string}`, "BitcoinSignatureHex">;
 export const BitcoinSignatureHex = make<BitcoinSignatureHex>();
 
 /** Zod schema: 0x-prefixed hex Bitcoin wire signature. */
-export const BitcoinSignatureHexSchema = z
+export const BitcoinSignatureHexSchema = /* @__PURE__ */ z
   .string()
   .regex(/^0x[0-9a-fA-F]+$/, {
     message: "must be a 0x-prefixed hex Bitcoin signature",

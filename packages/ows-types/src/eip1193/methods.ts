@@ -17,6 +17,10 @@ export const EIP1193_METHODS = [
   "wallet_switchEthereumChain",
   "wallet_addEthereumChain",
   "wallet_watchAsset",
+  // EIP-2255 — Wallet Permissions System
+  "wallet_requestPermissions",
+  "wallet_getPermissions",
+  "wallet_revokePermissions",
   // EIP-7715 — Request Permissions from Wallets
   "wallet_requestExecutionPermissions",
   "wallet_revokeExecutionPermission",

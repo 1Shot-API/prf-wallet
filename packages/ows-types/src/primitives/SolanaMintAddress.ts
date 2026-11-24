@@ -13,7 +13,7 @@ export type SolanaMintAddress = Brand<string, "SolanaMintAddress">;
 export const SolanaMintAddress = make<SolanaMintAddress>();
 
 /** Zod schema: Solana mint address validated via `@solana/addresses`. */
-export const SolanaMintAddressSchema = z.string().transform((s, ctx) => {
+export const SolanaMintAddressSchema = /* @__PURE__ */ z.string().transform((s, ctx) => {
   try {
     return SolanaMintAddress(address(s.trim()) as string);
   } catch {

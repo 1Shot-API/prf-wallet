@@ -21,7 +21,7 @@ function isValidSolanaTxHash(input: string): boolean {
 }
 
 /** Zod schema: base58 Solana transaction id decoding to 64 bytes. */
-export const SolanaTransactionHashSchema = z
+export const SolanaTransactionHashSchema = /* @__PURE__ */ z
   .string()
   .refine(isValidSolanaTxHash, {
     message: "must be a base58 Solana transaction hash (64-byte ed25519)",

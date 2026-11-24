@@ -7,7 +7,7 @@ export enum EClearSigningIteration {
 }
 
 /** Zod schema: {@link EClearSigningIteration} string values. */
-export const EClearSigningIterationSchema = z.enum([
+export const EClearSigningIterationSchema = /* @__PURE__ */ z.enum([
   EClearSigningIteration.Sequential,
   EClearSigningIteration.Bundled,
 ]);

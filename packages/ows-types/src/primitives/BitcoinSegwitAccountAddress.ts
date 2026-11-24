@@ -16,7 +16,7 @@ export type BitcoinSegwitAccountAddress = Brand<
 export const BitcoinSegwitAccountAddress = make<BitcoinSegwitAccountAddress>();
 
 /** Zod schema: Native SegWit P2WPKH (`bc1q` / `tb1q`), bech32-validated. */
-export const BitcoinSegwitAccountAddressSchema = z
+export const BitcoinSegwitAccountAddressSchema = /* @__PURE__ */ z
   .string()
   .trim()
   .refine((s) => BitcoinAddressUtils.isSegwitProgram(s, 0, 20), {

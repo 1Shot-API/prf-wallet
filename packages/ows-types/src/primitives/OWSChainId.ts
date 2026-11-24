@@ -16,7 +16,7 @@ import { z } from "zod";
 export type OWSChainId = EVMChainId | BitcoinChainId | SolanaChainId;
 
 /** Zod schema: EVM, Bitcoin, or Solana chain id. */
-export const OWSChainIdSchema = z.union([
+export const OWSChainIdSchema = /* @__PURE__ */ z.union([
   EVMChainIdSchema,
   BitcoinChainIdSchema,
   SolanaChainIdSchema,

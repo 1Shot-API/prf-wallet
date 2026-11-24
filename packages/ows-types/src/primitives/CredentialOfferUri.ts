@@ -23,7 +23,7 @@ function isUriLike(s: string): boolean {
 }
 
 /** Zod schema: credential offer URI (http(s) or custom scheme). */
-export const CredentialOfferUriSchema = z
+export const CredentialOfferUriSchema = /* @__PURE__ */ z
   .string()
   .refine(isUriLike, { message: "must be a valid credential offer URI" })
   .transform((s) => CredentialOfferUri(s));

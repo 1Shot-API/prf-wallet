@@ -10,7 +10,7 @@ export type ClearSigningRegistrySha = Brand<string, "ClearSigningRegistrySha">;
 export const ClearSigningRegistrySha = make<ClearSigningRegistrySha>();
 
 /** Zod schema: 40-hex git commit SHA, normalized to lowercase. */
-export const ClearSigningRegistryShaSchema = z
+export const ClearSigningRegistryShaSchema = /* @__PURE__ */ z
   .string()
   .regex(/^[0-9a-fA-F]{40}$/, { message: "must be a 40-hex git commit SHA" })
   .transform((s) => ClearSigningRegistrySha(s.toLowerCase()));

@@ -101,6 +101,26 @@ describe("eip1193/schemas", () => {
     ]);
     assert.equal(result.success, false);
   });
+
+  it("accepts EIP-2255 permission params", () => {
+    const request = getEip1193ParamSchema("wallet_requestPermissions");
+    assert.equal(request.safeParse([{ eth_accounts: {} }]).success, true);
+    assert.equal(request.safeParse([]).success, true);
+
+    const revoke = getEip1193ParamSchema("wallet_revokePermissions");
+    assert.equal(revoke.safeParse([{ eth_accounts: {} }]).success, true);
+
+    assert.equal(
+      getEip1193ParamSchema("wallet_getPermissions").safeParse([]).success,
+      true,
+    );
+  });
+
+  it("rejects wallet_revokePermissions without a permissions object", () => {
+    const schema = getEip1193ParamSchema("wallet_revokePermissions");
+    assert.equal(schema.safeParse([]).success, false);
+    assert.equal(schema.safeParse(["eth_accounts"]).success, false);
+  });
 });
 
 describe("rpc/handler", () => {

@@ -25,7 +25,7 @@ const KNOWN_FORMATS = new Set<string>(Object.values(EClearSigningFieldFormat));
  * Zod schema: ERC-7730 field format. Formats this version does not know are mapped to
  * {@link EClearSigningFieldFormat.Raw}, which the spec treats as the safe display.
  */
-export const EClearSigningFieldFormatSchema = z
+export const EClearSigningFieldFormatSchema = /* @__PURE__ */ z
   .string()
   .transform((value) =>
     KNOWN_FORMATS.has(value)
