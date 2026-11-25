@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OWS Custody Signer</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      font-family: system-ui, sans-serif;
+    }
+    body {
+      margin: 0;
+      padding: 8px;
+    }
+    .ows-signer-ui {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-width: 100%;
+    }
+    .ows-key {
+      margin: 0;
+      padding: 8px;
+      border: 1px solid #8884;
+      border-radius: 4px;
+      font-family: ui-monospace, monospace;
+      font-size: 12px;
+      word-break: break-all;
+      white-space: pre-wrap;
+    }
+    .ows-password {
+      padding: 8px;
+      border: 1px solid #8884;
+      border-radius: 4px;
+      font: inherit;
+    }
+    .ows-copy,
+    .ows-confirm {
+      padding: 8px 12px;
+      border: 1px solid #8884;
+      border-radius: 4px;
+      background: transparent;
+      font: inherit;
+      cursor: pointer;
+      align-self: flex-start;
+    }
+  </style>
+</head>
+<body>
+  <div id="ows-signer-root"></div>
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>

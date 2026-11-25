@@ -1,0 +1,23 @@
+{
+  "name": "@1shotapi/ows-example-credential-issuer",
+  "version": "0.0.0",
+  "private": true,
+  "description": "OWS credential issuer host demo — HTTP OID4VCI well-known/token/credential + acceptOffer",
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "build": "tsc -p tsconfig.json --noEmit && vite build",
+    "clean": "node scripts/clean.mjs",
+    "lint": "tsc -p tsconfig.json --noEmit",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@1shotapi/ows-provider": "*",
+    "@1shotapi/ows-types": "*"
+  },
+  "devDependencies": {
+    "dotenv": "^16.4.7",
+    "typescript": "~5.8.0",
+    "vite": "^7.0.4"
+  }
+}

@@ -1,0 +1,55 @@
+{
+  "found": true,
+  "registrySha": "0123456789abcdef0123456789abcdef01234567",
+  "path": "registry/1inch/calldata-AggregationRouterV6.json",
+  "descriptor": {
+    "context": {
+      "contract": {
+        "deployments": [
+          { "chainId": 1, "address": "0x111111125421cA6dc452d289314280a0f8842A65" },
+          { "chainId": 8453, "address": "0x111111125421cA6dc452d289314280a0f8842A65" }
+        ]
+      }
+    },
+    "metadata": {
+      "owner": "1inch Network",
+      "contractName": "AggregationRouterV6",
+      "info": { "url": "https://1inch.io/", "deploymentDate": "2024-02-12T03:44:35Z" },
+      "constants": {
+        "addressAsEth": "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
+        "addressAsNull": "0x0000000000000000000000000000000000000000"
+      }
+    },
+    "format": {
+      "key": "clipperSwap(address clipperExchange, uint256 srcToken, address dstToken, uint256 inputAmount, uint256 outputAmount, uint256 goodUntil, bytes32 r, bytes32 vs)",
+      "intent": "Swap",
+      "fields": [
+        {
+          "path": "inputAmount",
+          "label": "Amount to Send",
+          "format": "tokenAmount",
+          "params": {
+            "nativeCurrencyAddress": ["$.metadata.constants.addressAsEth", "$.metadata.constants.addressAsNull"],
+            "tokenPath": "srcToken.[-20:]"
+          },
+          "visible": "always"
+        },
+        {
+          "path": "outputAmount",
+          "label": "Minimum to Receive",
+          "format": "tokenAmount",
+          "params": {
+            "nativeCurrencyAddress": ["$.metadata.constants.addressAsEth", "$.metadata.constants.addressAsNull"],
+            "tokenPath": "dstToken"
+          },
+          "visible": "always"
+        },
+        { "path": "@.from", "label": "Beneficiary", "format": "addressName", "visible": "always" },
+        { "path": "goodUntil.[-4:]", "label": "Expiration time", "format": "date", "params": { "encoding": "timestamp" } },
+        { "label": "Clipper Exchange", "path": "clipperExchange", "visible": "never" },
+        { "label": "R", "path": "r", "visible": "never" },
+        { "label": "Vs", "path": "vs", "visible": "never" }
+      ]
+    }
+  }
+}

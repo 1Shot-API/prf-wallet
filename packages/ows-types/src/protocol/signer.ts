@@ -1,0 +1,241 @@
+import type { COSEPublicKey } from "../primitives/COSEPublicKey.js";
+import { CredentialId } from "../primitives/CredentialId.js";
+import type { ED25519PublicKey } from "../primitives/ED25519PublicKey.js";
+import type { HexString } from "../primitives/HexString.js";
+import type { JSONString } from "../primitives/JSONString.js";
+import type { SECP256K1PublicKey } from "../primitives/SECP256K1PublicKey.js";
+
+export const API_VERSION = 1 as const;
+
+export type SignScheme =
+  | "secp256k1-ecdsa"
+  | "secp256k1-ecdsa-recoverable"
+  | "secp256k1-bip340"
+  | "ed25519";
+
+export type SignerMethod =
+  | "getVersion"
+  | "createCredential"
+  | "signDigest"
+  | "revealPrivateKey"
+  | "importPrivateKey"
+  | "createRecoveryData"
+  | "recoverKey"
+  | "getPublicKey"
+  | "clearRecoverySession"
+  | "encryptAES256"
+  | "decryptAES256"
+  | "executeBatch";
+
+export type SignerEvent =
+  | "Version"
+  | "KeyDerived"
+  | "CredentialCreated"
+  | "DigestSigned"
+  | "RecoveryDataCreated"
+  | "RecoverySessionStarted"
+  | "RecoverySessionCleared"
+  | "PrivateKeyRevealed"
+  | "PublicKey"
+  | "ChallengeSigned"
+  | "AES256Encrypted"
+  | "AES256Decrypted"
+  | "BatchExecuted"
+  | "SignDenied"
+  | "NotAllowed"
+  | "InvalidRequest";
+
+/**
+ * Optional copy for the Signing Layer Confirm/Cancel panel shown before
+ * WebAuthn. Defaults are applied by the signer when omitted.
+ */
+export type CeremonyUiParams = {
+  explanationHeader?: string;
+  explanationText?: string;
+  confirmButtonText?: string;
+  denyButtonText?: string;
+};
+
+export type SignerRequest = {
+  v: typeof API_VERSION;
+  kind: "request";
+  method: SignerMethod;
+  correlationId?: string;
+  params?: Record<string, unknown>;
+};
+
+export type SignerEventMessage = {
+  v: typeof API_VERSION;
+  kind: "event";
+  event: SignerEvent;
+  correlationId?: string;
+  data: Record<string, unknown>;
+};
+
+export type VersionData = {
+  apiVersion: number;
+  signerVersion: string;
+  recoverySessionActive: boolean;
+};
+
+export type KeyDerivedData = {
+  secp256k1PublicKey: SECP256K1PublicKey;
+  ed25519PublicKey: ED25519PublicKey;
+};
+
+export type CredentialCreatedData = {
+  credentialId: CredentialId;
+  /** Authenticator COSE public key; only available on create (attestation). */
+  cosePublicKey: COSEPublicKey | null;
+  /**
+   * PRF-derived wallet secp256k1 public key.
+   * Absent when `deferKeyDerivation` was set on create (registration only).
+   */
+  secp256k1PublicKey?: SECP256K1PublicKey;
+};
+
+export type DigestSignItem = {
+  digestData: `0x${string}`;
+  scheme: SignScheme;
+};
+
+export type DigestSignedData = {
+  digest: `0x${string}`;
+  scheme: SignScheme;
+  signature: `0x${string}`;
+  credentialId: CredentialId | null;
+};
+
+/** Terminal `DigestSigned` event payload (batch). */
+export type DigestSignedResult = {
+  results: DigestSignedData[];
+};
+
+/**
+ * Batch sign digests under one passkey ceremony.
+ * Arrays amortize a single unlock across multiple digests.
+ */
+export type SignDigestParams = CeremonyUiParams & {
+  digests: DigestSignItem[];
+  credentialId?: CredentialId;
+};
+
+/**
+ * Mixed ceremony: sign digests, AES encrypt/decrypt, public key, and/or
+ * WebAuthn challenge auth under a single passkey assertion.
+ */
+export type ExecuteBatchParams = CeremonyUiParams & {
+  credentialId?: CredentialId;
+  /** WebAuthn assertion challenge (e.g. relayer auth). Forces a real assertion. */
+  challenge?: `0x${string}`;
+  digests?: DigestSignItem[];
+  plaintexts?: string[];
+  ciphertexts?: string[];
+  /** Include PublicKey payload in the result (addresses via KeyDerived). */
+  includePublicKey?: boolean;
+};
+
+export type RecoveryDataCreatedData = {
+  encryptedPrivateKey: string;
+};
+
+export type RecoverySessionStartedData = {
+  recoverySessionActive: true;
+};
+
+export type RecoverySessionClearedData = {
+  rebound?: boolean;
+};
+
+export type PublicKeyData = {
+  /**
+   * Authenticator COSE public key when available (create/attestation only).
+   * Assertions do not include credentialPublicKey — typically `null` here.
+   */
+  cosePublicKey: COSEPublicKey | null;
+  secp256k1PublicKey: SECP256K1PublicKey;
+  ed25519PublicKey: ED25519PublicKey;
+  credentialId?: CredentialId;
+};
+
+/**
+ * WebAuthn assertion fields after OWSSigner decodes the Signing Layer wire
+ * payload (iframe still sends base64url). Branding re-encodes for protocols
+ * that need base64url (e.g. SimpleWebAuthn / relayer).
+ *
+ * - `authenticatorData` / `signature` — raw bytes as {@link HexString}
+ * - `clientDataJSON` — UTF-8 JSON text as {@link JSONString} (parseable via
+ *   `JSON.parse` with no further decoding)
+ */
+export type WebAuthnAssertionFields = {
+  authenticatorData: HexString;
+  clientDataJSON: JSONString;
+  signature: HexString;
+  credentialId: CredentialId;
+};
+
+/** Terminal `BatchExecuted` event payload. */
+export type ExecuteBatchResult = {
+  results?: DigestSignedData[];
+  ciphertexts?: string[];
+  plaintexts?: string[];
+  publicKey?: PublicKeyData;
+  /** Present when `challenge` was supplied to the ceremony. */
+  assertion?: WebAuthnAssertionFields;
+  credentialId?: CredentialId | null;
+};
+
+export type ChallengeSignedData = {
+  challenge: `0x${string}`;
+  assertion: WebAuthnAssertionFields;
+};
+
+export type CreateCredentialOptions = CeremonyUiParams & {
+  rpName?: string;
+  userDisplayName?: string;
+  userId?: string;
+  /**
+   * When true, only run WebAuthn registration — skip the PRF follow-up get and
+   * omit `secp256k1PublicKey` from `CredentialCreated`. Use when a different
+   * signer session (e.g. opener after Safari `/create`) will unlock later.
+   */
+  deferKeyDerivation?: boolean;
+};
+
+export type GetPublicKeyParams = CeremonyUiParams & {
+  credentialId?: CredentialId;
+  challenge?: `0x${string}`;
+  /** When true, use discoverable credentials (omit allowCredentials). */
+  discoverable?: boolean;
+};
+
+/**
+ * Batch encrypt plaintexts with PRF-derived AES-256-GCM
+ * (HKDF from the wallet secp256k1 scalar — same material as `signDigest`).
+ * Arrays amortize a single passkey ceremony across multiple plaintexts.
+ */
+export type EncryptAES256Params = CeremonyUiParams & {
+  plaintexts: string[];
+  credentialId?: CredentialId;
+};
+
+export type EncryptAES256Result = {
+  ciphertexts: string[];
+};
+
+/**
+ * Batch decrypt AES-256-GCM envelopes (`ows-aes1:…`).
+ */
+export type DecryptAES256Params = CeremonyUiParams & {
+  ciphertexts: string[];
+  credentialId?: CredentialId;
+};
+
+/** Options for recovery / reveal RPCs that may trigger WebAuthn. */
+export type RecoveryCeremonyOptions = CeremonyUiParams & {
+  credentialId?: CredentialId;
+};
+
+export type DecryptAES256Result = {
+  plaintexts: string[];
+};

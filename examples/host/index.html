@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Open Wallet — Example Host</title>
+</head>
+<body>
+  <header class="site-header">
+    <h1>Open Wallet <span class="byline">by 1Shot API</span></h1>
+  </header>
+
+  <main class="content">
+    <section class="sign-panel">
+      <div class="chain-row">
+        <label for="chain-select">Chain</label>
+        <select id="chain-select" aria-label="Active chain">
+          <option value="0xaa36a7">Sepolia</option>
+          <option value="0x14a34">Base Sepolia</option>
+          <option value="0x4cef52">Arc Testnet</option>
+          <option value="solana:mainnet">Solana</option>
+          <option value="solana:devnet">Solana Devnet</option>
+        </select>
+        <button
+          type="button"
+          id="chain-refresh-button"
+          class="chain-refresh"
+          aria-label="Refresh chain from wallet"
+          title="Refresh chain from wallet"
+        >
+          ↻
+        </button>
+      </div>
+
+      <label for="message-input">Message to sign (EIP-191)</label>
+      <textarea id="message-input" rows="3">Hello from Open Wallet</textarea>
+      <div class="actions">
+        <button type="button" id="sign-button">Sign</button>
+        <button type="button" id="show-wallet-button">Show Wallet</button>
+      </div>
+      <p id="status" class="status" aria-live="polite"></p>
+      <pre id="signature-output" class="signature-output" hidden></pre>
+
+      <hr class="panel-divider" />
+
+      <label for="usdc-mode-select">USDC</label>
+      <select id="usdc-mode-select" aria-label="USDC action">
+        <option value="balance">Check Balance</option>
+        <option value="send">Send USDC</option>
+      </select>
+      <p id="usdc-contract" class="hint" aria-live="polite"></p>
+
+      <div id="usdc-send-fields" hidden>
+        <label for="usdc-destination-input">Destination</label>
+        <input
+          id="usdc-destination-input"
+          type="text"
+          class="text-input"
+          spellcheck="false"
+          autocomplete="off"
+          placeholder="0x…"
+        />
+        <label for="usdc-amount-input">Amount (USDC)</label>
+        <input
+          id="usdc-amount-input"
+          type="text"
+          class="text-input"
+          spellcheck="false"
+          autocomplete="off"
+          placeholder="1.0"
+          inputmode="decimal"
+        />
+      </div>
+
+      <div class="actions">
+        <button type="button" id="usdc-action-button">Check Balance</button>
+      </div>
+      <pre id="usdc-output" class="signature-output" hidden></pre>
+      <p id="usdc-tx-link" class="hint" hidden></p>
+
+      <hr class="panel-divider" />
+
+      <h2 class="panel-subtitle">Analytics</h2>
+      <p class="hint">
+        Events from branding via <code>proxy.analytics</code> (<code>ows:analytics</code>).
+      </p>
+      <pre id="analytics-output" class="signature-output" aria-live="polite"></pre>
+    </section>
+  </main>
+
+  <div id="wallet-container" class="wallet-container"></div>
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>

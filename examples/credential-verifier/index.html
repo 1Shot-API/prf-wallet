@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OWS — Mock Credential Verifier</title>
+</head>
+<body>
+  <header class="site-header">
+    <h1>Mock Credential Verifier</h1>
+    <p class="subtitle">Host demo — OID4VP presentation with custody chain inspection</p>
+  </header>
+
+  <main class="content">
+    <section class="panel">
+      <p id="request-uri" class="mono"></p>
+      <div class="actions">
+        <button type="button" id="verify-button">Request presentation</button>
+        <button type="button" id="show-wallet-button">Show wallet</button>
+      </div>
+      <p id="status" class="status" aria-live="polite"></p>
+    </section>
+
+    <section id="inspection" class="inspection" hidden>
+      <h2 class="section-title">Chain of custody</h2>
+      <ol id="custody-list" class="custody-list"></ol>
+
+      <h2 class="section-title">Presented credential</h2>
+      <div id="credential-meta" class="credential-meta"></div>
+
+      <h2 class="section-title">Disclosed claims</h2>
+      <div id="claim-cards" class="claim-cards"></div>
+
+      <details class="raw-details">
+        <summary>Raw presentation</summary>
+        <pre id="result-output" class="output"></pre>
+      </details>
+    </section>
+  </main>
+
+  <div id="wallet-container" class="wallet-container"></div>
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
