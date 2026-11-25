@@ -1,12 +1,13 @@
 import { z } from "zod";
 import {
+  BitcoinAddressSchema,
   BITCOIN_WIRE_METHODS,
   type IOpenWalletBitcoinProvider,
 } from "@1shotapi/ows-types";
 
 export const getAccountAddressesParamsSchema = z
   .object({
-    account: z.string().optional(),
+    account: BitcoinAddressSchema.optional(),
     intentions: z.array(z.string()).optional(),
     chainId: z
       .enum(["Bitcoin", "BitcoinTestnet"])

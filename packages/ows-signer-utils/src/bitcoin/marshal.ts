@@ -6,6 +6,7 @@ import {
   BitcoinSignatureHex,
   type BitcoinSegwitAccountAddress,
   BitcoinTransactionHash,
+  type SECP256K1CompressedPublicKey,
   type SECP256K1PublicKey,
 } from "@1shotapi/ows-types";
 import { secp256k1 } from "@noble/curves/secp256k1.js";
@@ -42,7 +43,7 @@ export interface IBitcoinSignedTransactionResult {
 export interface IPreparedBitcoinTransaction {
   tx: btc.Transaction;
   sighashes: Uint8Array[];
-  compressedPubKey: Uint8Array;
+  compressedPubKey: SECP256K1CompressedPublicKey;
 }
 
 /**
@@ -50,7 +51,7 @@ export interface IPreparedBitcoinTransaction {
  */
 export function prepareBitcoinTransaction(
   unsignedTx: IBitcoinUnsignedTransaction,
-  publicKey: SECP256K1PublicKey | Uint8Array,
+  publicKey: SECP256K1PublicKey,
 ): IPreparedBitcoinTransaction {
   if (unsignedTx.inputs.length === 0) {
     throw new Error("prepareBitcoinTransaction: transaction must have at least one input");
@@ -62,7 +63,7 @@ export function prepareBitcoinTransaction(
   const chainId = unsignedTx.chainId ?? BITCOIN_MAINNET_CHAIN_ID;
   const network = bitcoinNetworkForChainId(chainId);
   const compressedPubKey = compressSecp256k1PublicKey(publicKey);
-  const p2w = btc.p2wpkh(compressedPubKey, network);
+  const p2w = btc.p2wpkh(ConversionUtils.hexToBytes(HexString(compressedPubKey)), network);
 
   const tx = new btc.Transaction({
     allowUnknownOutputs: false,
@@ -118,6 +119,7 @@ export function finalizeBitcoinTransaction(
   compactSignaturesHex: Array<`0x${string}` | HexString>,
 ): IBitcoinSignedTransactionResult {
   const { tx, compressedPubKey } = prepared;
+  const compressedPubKeyBytes = ConversionUtils.hexToBytes(HexString(compressedPubKey));
 
   if (compactSignaturesHex.length !== tx.inputsLength) {
     throw new Error(
@@ -143,7 +145,7 @@ export function finalizeBitcoinTransaction(
     sigWithHash[derBytes.length] = btc.SigHash.ALL;
 
     tx.updateInput(i, {
-      partialSig: [[compressedPubKey, sigWithHash]],
+      partialSig: [[compressedPubKeyBytes, sigWithHash]],
     });
 
     signatures.push(
